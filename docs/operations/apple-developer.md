@@ -76,17 +76,36 @@ Portal: [Apps](https://appstoreconnect.apple.com/apps)
 
 SKU syns inte för användare. Den måste vara unik i Papa Bravo-kontot och går inte att byta. Samma sträng som bundle ID undviker krock med My Starday.
 
+Privacy Policy URL i App Store Connect: `https://korpasset.se/integritet`.
+Villkor: `https://korpasset.se/villkor`.
+
+## VPS-env när native-appen deployas
+
+Team ID är publikt. Sätt i `deploy/.env` (rotera inte `SESSION_SECRET`):
+
+```
+APPLE_BUNDLE_ID=se.korpasset.app
+APPLE_TEAM_ID=PQ7M3B7VW5
+APPLE_CLIENT_ID=se.korpasset.app
+```
+
+iOS identity tokens verifieras mot Apples JWKS (`aud` = bundle ID). Ingen
+`.p8` behövs för det. Nyckeln behövs först för client secret (Apple på
+Android/webb) och för REST-anrop som token-revoke.
+
 ## Inte klart än
 
 Ordning efter App Store Connect-appen:
 
-1. **Keys** — Sign in with Apple-nyckel så backend kan verifiera identity token. Private key och `.p8` lämnar inte repo.
-2. **Services ID** (t.ex. `se.korpasset.app.signin`) — bara om webb-/serverflöde mot Apple behövs, med Return URL på `https://korpasset.se/…`.
-3. **Associated Domains i appen** — `applinks:korpasset.se`.
-4. **`/.well-known/apple-app-site-association`** på `korpasset.se` så `/invite/<token>` öppnar appen.
-5. **TestFlight** när första iOS-bygget finns.
-6. **Apple-webhook** mot `https://korpasset.se/api/apple/notifications` (konto-radering / Apple-events).
+1. **Google OAuth-klienter** för Körpasset — se [google-play.md](google-play.md). Blockerar Sign in with Google.
+2. **Keys** (när Apple behövs på Android eller för revoke) — Developer → Keys → Sign in with Apple. Namn t.ex. `Körpasset Sign in with Apple`, koppla till App ID **Korpasset**. Ladda ner `.p8` en gång. Cursor runtime secrets (när den skapas): `APPLE_KEY_ID` + `APPLE_PRIVATE_KEY`. Filen lämnar inte git.
+3. **Services ID** `se.korpasset.app.android` — bara för Apple-inloggning på Android, Return URL `https://korpasset.se/app`. Inte `se.mystarday.*`.
+4. **Associated Domains i Xcode** — `applinks:korpasset.se`.
+5. **`/.well-known/apple-app-site-association`** på `korpasset.se` så `/invite/<token>` öppnar appen (`appID` `PQ7M3B7VW5.se.korpasset.app`).
+6. **TestFlight** när första iOS-bygget finns.
+7. **Apple-webhook** mot `https://korpasset.se/api/apple/notifications` (konto-radering / Apple-events) — bygg endpointen innan URL:en fylls i på App ID:n.
 
 Push och betalning ingår inte i första betan.
 
 Android / Play: [google-play.md](google-play.md).
+
