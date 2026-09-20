@@ -2,6 +2,11 @@ import type pg from "pg";
 import { AppError } from "../errors.js";
 import { getPool, withTransaction } from "../db/pool.js";
 import { assertDriveSupervisorForObservation } from "./drives.js";
+import { listActiveSupervisors } from "./journeys.js";
+import {
+  countCompletedRatedDrives,
+  recordProductEventSafe,
+} from "./product-events.js";
 
 export type AssessmentLevel = "needs_help" | "with_support" | "independent";
 
@@ -156,6 +161,35 @@ export async function saveDriveObservations(
          )
          VALUES ($1, $2, $3, $4, 'supervisor', $5)`,
         [journeyId, driveId, obs.skillId, observerUserId, obs.assessment],
+      );
+    }
+
+    const supervisors = await listActiveSupervisors(journeyId, client);
+    const ratedCount = await countCompletedRatedDrives(journeyId, client);
+    await recordProductEventSafe(
+      {
+        name: "rating_completed",
+        journeyId,
+        userId: observerUserId,
+        actorRole: "supervisor",
+        supervisorCount: supervisors.length,
+        focusSkillCount: observations.length,
+      },
+      undefined,
+      client,
+    );
+    if (ratedCount >= 2) {
+      await recordProductEventSafe(
+        {
+          name: "second_drive_completed",
+          journeyId,
+          userId: observerUserId,
+          actorRole: "supervisor",
+          supervisorCount: supervisors.length,
+          focusSkillCount: observations.length,
+        },
+        undefined,
+        client,
       );
     }
   });

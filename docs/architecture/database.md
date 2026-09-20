@@ -16,6 +16,7 @@ Motivering: kolumnspecifik `ON DELETE SET NULL` på composite foreign keys, som 
 | [`db/migrations/0004_resend_webhook_events.sql`](../../db/migrations/0004_resend_webhook_events.sql) | Resend webhook-logg (`resend_webhook_events`) |
 | [`db/migrations/0005_admin_audit_events.sql`](../../db/migrations/0005_admin_audit_events.sql) | Admin-audit för privileged writes (`admin_audit_events`) |
 | [`db/migrations/0006_interest_signups_platform.sql`](../../db/migrations/0006_interest_signups_platform.sql) | Plattformsval i intresseanmälan (`platform_ios`, `platform_android`) |
+| [`db/migrations/0007_product_events.sql`](../../db/migrations/0007_product_events.sql) | Beta-funnel events (`product_events`) |
 
 Runtime-applikationen tillämpar samma filer via [`app/src/db/migrate.ts`](../../app/src/db/migrate.ts) och tabellen `schema_migrations`. Redan migrerade databaser stämplas, SQL körs inte om. Deploy: [Production](../operations/production.md).
 

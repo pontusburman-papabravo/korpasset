@@ -440,6 +440,11 @@ a { color: inherit; }
 
 .optional { font-weight: 500; color: #9bb8b1; }
 
+.field-hint {
+  margin: -0.15rem 0 0.35rem;
+  font-size: 0.92rem;
+}
+
 .hp {
   position: absolute;
   left: -9999px;

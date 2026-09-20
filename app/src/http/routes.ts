@@ -1,5 +1,3 @@
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { FastifyInstance } from "fastify";
 import QRCode from "qrcode";
 import { AppError } from "../errors.js";
@@ -15,12 +13,12 @@ import {
   getJourneyById,
   listAccessibleActiveJourneys,
   listActiveSupervisors,
+  updateTransmissionScope,
 } from "../services/journeys.js";
 import {
   requireActiveSupervisor,
   requireJourneyAccess,
 } from "../services/authorization.js";
-import { getPool } from "../db/pool.js";
 import { countBetaWaitlist } from "../services/interest.js";
 import {
   createDriveWithFocus,
@@ -29,6 +27,7 @@ import {
   getActiveDrive,
   getDrive,
   getDriveFocusSkills,
+  getLatestEndedDrive,
 } from "../services/drives.js";
 import { listSkillsForTaxonomy } from "../services/skills.js";
 import {
@@ -39,14 +38,22 @@ import {
 } from "../services/observations.js";
 import { recommendNextFocus } from "../services/recommendations.js";
 import {
+  listAreaProgress,
+  listSkillProgress,
+  skillProgressLabel,
+  isSkillNotApplicable,
+} from "../services/progression.js";
+import { recordProductEventSafe } from "../services/product-events.js";
+import { getReusableSessionUserId, getUserById } from "../services/users.js";
+import {
   escapeHtml,
   layout,
   primaryButton,
   errorBanner,
+  invitationAlreadyUsedPage,
 } from "./layout.js";
+import { renderDevelopmentPage, renderJourneyHome } from "./journey-pages.js";
 import { renderLandingPage } from "./landing.js";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function handleError(error: unknown): { status: number; message: string } {
   if (error instanceof AppError) {
@@ -91,13 +98,13 @@ function groupSkillsByArea(
   return groups;
 }
 
-function onboardingForm(errorMessage?: string): string {
+function onboardingForm(errorMessage?: string, name = ""): string {
   return `${errorMessage ? errorBanner(errorMessage) : ""}
          <h1>Vad heter du?</h1>
          <form method="post" action="/start" class="stack">
            <div>
              <label for="name">Namn</label>
-             <input id="name" name="name" type="text" required autocomplete="name" placeholder="Ditt namn">
+             <input id="name" name="name" type="text" required autocomplete="name" placeholder="Ditt namn" value="${escapeHtml(name)}">
            </div>
            ${primaryButton("Starta min körkortsresa")}
          </form>`;
@@ -135,9 +142,18 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     );
   });
 
-  app.get("/onboarding", async (_request, reply) => {
+  app.get("/onboarding", async (request, reply) => {
+    const userId = getSessionUserId(request);
+    if (userId) {
+      const journeys = await listAccessibleActiveJourneys(userId);
+      if (journeys.length > 0) {
+        return reply.redirect("/");
+      }
+    }
+    const sessionUserId = await getReusableSessionUserId(userId);
+    const user = sessionUserId ? await getUserById(sessionUserId) : null;
     reply.type("text/html").send(
-      layout("Starta din körkortsresa", onboardingForm()),
+      layout("Starta din körkortsresa", onboardingForm(undefined, user?.displayName ?? "")),
     );
   });
 
@@ -174,80 +190,33 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const supervisors = await listActiveSupervisors(journeyId);
-      const hasSupervisor = supervisors.length > 0;
-
-      const inviteSection = access.role === "student"
-        ? `<section class="card">
-             <h2>Bjud in handledare</h2>
-             <p>Dela länken eller QR-koden med din handledare.</p>
-             <form method="post" action="/journey/${escapeHtml(journeyId)}/invitations">
-               ${primaryButton("Skapa inbjudan")}
-             </form>
-           </section>`
-        : "";
-
       const activeDrive = await getActiveDrive(journeyId);
-      const latestEnded = await getPool().query(
-        `SELECT id, supervisor_user_id FROM drives
-         WHERE journey_id = $1 AND ended_at IS NOT NULL
-         ORDER BY ended_at DESC
-         LIMIT 1`,
-        [journeyId],
+      const latestEnded = await getLatestEndedDrive(journeyId);
+      const pendingRating = Boolean(
+        latestEnded &&
+          !latestEnded.rated &&
+          access.role === "supervisor" &&
+          latestEnded.supervisorUserId === userId,
       );
-      const latestEndedDrive = latestEnded.rows[0];
-
-      let pendingRating = "";
-      if (
-        latestEndedDrive &&
-        access.role === "supervisor" &&
-        latestEndedDrive.supervisor_user_id === userId
-      ) {
-        const alreadyRated = await driveHasSupervisorRating(
-          journeyId,
-          latestEndedDrive.id,
-        );
-        if (!alreadyRated) {
-          pendingRating = `<section class="card">
-               <h2>Bedöm senaste körpasset</h2>
-               <a class="btn btn-primary" href="/journey/${escapeHtml(journeyId)}/drive/${escapeHtml(latestEndedDrive.id)}/rate">Bedöm moment</a>
-             </section>`;
-        }
-      }
-
-      const activeDriveSection = activeDrive
-        ? `<section class="card">
-             <h2>Körpass pågår</h2>
-             <a class="btn btn-primary" href="/journey/${escapeHtml(journeyId)}/drive/${escapeHtml(activeDrive.id)}">Gå till körpasset</a>
-           </section>`
-        : "";
-
-      const startDriveSection =
-        hasSupervisor && !activeDrive
-          ? `<section class="card">
-               <h2>Nästa körpass</h2>
-               <p>Välj 2–3 moment att träna på idag.</p>
-               <a class="btn btn-primary" href="/journey/${escapeHtml(journeyId)}/drive/new">Vad tränar ni på idag?</a>
-             </section>`
-          : "";
-
-      const driveSection = hasSupervisor
-        ? `${activeDriveSection}${pendingRating}${startDriveSection}`
-        : `<section class="card">
-             <p class="muted">Bjud in en handledare för att kunna starta ett körpass.</p>
-           </section>`;
-
-      const supervisorNames = supervisors
-        .map((s) => escapeHtml(s.displayName ?? "Handledare"))
-        .join(", ");
+      const recommendations = await recommendNextFocus(journeyId);
+      const areas = await listAreaProgress(journeyId);
 
       reply.type("text/html").send(
         layout(
-          journey.studentName ?? "Körkortsresa",
-          `<h1>${escapeHtml(journey.studentName ?? "Körkortsresa")}</h1>
-           <p class="muted">Din körkortsresa</p>
-           ${hasSupervisor ? `<p>Handledare: ${supervisorNames}</p>` : ""}
-           ${inviteSection}
-           ${driveSection}`,
+          access.role === "student"
+            ? "Min körkortsresa"
+            : (journey.studentName ?? "Körkortsresa"),
+          renderJourneyHome({
+            journey,
+            access,
+            supervisors,
+            activeDriveId: activeDrive?.id ?? null,
+            latestEnded,
+            pendingRating,
+            recommendations,
+            areas,
+          }),
+          { journeyId, role: access.role },
         ),
       );
     } catch (error) {
@@ -273,10 +242,81 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         layout(
           "Inbjudan",
           `<h1>Bjud in handledare</h1>
-           <p>Dela med <strong>${escapeHtml(invitation.studentName)}</strong>s handledare.</p>
-           <div class="invite-url">${escapeHtml(invitation.inviteUrl)}</div>
+           <p>Skicka till mamma, pappa, syskon eller den som kör med <strong>${escapeHtml(invitation.studentName)}</strong>. En länk per person — ni kan bjuda in fler sen.</p>
+           <label for="invite-url">Länk</label>
+           <input id="invite-url" class="invite-url" readonly value="${escapeHtml(invitation.inviteUrl)}" onclick="this.select()">
+           <button type="button" class="btn btn-secondary" id="copy-invite">Kopiera länk</button>
            <div class="qr-wrap"><img src="${qrDataUrl}" alt="QR-kod för inbjudan"></div>
-           <a class="btn btn-secondary" href="/journey/${escapeHtml(journeyId)}">Tillbaka till resan</a>`,
+           <a class="btn btn-secondary" href="/journey/${escapeHtml(journeyId)}">Tillbaka till resan</a>
+           <script>
+             document.getElementById('copy-invite').addEventListener('click', async function () {
+               const input = document.getElementById('invite-url');
+               try {
+                 await navigator.clipboard.writeText(input.value);
+                 this.textContent = 'Kopierad';
+               } catch (err) {
+                 input.select();
+               }
+             });
+           </script>`,
+          { journeyId, role: "student" },
+        ),
+      );
+    } catch (error) {
+      const { status, message } = handleError(error);
+      return reply.status(status).type("text/html").send(
+        layout("Fel", errorBanner(message)),
+      );
+    }
+  });
+
+  app.post("/journey/:journeyId/transmission", async (request, reply) => {
+    const { journeyId } = request.params as { journeyId: string };
+    const userId = requireSessionUserId(request);
+    const body = request.body as { transmission_scope?: string };
+    const scope = body.transmission_scope;
+    if (scope !== "unknown" && scope !== "manual" && scope !== "automatic_only") {
+      return reply.status(400).type("text/html").send(
+        layout("Fel", errorBanner("Ogiltigt val för växellåda")),
+      );
+    }
+    try {
+      await updateTransmissionScope(journeyId, userId, scope);
+      return reply.redirect(`/journey/${journeyId}`);
+    } catch (error) {
+      const { status, message } = handleError(error);
+      return reply.status(status).type("text/html").send(
+        layout("Fel", errorBanner(message)),
+      );
+    }
+  });
+
+  app.get("/journey/:journeyId/utveckling", async (request, reply) => {
+    const { journeyId } = request.params as { journeyId: string };
+    const userId = requireSessionUserId(request);
+
+    try {
+      const access = await requireJourneyAccess(journeyId, userId);
+      const journey = await getJourneyById(journeyId);
+      if (!journey) {
+        return reply.status(404).send("Not found");
+      }
+      const progress = await listSkillProgress(journeyId);
+      reply.type("text/html").send(
+        layout(
+          "Utveckling",
+          renderDevelopmentPage({
+            journeyId,
+            studentName: journey.studentName ?? "Körkortsresa",
+            skills: progress.map((skill) => ({
+              skillId: skill.skillId,
+              title: skill.title,
+              areaKey: skill.areaKey,
+              areaTitle: skill.areaTitle,
+              label: skillProgressLabel(skill),
+            })),
+          }),
+          { journeyId, role: access.role },
         ),
       );
     } catch (error) {
@@ -299,7 +339,17 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
 
     if (invitation.status !== "pending") {
       if (invitation.status === "accepted") {
-        return reply.redirect(`/journey/${invitation.journeyId}`);
+        const sessionUserId = getSessionUserId(request);
+        if (
+          sessionUserId &&
+          (sessionUserId === invitation.acceptedByUserId ||
+            sessionUserId === invitation.studentUserId)
+        ) {
+          return reply.redirect(`/journey/${invitation.journeyId}`);
+        }
+        return reply.status(410).type("text/html").send(
+          invitationAlreadyUsedPage(invitation.studentName),
+        );
       }
       return reply.status(410).type("text/html").send(
         layout("Inbjudan", errorBanner("Inbjudan är inte längre giltig")),
@@ -312,17 +362,29 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       );
     }
 
+    const sessionUserId = await getReusableSessionUserId(getSessionUserId(request));
+    const sessionUser = sessionUserId ? await getUserById(sessionUserId) : null;
+    const sessionName = sessionUser?.displayName?.trim() ?? "";
+
     reply.type("text/html").send(
       layout(
         "Anslut som handledare",
         `<h1>Du ska övningsköra med ${escapeHtml(invitation.studentName)}</h1>
-         <form method="post" action="/invite/${escapeHtml(token)}/accept" class="stack">
-           <div>
-             <label for="name">Vad heter du?</label>
-             <input id="name" name="name" type="text" required autocomplete="name" placeholder="Ditt namn">
-           </div>
-           ${primaryButton("Anslut")}
-         </form>`,
+         ${
+           sessionUser && sessionName
+             ? `<form method="post" action="/invite/${escapeHtml(token)}/accept" class="stack">
+                  <input type="hidden" name="name" value="${escapeHtml(sessionName)}">
+                  <p>Du ansluter som ${escapeHtml(sessionName)}.</p>
+                  ${primaryButton("Anslut")}
+                </form>`
+             : `<form method="post" action="/invite/${escapeHtml(token)}/accept" class="stack">
+                  <div>
+                    <label for="name">Vad heter du?</label>
+                    <input id="name" name="name" type="text" required autocomplete="name" placeholder="Ditt namn" value="${escapeHtml(sessionName)}">
+                  </div>
+                  ${primaryButton(sessionUser ? "Anslut" : "Anslut som gäst")}
+                </form>`
+         }`,
       ),
     );
   });
@@ -330,7 +392,12 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
   app.post("/invite/:token/accept", async (request, reply) => {
     const { token } = request.params as { token: string };
     const body = request.body as { name?: string };
-    const name = body.name?.trim();
+    const sessionUserId = getSessionUserId(request);
+    let name = body.name?.trim() ?? "";
+    if (!name && sessionUserId) {
+      const user = await getUserById(sessionUserId);
+      name = user?.displayName?.trim() ?? "";
+    }
 
     if (!name) {
       return reply.status(400).type("text/html").send(
@@ -339,11 +406,16 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     }
 
     try {
-      const sessionUserId = getSessionUserId(request);
       const result = await acceptInvitation(token, name, sessionUserId);
       setSessionCookie(reply, result.userId);
       return reply.redirect(`/journey/${result.journeyId}`);
     } catch (error) {
+      if (error instanceof AppError && error.code === "already_accepted") {
+        const invitation = await getInvitationByToken(token);
+        return reply.status(409).type("text/html").send(
+          invitationAlreadyUsedPage(invitation?.studentName ?? "Eleven"),
+        );
+      }
       const { status, message } = handleError(error);
       return reply.status(status).type("text/html").send(
         layout("Anslut", errorBanner(message)),
@@ -378,8 +450,16 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
              </div>`
           : "";
 
-      const skills = await listSkillsForTaxonomy();
+      const skills = (await listSkillsForTaxonomy()).filter(
+        (skill) => !isSkillNotApplicable(skill.skillKey, access.transmissionScope),
+      );
+      const recommendedIds = new Set(
+        (await recommendNextFocus(journeyId)).map((rec) => rec.skillId),
+      );
       const groups = groupSkillsByArea(skills);
+      const preselectedCount = skills.filter((skill) =>
+        recommendedIds.has(skill.skillId),
+      ).length;
 
       const areaHtml = [...groups.values()]
         .map(
@@ -387,12 +467,13 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
             <h3>${escapeHtml(group.areaTitle)}</h3>
             <div class="skill-grid">
               ${group.skills
-                .map(
-                  (skill) => `<label class="skill-option">
-                    <input type="checkbox" name="skill_ids" value="${escapeHtml(skill.skillId)}">
+                .map((skill) => {
+                  const checked = recommendedIds.has(skill.skillId) ? " checked" : "";
+                  return `<label class="skill-option">
+                    <input type="checkbox" name="skill_ids" value="${escapeHtml(skill.skillId)}"${checked}>
                     <span>${escapeHtml(skill.title)}</span>
-                  </label>`,
-                )
+                  </label>`;
+                })
                 .join("")}
             </div>
           </section>`,
@@ -404,7 +485,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
           "Välj fokus",
           `<h1>Vad tränar ni på idag?</h1>
            <p>Välj 2–3 moment.</p>
-           <p class="focus-count" id="focus-count" aria-live="polite">0 av 3 valda</p>
+           <p class="focus-count" id="focus-count" aria-live="polite">${preselectedCount} av 3 valda</p>
            <form method="post" action="/journey/${escapeHtml(journeyId)}/drives" class="stack" id="focus-form">
              ${supervisorPicker}
              ${areaHtml}
@@ -444,6 +525,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
                });
              })();
            </script>`,
+          { journeyId, role: access.role },
         ),
       );
     } catch (error) {
@@ -673,9 +755,15 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     const userId = requireSessionUserId(request);
 
     try {
-      await requireJourneyAccess(journeyId, userId);
+      const access = await requireJourneyAccess(journeyId, userId);
       const recap = await getDriveObservationRecap(journeyId, driveId);
       const recommendations = await recommendNextFocus(journeyId);
+      await recordProductEventSafe({
+        name: "recap_viewed",
+        journeyId,
+        userId,
+        actorRole: access.role,
+      });
 
       const recapList = recap.length > 0
         ? `<ul class="drive-recap-list">
@@ -719,6 +807,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
              ${recList}
            </section>
            <a class="btn btn-primary" href="/journey/${escapeHtml(journeyId)}">Tillbaka till resan</a>`,
+          { journeyId, role: access.role },
         ),
       );
     } catch (error) {

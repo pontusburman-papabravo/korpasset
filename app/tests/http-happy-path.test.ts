@@ -49,6 +49,9 @@ describe("HTTP happy path (two isolated sessions)", () => {
       url: `/journey/${journeyId}/invitations`,
     });
     assert.equal(inviteResponse.statusCode, 200, "invitation page loads");
+    assert.match(inviteResponse.body, /Kopiera länk/);
+    assert.match(inviteResponse.body, /id="invite-url"/);
+    assert.match(inviteResponse.body, /mamma, pappa, syskon/);
     const inviteToken = extractInviteToken(inviteResponse.body);
 
     // B1–B3: separate supervisor session accepts invitation
@@ -97,7 +100,7 @@ describe("HTTP happy path (two isolated sessions)", () => {
     });
     assert.equal(focusPage.statusCode, 200);
     assert.match(focusPage.body, /Vad tränar ni på idag/);
-    assert.match(focusPage.body, /0 av 3 valda/);
+    assert.match(focusPage.body, /[1-3] av 3 valda/);
 
     const driveCreate = await injectWithSession(app, studentCookies, {
       method: "POST",

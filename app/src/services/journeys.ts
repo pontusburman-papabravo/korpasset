@@ -1,6 +1,8 @@
 import type pg from "pg";
+import { ForbiddenError } from "../errors.js";
 import { getPool, withTransaction } from "../db/pool.js";
 import { createGuestUser, getReusableSessionUserId } from "./users.js";
+import { recordProductEventSafe } from "./product-events.js";
 
 export interface DrivingJourney {
   id: string;
@@ -40,7 +42,7 @@ export async function createJourneyForStudent(
       [userId],
     );
 
-    return {
+    const created = {
       userId,
       journey: {
         id: row.id,
@@ -51,6 +53,18 @@ export async function createJourneyForStudent(
         status: row.status,
       },
     };
+    await recordProductEventSafe(
+      {
+        name: "journey_created",
+        journeyId: created.journey.id,
+        userId,
+        actorRole: "student",
+        supervisorCount: 0,
+      },
+      undefined,
+      client,
+    );
+    return created;
   });
 }
 
@@ -163,4 +177,27 @@ export async function listActiveSupervisors(
     userId: row.user_id,
     displayName: row.display_name,
   }));
+}
+
+export async function updateTransmissionScope(
+  journeyId: string,
+  studentUserId: string,
+  transmissionScope: "unknown" | "manual" | "automatic_only",
+): Promise<void> {
+  const result = await getPool().query(
+    `UPDATE driving_journeys
+     SET transmission_scope = $3, updated_at = now()
+     WHERE id = $1 AND student_user_id = $2
+     RETURNING id`,
+    [journeyId, studentUserId, transmissionScope],
+  );
+  if (result.rowCount === 0) {
+    throw new ForbiddenError("Bara eleven kan ändra växellåda");
+  }
+}
+
+export function transmissionLabel(scope: string): string {
+  if (scope === "manual") return "Manuell";
+  if (scope === "automatic_only") return "Automat";
+  return "Inte angivet";
 }
