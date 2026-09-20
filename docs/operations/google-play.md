@@ -10,19 +10,10 @@ Portal: [Play Console](https://play.google.com/console)
 Play-granskaren kan inte skapa konto. Körpasset har ingen e-post/lösenord —
 de ska trycka **Fortsätt med Google**.
 
-`review@korpasset.se` är avsett send-as-alias (samma mönster som
-`info@mystarday.se`). Google-inloggning använder det **primära** Gmail-kontot.
+Ett konto: `korpasset@gmail.com`. Inget send-as-alias.
 
-| Roll | Adress |
-| --- | --- |
-| Google-konto (logga in) | `korpasset@gmail.com` |
-| Alias (skicka som) | `review@korpasset.se` |
-
-`korpasset@gmail.com` är bekräftat i Cursor-miljön. Alias-adressen är
-avsändarmönstret, inte Google-login och inte värdet i `PLAY_REVIEW_EMAIL`
-just nu.
-
-Waitlist-admin (`/admin`) är **inte** recensionsinloggning. Ingen 2FA på
+Waitlist-admin är `pontus.burman@papabravo.se` på `/admin` — **inte**
+recensionsinloggning och inte Gmail-kontot. Ingen 2FA på
 `korpasset@gmail.com` — Play-granskaren kan inte klara ett extra steg.
 Peka inte MX för `korpasset.se` mot Google; utgående produktmejl går via
 Resend (`support@korpasset.se`).
@@ -62,16 +53,15 @@ Bekräftade i environment *pontusburman-papabravo/korpasset* 2026-09-20.
 Namnen är exakt som i dashboard — `GMAIL_LOGGIN` är medvetet samma stavning
 där, byt inte bara i git.
 
-Samma lösenord som Gmail-kontot. Inte per alias. Gmail-MCP i Cursor är OAuth
-mot det konto användaren godkänner och läser **inte**
-`GMAIL_LOGGIN_PASSWORD`. Senast kopplat MCP: Papa Bravo-lådan
+Gmail-MCP i Cursor är OAuth mot det konto användaren godkänner och läser
+**inte** `GMAIL_LOGGIN_PASSWORD`. Senast kopplat MCP: Papa Bravo-lådan
 (`info@mystarday.se` / `info@korpasset.se`), inte `korpasset@gmail.com`.
 
 | Name | Typ | Värde |
 | --- | --- | --- |
 | `GMAIL_LOGGIN` | Environment Variable | `korpasset@gmail.com` |
 | `GMAIL_LOGGIN_PASSWORD` | Runtime Secret | Gmail-lösenordet |
-| `PLAY_REVIEW_EMAIL` | Environment Variable | `korpasset@gmail.com` (samma som inloggning) |
+| `PLAY_REVIEW_EMAIL` | Environment Variable | `korpasset@gmail.com` |
 
 Äldre namn (`GOOGLE_ACCOUNT_EMAIL`, `GOOGLE_ACCOUNT_PASSWORD`) skapades
 inte. `RESEND_API_KEY` och `RESEND_WEBHOOK_SECRET` i samma environment är

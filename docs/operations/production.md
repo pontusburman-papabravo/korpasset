@@ -14,7 +14,7 @@ Ett origin:
 | `https://korpasset.se/onboarding` | Slice-fallback för att skapa elevresa. Inte betans kontomodell. |
 | `https://korpasset.se/invite/<token>` | Canonical invitation-länk; i beta öppnas den i appen |
 | `https://korpasset.se/integritet` `/villkor` `/kontakt` | Legal |
-| `https://korpasset.se/admin` | Waitlist-admin (e-post + lösenord, skapas med `admin:create`) |
+| `https://korpasset.se/admin` | Waitlist-admin (`pontus.burman@papabravo.se`). Inte produktkonto, inte Play-granskning. |
 | `https://korpasset.se/health` | Health, ingen auth |
 | `https://korpasset.se/api/resend/webhook` | Resend-händelser (Svix-signatur, ingen användar-auth) |
 
@@ -38,14 +38,16 @@ Play-granskning loggar in med `korpasset@gmail.com` (Cursor-secrets `GMAIL_LOGGI
 | `RESEND_WEBHOOK_SECRET` | Valfritt. Svix-signing secret från Resend → Webhooks. Utan secret svarar `POST /api/resend/webhook` 503. |
 | `EMAIL_FROM` | Valfritt. Default `Körpasset <support@korpasset.se>` |
 
-Första waitlist-admin skapas **inte** via env och inte via publik signup:
+Första waitlist-admin skapas **inte** via env och inte via publik signup.
+Produktion har redan `pontus.burman@papabravo.se` (aktiv sedan 2026-09-18).
+Play-granskning använder `korpasset@gmail.com`, inte den här inloggningen.
 
 ```bash
 # Lokal utveckling
-cd app && npm run admin:create -- --email you@korpasset.se
+cd app && npm run admin:create -- --email pontus.burman@papabravo.se
 
-# Produktion (efter image-build, interaktivt)
-node dist/cli/create-admin.js --email you@korpasset.se
+# Produktion (efter image-build, interaktivt — bara om raden saknas)
+node dist/cli/create-admin.js --email pontus.burman@papabravo.se
 ```
 
 Skriptet frågar efter lösenord (minst 12 tecken), hashar med Argon2id och skriver till `admin_users`. Inget plaintext-lösen i env. Utan minst en aktiv admin-rad svarar `/admin` 404.
