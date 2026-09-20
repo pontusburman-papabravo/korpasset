@@ -1,12 +1,16 @@
 :root {
   color-scheme: light;
-  --bg: #f7f7f8;
+  --navy: #1A2B4C;
+  --teal: #00C896;
+  --teal-pressed: #00B086;
+  --cream: #f6f3ec;
+  --bg: #f6f3ec;
   --surface: #ffffff;
-  --text: #111827;
-  --muted: #6b7280;
-  --primary: #1d4ed8;
-  --primary-pressed: #1e40af;
-  --border: #e5e7eb;
+  --text: #1A2B4C;
+  --muted: #5c6578;
+  --primary: #00C896;
+  --primary-pressed: #00B086;
+  --border: rgba(26, 43, 76, 0.12);
   --error-bg: #fef2f2;
   --error-text: #b91c1c;
   --success-bg: #ecfdf5;
@@ -28,10 +32,83 @@ body {
   line-height: 1.5;
 }
 
+body.app {
+  padding-bottom: 5.5rem;
+}
+
 .container {
   max-width: 28rem;
   margin: 0 auto;
   padding: 1.25rem 1rem 2.5rem;
+}
+
+.app-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(246, 243, 236, 0.94);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.app-bar__brand img {
+  display: block;
+  height: 1.75rem;
+  width: auto;
+}
+
+.app-bar__nav {
+  display: flex;
+  gap: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.app-bar__nav a {
+  color: var(--navy);
+  text-decoration: none;
+}
+
+.app-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.15rem;
+  padding: 0.55rem 0.4rem calc(0.55rem + env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1px solid var(--border);
+  z-index: 20;
+}
+
+.app-tabbar a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  color: var(--navy);
+  text-decoration: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--teal-pressed);
+  margin: 0 0 0.35rem;
+}
+
+.card--action {
+  border-color: rgba(0, 200, 150, 0.35);
 }
 
 h1 {
@@ -83,7 +160,7 @@ select.supervisor-select {
 
 .btn-primary {
   background: var(--primary);
-  color: #fff;
+  color: var(--navy);
 }
 
 .btn-primary:active {
@@ -185,7 +262,7 @@ a.journey-choice {
 
 .skill-option input:checked + span {
   border-color: var(--primary);
-  background: #eff6ff;
+  background: #e8faf4;
 }
 
 .skill-option--disabled span {
@@ -387,4 +464,69 @@ a.journey-choice {
 .focus-list li {
   margin-bottom: 0.35rem;
   font-weight: 600;
+}
+
+.progress-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.progress-row {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 0.15rem;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid var(--border);
+}
+
+.progress-row:last-child {
+  border-bottom: none;
+}
+
+.progress-row__title {
+  font-weight: 700;
+}
+
+.progress-row__meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.development-list,
+.supervisor-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+
+.development-list li,
+.supervisor-list li {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.development-title {
+  display: block;
+  font-weight: 700;
+}
+
+.development-label {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+textarea {
+  width: 100%;
+  font: inherit;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  resize: vertical;
+}
+
+.account-delete {
+  margin-top: 1.5rem;
 }

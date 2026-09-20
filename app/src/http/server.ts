@@ -5,13 +5,22 @@ import fastifyStatic from "@fastify/static";
 import { randomUUID } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { UnauthorizedError } from "../errors.js";
 import { config, isProduction } from "../config.js";
 import { getPool } from "../db/pool.js";
 import { redactRequestPath } from "./log.js";
+import { missingSessionPage } from "./layout.js";
 import { registerAdminRoutes } from "./admin.js";
 import { registerMarketingRoutes } from "./marketing.js";
 import { registerResendWebhook } from "./resend-webhook.js";
+import { registerHelpRoutes } from "./help.js";
+import { registerAccountRoutes } from "./account.js";
 import { registerRoutes } from "./routes.js";
+
+function wantsJson(request: { headers: { accept?: string } }): boolean {
+  const accept = request.headers.accept ?? "";
+  return accept.includes("application/json") && !accept.includes("text/html");
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -85,6 +94,15 @@ export async function buildServer() {
 
   app.setErrorHandler((error: Error & { statusCode?: number }, request, reply) => {
     const status = error.statusCode ?? 500;
+    if (error instanceof UnauthorizedError || status === 401) {
+      if (wantsJson(request)) {
+        return reply.status(401).send({
+          error: "Session required",
+          requestId: request.id,
+        });
+      }
+      return reply.status(401).type("text/html").send(missingSessionPage());
+    }
     if (status >= 500) {
       request.log.error({ err: error }, "unhandled request error");
       return reply.status(500).send({
@@ -99,6 +117,8 @@ export async function buildServer() {
   });
 
   await registerResendWebhook(app);
+  await registerHelpRoutes(app);
+  await registerAccountRoutes(app);
   await registerMarketingRoutes(app);
   await registerAdminRoutes(app);
   await registerRoutes(app);

@@ -196,6 +196,7 @@ describe("production foundation / fresh database migrate", () => {
       "0004_resend_webhook_events.sql",
       "0005_admin_audit_events.sql",
       "0006_interest_signups_platform.sql",
+      "0007_product_events.sql",
     ]);
     assert.deepEqual(first.stamped, []);
 
@@ -204,13 +205,15 @@ describe("production foundation / fresh database migrate", () => {
               to_regclass('public.interest_signups') AS interest,
               to_regclass('public.admin_users') AS admins,
               to_regclass('public.resend_webhook_events') AS webhooks,
-              to_regclass('public.admin_audit_events') AS audit`,
+              to_regclass('public.admin_audit_events') AS audit,
+              to_regclass('public.product_events') AS events`,
     );
     assert.ok(tables.rows[0].users);
     assert.ok(tables.rows[0].interest);
     assert.ok(tables.rows[0].admins);
     assert.ok(tables.rows[0].webhooks);
     assert.ok(tables.rows[0].audit);
+    assert.ok(tables.rows[0].events);
 
     const second = await applyMigrations(client);
     assert.deepEqual(second.applied, []);
@@ -263,6 +266,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
       "0004_resend_webhook_events.sql",
       "0005_admin_audit_events.sql",
       "0006_interest_signups_platform.sql",
+      "0007_product_events.sql",
     ]);
     assert.deepEqual(first.skipped, []);
 
@@ -289,6 +293,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
         "0004_resend_webhook_events.sql",
         "0005_admin_audit_events.sql",
         "0006_interest_signups_platform.sql",
+        "0007_product_events.sql",
       ],
     );
 

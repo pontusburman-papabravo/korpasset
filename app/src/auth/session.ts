@@ -57,6 +57,16 @@ export function setSessionCookie(reply: FastifyReply, userId: string): void {
   });
 }
 
+export function clearSessionCookie(reply: FastifyReply): void {
+  reply.clearCookie(config.sessionCookieName, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: config.cookieSecure,
+    signed: false,
+  });
+}
+
 export function getSessionUserId(request: FastifyRequest): string | null {
   const token = request.cookies[config.sessionCookieName];
   const session = parseSessionToken(token);

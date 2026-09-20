@@ -99,4 +99,4 @@ Health: `GET /health` → `{ "status": "ok" }`.
 
 ## Status
 
-Canonical produkt- och databasgrund. Första vertical slice: journey → invitation → körpass → observation → rekommendation. Publik landning med intresseanmälan på `https://korpasset.se`. Nästa fas: **Beta Readiness** (app-shell, Apple/Google-konto enligt [ADR-008](docs/decisions/ADR-008-app-oauth-accounts.md), legal i produktion, observability, iOS/Android).
+Canonical produkt- och databasgrund. Första vertical slice: journey → invitation → körpass → observation → rekommendation. Publik landning med intresseanmälan på `https://korpasset.se`. Produktappen har nu elev- och handledarhem, utveckling utan procent, hjälp/feedback, session-fallback och beta-funnel-events. Nästa: **Apple/Google i appen** (PR #23) och native TestFlight/Play.

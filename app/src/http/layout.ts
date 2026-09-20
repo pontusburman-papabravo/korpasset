@@ -25,7 +25,27 @@ function faviconLink(): string {
   return `<link rel="icon" href="${BRAND_ASSETS.favicon}" type="image/svg+xml">`;
 }
 
-export function layout(title: string, body: string): string {
+export interface AppLayoutOptions {
+  journeyId?: string;
+  role?: "student" | "supervisor";
+}
+
+function appNav(options: AppLayoutOptions = {}): string {
+  const journeyId = options.journeyId ? escapeHtml(options.journeyId) : "";
+  const homeHref = journeyId ? `/journey/${journeyId}` : "/";
+  const nextHref = journeyId ? `/journey/${journeyId}/drive/new` : "/";
+  const progressHref = journeyId ? `/journey/${journeyId}/utveckling` : "/konto";
+  const nextLabel = options.role === "supervisor" ? "Fokus" : "Nästa";
+  return `<nav class="app-tabbar" aria-label="Huvudmeny">
+    <a href="${homeHref}">Resa</a>
+    <a href="${nextHref}">${nextLabel}</a>
+    <a href="${progressHref}">Utveckling</a>
+    <a href="/hjalp">Hjälp</a>
+    <a href="/konto">Konto</a>
+  </nav>`;
+}
+
+export function layout(title: string, body: string, options: AppLayoutOptions = {}): string {
   return `<!DOCTYPE html>
 <html lang="sv">
 <head>
@@ -35,12 +55,73 @@ export function layout(title: string, body: string): string {
   ${faviconLink()}
   <link rel="stylesheet" href="/app.css">
 </head>
-<body>
+<body class="app">
+  <header class="app-bar">
+    <a class="app-bar__brand" href="/">
+      <img src="${BRAND_ASSETS.logo}" alt="Körpasset">
+    </a>
+    <nav class="app-bar__nav" aria-label="Konto">
+      <a href="/hjalp">Hjälp</a>
+      <a href="/konto">Konto</a>
+    </nav>
+  </header>
   <main class="container">
     ${body}
   </main>
+  ${appNav(options)}
+  <script>
+    window.addEventListener("error", function (event) {
+      try {
+        fetch("/api/client-error", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            message: String(event.message || "error").slice(0, 500),
+            path: location.pathname
+          }),
+          keepalive: true
+        });
+      } catch (ignore) {}
+    });
+    window.addEventListener("unhandledrejection", function (event) {
+      try {
+        var reason = event.reason;
+        fetch("/api/client-error", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            message: String(reason && reason.message || reason || "rejection").slice(0, 500),
+            path: location.pathname
+          }),
+          keepalive: true
+        });
+      } catch (ignore) {}
+    });
+  </script>
 </body>
 </html>`;
+}
+
+export function missingSessionPage(): string {
+  return layout(
+    "Session saknas",
+    `${errorBanner("Vi känner inte igen den här enheten.")}
+     <h1>Öppna Körpasset igen</h1>
+     <p>Om du är elev kan du starta eller fortsätta din körkortsresa här. Om du är handledare: öppna inbjudningslänken från eleven, eller be om en ny.</p>
+     <a class="btn btn-primary" href="/onboarding">Starta som elev</a>
+     <p class="muted">Inbjudningslänken ser ut som korpasset.se/invite/…</p>`,
+  );
+}
+
+export function invitationAlreadyUsedPage(studentName: string): string {
+  return layout(
+    "Inbjudan redan använd",
+    `${errorBanner("Den här inbjudan är redan använd.")}
+     <h1>Be om en ny länk</h1>
+     <p>Inbjudan till ${escapeHtml(studentName)}s körkortsresa har redan accepterats.</p>
+     <p>Om du redan anslutit: öppna Körpasset på samma telefon som förut. Om du bytt telefon, be eleven skapa en ny inbjudan.</p>
+     <a class="btn btn-secondary" href="/">Till startsidan</a>`,
+  );
 }
 
 export function siteLayout(

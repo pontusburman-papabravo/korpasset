@@ -8,6 +8,8 @@ import {
 import { listActiveSupervisors } from "./journeys.js";
 import type { SkillWithDefinition } from "./skills.js";
 import { getSkillsByIds } from "./skills.js";
+import { actorDisplayName } from "./actor-display.js";
+import { recordProductEventSafe } from "./product-events.js";
 
 export interface Drive {
   id: string;
@@ -16,6 +18,46 @@ export interface Drive {
   supervisorUserId: string;
   startedAt: Date;
   endedAt: Date | null;
+}
+
+export interface EndedDriveSummary {
+  id: string;
+  endedAt: Date;
+  supervisorUserId: string;
+  supervisorLabel: string;
+  rated: boolean;
+}
+
+export async function getLatestEndedDrive(
+  journeyId: string,
+  client?: pg.PoolClient,
+): Promise<EndedDriveSummary | null> {
+  const db = client ?? getPool();
+  const result = await db.query(
+    `SELECT d.id, d.ended_at, d.supervisor_user_id,
+            u.display_name, u.account_state,
+            EXISTS (
+              SELECT 1 FROM drive_observations o
+              WHERE o.journey_id = d.journey_id
+                AND o.drive_id = d.id
+                AND o.source_type = 'supervisor'
+            ) AS rated
+     FROM drives d
+     JOIN users u ON u.id = d.supervisor_user_id
+     WHERE d.journey_id = $1 AND d.ended_at IS NOT NULL
+     ORDER BY d.ended_at DESC
+     LIMIT 1`,
+    [journeyId],
+  );
+  if (result.rowCount === 0) return null;
+  const row = result.rows[0];
+  return {
+    id: String(row.id),
+    endedAt: new Date(row.ended_at),
+    supervisorUserId: String(row.supervisor_user_id),
+    supervisorLabel: actorDisplayName(row.display_name, row.account_state, "supervisor"),
+    rated: Boolean(row.rated),
+  };
 }
 
 export async function getActiveDrive(
@@ -157,7 +199,7 @@ export async function createDriveWithFocus(
       );
     }
 
-    return {
+    const created = {
       drive: {
         id: driveRow.id,
         journeyId: driveRow.journey_id,
@@ -168,6 +210,18 @@ export async function createDriveWithFocus(
       },
       focusSkills: skills,
     };
+    const access = await getJourneyAccess(journeyId, userId, client);
+    const supervisors = await listActiveSupervisors(journeyId, client);
+    const eventBase = {
+      journeyId,
+      userId,
+      actorRole: access?.role ?? null,
+      supervisorCount: supervisors.length,
+      focusSkillCount: skills.length,
+    };
+    await recordProductEventSafe({ name: "drive_focus_saved", ...eventBase }, undefined, client);
+    await recordProductEventSafe({ name: "drive_started", ...eventBase }, undefined, client);
+    return created;
   });
 }
 
@@ -270,7 +324,7 @@ export async function endDrive(
     throw new AppError("Drive could not be ended");
   }
   const row = result.rows[0];
-  return {
+  const ended = {
     id: row.id,
     journeyId: row.journey_id,
     startedByUserId: row.started_by_user_id,
@@ -278,6 +332,21 @@ export async function endDrive(
     startedAt: row.started_at,
     endedAt: row.ended_at,
   };
+  const focus = await getPool().query(
+    `SELECT count(*)::int AS count FROM drive_focus_skills
+     WHERE drive_id = $1 AND journey_id = $2`,
+    [driveId, journeyId],
+  );
+  const supervisors = await listActiveSupervisors(journeyId);
+  await recordProductEventSafe({
+    name: "drive_completed",
+    journeyId,
+    userId,
+    actorRole: access.role,
+    supervisorCount: supervisors.length,
+    focusSkillCount: Number(focus.rows[0]?.count ?? 0),
+  });
+  return ended;
 }
 
 export async function assertDriveSupervisorForObservation(

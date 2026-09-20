@@ -45,7 +45,8 @@ DECLARE
     'interest_signups',
     'admin_users',
     'admin_password_reset_tokens',
-    'resend_webhook_events'
+    'resend_webhook_events',
+    'product_events'
   ];
   t text;
 BEGIN
