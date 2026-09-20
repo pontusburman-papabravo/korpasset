@@ -22,6 +22,11 @@ de ska trycka **Fortsätt med Google**.
 avsändarmönstret, inte Google-login och inte värdet i `PLAY_REVIEW_EMAIL`
 just nu.
 
+Waitlist-admin (`/admin`) är **inte** recensionsinloggning. Ingen 2FA på
+`korpasset@gmail.com` — Play-granskaren kan inte klara ett extra steg.
+Peka inte MX för `korpasset.se` mot Google; utgående produktmejl går via
+Resend (`support@korpasset.se`).
+
 ## Play Console — klistra in
 
 ### Ny app
@@ -49,6 +54,7 @@ Ingen ny Play-utvecklaravgift. Samma Papa Bravo-konto som My Starday. Skapa
 | Extra instruktioner | `Logga in med Google. Använd kontot ovan. Första inloggningen skapar testdata. Ingen betalning, inga koder. Apple-inloggning finns bara på iOS.` |
 
 Välj **Nej** tills APK:n faktiskt har inloggning, annars fastnar granskningen.
+Fyll inte i waitlist-admin där.
 
 ## Cursor Agent-secrets
 
