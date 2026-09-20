@@ -8,6 +8,10 @@ import {
 import { contactPage, privacyPage, termsPage } from "./legal.js";
 import { INTEREST_RATE_LIMIT, allowRequest } from "./rate-limit.js";
 
+function checkboxChecked(value: unknown): boolean {
+  return value === "yes" || value === "on" || value === true;
+}
+
 function formValues(body: Record<string, unknown>) {
   return {
     name: typeof body.name === "string" ? body.name : "",
@@ -15,6 +19,8 @@ function formValues(body: Record<string, unknown>) {
     role: typeof body.role === "string" ? body.role : "",
     city: typeof body.city === "string" ? body.city : "",
     message: typeof body.message === "string" ? body.message : "",
+    platformIos: checkboxChecked(body.platform_ios),
+    platformAndroid: checkboxChecked(body.platform_android),
   };
 }
 

@@ -5,7 +5,7 @@ import type {
 } from "../services/admin-support.js";
 import { supportUserHeading } from "../services/admin-support.js";
 import type { InterestRole, InterestSignup, InterestStatus } from "../services/interest.js";
-import { INTEREST_STATUSES } from "../services/interest.js";
+import { formatInterestPlatforms, INTEREST_STATUSES } from "../services/interest.js";
 import {
   escapeHtml,
   errorBanner,
@@ -302,6 +302,7 @@ export function signupsListPage(options: {
       return `<tr>
         <td><a href="/admin/signups/${escapeHtml(signup.id)}">${escapeHtml(signup.name)}</a><div class="muted">${escapeHtml(signup.email)}</div></td>
         <td>${escapeHtml(ROLE_LABELS[signup.role])}</td>
+        <td>${escapeHtml(formatInterestPlatforms(signup))}</td>
         <td><span class="status status--${signup.status}">${escapeHtml(STATUS_LABELS[signup.status])}</span></td>
         <td>${escapeHtml(signup.city ?? "—")}</td>
         <td>${preview}</td>
@@ -345,10 +346,10 @@ export function signupsListPage(options: {
        </div>
        <table class="admin-table">
          <thead>
-           <tr><th>Namn</th><th>Roll</th><th>Status</th><th>Ort</th><th>Meddelande</th><th>Inkommen</th><th>Åtgärd</th></tr>
+           <tr><th>Namn</th><th>Roll</th><th>Plattform</th><th>Status</th><th>Ort</th><th>Meddelande</th><th>Inkommen</th><th>Åtgärd</th></tr>
          </thead>
          <tbody>
-           ${rows || `<tr><td colspan="7">Inga anmälningar ännu.</td></tr>`}
+           ${rows || `<tr><td colspan="8">Inga anmälningar ännu.</td></tr>`}
          </tbody>
        </table>
        <nav class="admin-pagination" aria-label="Paginering">
@@ -370,7 +371,7 @@ export function signupDetailPage(signup: InterestSignup): string {
     `<main class="admin-shell">
        <p><a href="/admin/signups">← Alla anmälningar</a></p>
        <h1>${escapeHtml(signup.name)}</h1>
-       <p>${escapeHtml(signup.email)} · ${escapeHtml(ROLE_LABELS[signup.role])} · ${escapeHtml(signup.city ?? "Ingen ort")}</p>
+       <p>${escapeHtml(signup.email)} · ${escapeHtml(ROLE_LABELS[signup.role])} · ${escapeHtml(formatInterestPlatforms(signup))} · ${escapeHtml(signup.city ?? "Ingen ort")}</p>
        <p>Inkommen ${escapeHtml(formatWhen(signup.createdAt))}</p>
        ${signup.message ? `<blockquote>${escapeHtml(signup.message)}</blockquote>` : "<p class=\"muted\">Inget meddelande.</p>"}
        <form method="post" action="/admin/signups/${escapeHtml(signup.id)}" class="admin-form">

@@ -27,6 +27,8 @@ export interface InterestSignup {
   role: InterestRole;
   city: string | null;
   message: string | null;
+  platformIos: boolean;
+  platformAndroid: boolean;
   status: InterestStatus;
   adminNote: string | null;
 }
@@ -37,6 +39,8 @@ export interface InterestInput {
   role: string;
   city?: string;
   message?: string;
+  platformIos?: boolean;
+  platformAndroid?: boolean;
   honeypot?: string;
 }
 
@@ -62,9 +66,18 @@ function mapRow(row: Record<string, unknown>): InterestSignup {
     role: row.role as InterestRole,
     city: row.city == null ? null : String(row.city),
     message: row.message == null ? null : String(row.message),
+    platformIos: Boolean(row.platform_ios),
+    platformAndroid: Boolean(row.platform_android),
     status: row.status as InterestStatus,
     adminNote: row.admin_note == null ? null : String(row.admin_note),
   };
+}
+
+export function formatInterestPlatforms(signup: Pick<InterestSignup, "platformIos" | "platformAndroid">): string {
+  const labels: string[] = [];
+  if (signup.platformIos) labels.push("iPhone");
+  if (signup.platformAndroid) labels.push("Android");
+  return labels.length > 0 ? labels.join(" · ") : "—";
 }
 
 export function validateInterestInput(input: InterestInput): {
@@ -74,12 +87,16 @@ export function validateInterestInput(input: InterestInput): {
   role: InterestRole;
   city: string | null;
   message: string | null;
+  platformIos: boolean;
+  platformAndroid: boolean;
 } {
   const name = input.name.trim();
   const email = input.email.trim();
   const emailNormalized = normalizeEmail(email);
   const city = input.city?.trim() || "";
   const message = input.message?.trim() || "";
+  const platformIos = Boolean(input.platformIos);
+  const platformAndroid = Boolean(input.platformAndroid);
 
   if (name.length < 1 || name.length > 80) {
     throw new AppError("Ange ditt namn", 400, "invalid_name");
@@ -89,6 +106,9 @@ export function validateInterestInput(input: InterestInput): {
   }
   if (!isRole(input.role)) {
     throw new AppError("Välj hur du är med i övningskörningen", 400, "invalid_role");
+  }
+  if (!platformIos && !platformAndroid) {
+    throw new AppError("Kryssa i iPhone eller Android", 400, "invalid_platform");
   }
   if (city.length > 80) {
     throw new AppError("Staden är för lång", 400, "invalid_city");
@@ -104,6 +124,8 @@ export function validateInterestInput(input: InterestInput): {
     role: input.role,
     city: city || null,
     message: message || null,
+    platformIos,
+    platformAndroid,
   };
 }
 
@@ -116,17 +138,30 @@ export async function saveInterestSignup(
 
   const data = validateInterestInput(input);
   const result = await getPool().query(
-    `INSERT INTO interest_signups (name, email, email_normalized, role, city, message)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO interest_signups (
+       name, email, email_normalized, role, city, message, platform_ios, platform_android
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      ON CONFLICT (email_normalized) DO UPDATE SET
        name = CASE WHEN interest_signups.status = 'new' THEN EXCLUDED.name ELSE interest_signups.name END,
        email = CASE WHEN interest_signups.status = 'new' THEN EXCLUDED.email ELSE interest_signups.email END,
        role = CASE WHEN interest_signups.status = 'new' THEN EXCLUDED.role ELSE interest_signups.role END,
        city = CASE WHEN interest_signups.status = 'new' THEN EXCLUDED.city ELSE interest_signups.city END,
        message = CASE WHEN interest_signups.status = 'new' THEN EXCLUDED.message ELSE interest_signups.message END,
+       platform_ios = CASE WHEN interest_signups.status = 'new' THEN EXCLUDED.platform_ios ELSE interest_signups.platform_ios END,
+       platform_android = CASE WHEN interest_signups.status = 'new' THEN EXCLUDED.platform_android ELSE interest_signups.platform_android END,
        updated_at = CASE WHEN interest_signups.status = 'new' THEN now() ELSE interest_signups.updated_at END
      RETURNING *, (xmax = 0) AS inserted`,
-    [data.name, data.email, data.emailNormalized, data.role, data.city, data.message],
+    [
+      data.name,
+      data.email,
+      data.emailNormalized,
+      data.role,
+      data.city,
+      data.message,
+      data.platformIos,
+      data.platformAndroid,
+    ],
   );
 
   const row = result.rows[0] as Record<string, unknown>;

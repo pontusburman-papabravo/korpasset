@@ -43,6 +43,8 @@ export function renderLandingPage(options: {
     role?: string;
     city?: string;
     message?: string;
+    platformIos?: boolean;
+    platformAndroid?: boolean;
   };
 } = {}): string {
   const values = options.values ?? {};
@@ -359,6 +361,8 @@ function interestSection(
     role?: string;
     city?: string;
     message?: string;
+    platformIos?: boolean;
+    platformAndroid?: boolean;
   },
   betaFilled: number,
 ): string {
@@ -401,6 +405,17 @@ function interestSection(
             ${roleOptions}
           </select>
         </div>
+        <fieldset class="platform-choice">
+          <legend>Vi använder</legend>
+          <label class="consent">
+            <input type="checkbox" name="platform_ios" value="yes"${values.platformIos ? " checked" : ""}>
+            <span>iPhone</span>
+          </label>
+          <label class="consent">
+            <input type="checkbox" name="platform_android" value="yes"${values.platformAndroid ? " checked" : ""}>
+            <span>Android</span>
+          </label>
+        </fieldset>
         <div>
           <label for="city">Ort <span class="optional">(valfritt)</span></label>
           <input id="city" name="city" type="text" maxlength="80" autocomplete="address-level2" value="${escapeHtml(values.city ?? "")}">
@@ -427,6 +442,8 @@ export function renderInterestFormError(
     role?: string;
     city?: string;
     message?: string;
+    platformIos?: boolean;
+    platformAndroid?: boolean;
   },
   betaFilled = 0,
 ): string {

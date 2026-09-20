@@ -35,6 +35,7 @@ describe("waitlist hardening", () => {
       role: "other",
       city: 'Staden, "citat"',
       message: "rad1\nrad2",
+      platformAndroid: true,
     });
     const app = await createTestApp();
     const csv = await app.inject({
@@ -61,6 +62,7 @@ describe("waitlist hardening", () => {
           name: "Anna",
           email: `anna${i}@example.com`,
           role: "parent",
+          platform_ios: "yes",
           consent: "yes",
         }),
       });
@@ -79,6 +81,7 @@ describe("waitlist hardening", () => {
       role: "parent",
       city: "Uppsala",
       message: "första",
+      platformIos: true,
     });
     assert.ok(first);
     await updateInterestSignup(first.signup.id, { status: "contacted", adminNote: "behåll" });
@@ -92,6 +95,7 @@ describe("waitlist hardening", () => {
         name: "Inkräktare",
         email: "anna@example.com",
         role: "student",
+        platform_android: "yes",
         city: "Lund",
         message: "överskriv",
         consent: "yes",
@@ -117,6 +121,7 @@ describe("waitlist hardening", () => {
       name: "Anna",
       email: "anna@example.com",
       role: "parent",
+      platformIos: true,
     });
     assert.ok(saved);
     const app = await createTestApp();

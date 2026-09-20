@@ -35,6 +35,7 @@ import {
   countInterestSignups,
   countNewInterestSignups,
   deleteInterestSignup,
+  formatInterestPlatforms,
   getInterestSignup,
   listInterestSignups,
   updateInterestSignup,
@@ -272,13 +273,14 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     const query = request.query as { status?: string };
     const status = parseStatus(query.status);
     const signups = await listInterestSignups(status);
-    const header = "created_at,name,email,role,city,status,message";
+    const header = "created_at,name,email,role,platform,city,status,message";
     const lines = signups.map((signup) =>
       [
         signup.createdAt,
         csvCell(signup.name),
         csvCell(signup.email),
         signup.role,
+        csvCell(formatInterestPlatforms(signup)),
         csvCell(signup.city ?? ""),
         signup.status,
         csvCell(signup.message ?? ""),
