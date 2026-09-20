@@ -102,6 +102,10 @@ describe("landing and interest waitlist", () => {
     assert.match(privacy.body, /personuppgiftsansvarig/i);
     assert.match(privacy.body, /Sign in with Apple/);
     assert.match(privacy.body, /Sign in with Google/);
+    assert.match(privacy.body, /Data på enheten/);
+    assert.match(privacy.body, /inte tillgång till kamera/);
+    assert.match(privacy.body, /Radera konto/);
+    assert.match(privacy.body, /korpasset\.se/);
     assert.equal(terms.statusCode, 200);
     assert.match(terms.body, /gratis/i);
     assert.equal(contact.statusCode, 200);

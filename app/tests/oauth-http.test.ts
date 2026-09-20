@@ -251,6 +251,7 @@ describe("app oauth HTTP (FR-11)", () => {
     assert.equal(page.statusCode, 200);
     assert.match(page.body, /Radera konto/);
     assert.match(page.body, /Apple/);
+    assert.match(page.body, /href="\/integritet"/);
 
     const deleted = await injectWithSession(
       app,

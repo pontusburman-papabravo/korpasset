@@ -57,7 +57,7 @@ Utan client-id svarar inloggningen 503. Waitlist fortsätter att fungera.
 1. Apple Developer → Identifiers → ny App ID `se.korpasset.app` med Sign in with Apple och Associated Domains (`applinks:korpasset.se`).
 2. Team ID är samma som på Min Stjärndag (10 tecken i Xcode eller Membership).
 3. För Apple-inloggning på Android: Services ID t.ex. `se.korpasset.app.android` med return URL `https://korpasset.se/app`.
-4. App Store Connect: ny app **Körpasset** (inte en ny version av Min Stjärndag). Privacy `https://korpasset.se/integritet`, villkor `https://korpasset.se/villkor`.
+4. App Store Connect: ny app **Körpasset** (inte en ny version av Min Stjärndag). **Privacy Policy URL:** `https://korpasset.se/integritet`. Villkor: `https://korpasset.se/villkor`.
 5. Bygg på Mac:
 
 ```bash
@@ -75,10 +75,11 @@ Ikon: `app/public/brand/korpasset-social-1024.png` (1024×1024).
 ## Google (en gång, samma Play-konto som My Starday)
 
 1. Play Console → skapa appen **Körpasset** (package `se.korpasset.app`). Ingen ny 25-dollarsavgift.
-2. I Google Cloud: tre OAuth-klienter för Körpasset — Web, iOS (`se.korpasset.app`) och Android (`se.korpasset.app` + SHA-1 från Play App signing för Körpasset, inte My Starday).
-3. Web-client-id är `aud` på id-token som servern verifierar. Sätt den i `GOOGLE_WEB_CLIENT_ID` och i Capacitor-init. Kopiera inte My Stardays `GOOGLE_WEB_CLIENT_ID`.
-4. SHA-256 från **Körpassets** Play App signing in i `ANDROID_SHA256_CERT_FINGERPRINTS` (kolon-separerad hex). Redeploy så `assetlinks.json` stämmer.
-5. Bygg:
+2. Butiksuppgifter → **Webbadress till integritetspolicy:** `https://korpasset.se/integritet` (samma sida som App Store).
+3. I Google Cloud: tre OAuth-klienter för Körpasset — Web, iOS (`se.korpasset.app`) och Android (`se.korpasset.app` + SHA-1 från Play App signing för Körpasset, inte My Stjärndag).
+4. Web-client-id är `aud` på id-token som servern verifierar. Sätt den i `GOOGLE_WEB_CLIENT_ID` och i Capacitor-init. Kopiera inte My Stardays `GOOGLE_WEB_CLIENT_ID`.
+5. SHA-256 från **Körpassets** Play App signing in i `ANDROID_SHA256_CERT_FINGERPRINTS` (kolon-separerad hex). Redeploy så `assetlinks.json` stämmer.
+6. Bygg:
 
 ```bash
 cd native

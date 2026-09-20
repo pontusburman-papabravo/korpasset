@@ -46,6 +46,10 @@ export function layout(title: string, body: string): string {
   <main class="container">
     ${body}
   </main>
+  <footer class="app-footer">
+    <a href="/integritet">Integritet</a>
+    <a href="/villkor">Villkor</a>
+  </footer>
   <script>
     window.addEventListener("error", function (event) {
       try {
