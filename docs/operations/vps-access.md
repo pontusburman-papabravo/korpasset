@@ -47,7 +47,7 @@ Första admin skapas i containern efter migrate:
 ```bash
 docker compose --project-directory /var/www/korpasset/deploy \
   -f /var/www/korpasset/deploy/docker-compose.yml \
-  exec -it app node dist/cli/create-admin.js --email you@korpasset.se
+  exec -it app node dist/cli/create-admin.js --email pontus.burman@papabravo.se
 ```
 
 Agent-SSH: `scripts/vps-ssh.sh check`.

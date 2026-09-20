@@ -45,6 +45,7 @@ import {
   errorBanner,
 } from "./layout.js";
 import { renderLandingPage } from "./landing.js";
+import { oauthButtons } from "./oauth.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -322,7 +323,11 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
              <input id="name" name="name" type="text" required autocomplete="name" placeholder="Ditt namn">
            </div>
            ${primaryButton("Anslut")}
-         </form>`,
+         </form>
+         ${oauthButtons({
+           returnTo: `/invite/${token}`,
+           lead: "Fortsätt med Apple eller Google i appen, eller anslut som gäst.",
+         })}`,
       ),
     );
   });
