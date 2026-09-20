@@ -242,7 +242,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         layout(
           "Inbjudan",
           `<h1>Bjud in handledare</h1>
-           <p>Dela med <strong>${escapeHtml(invitation.studentName)}</strong>s handledare.</p>
+           <p>Skicka till mamma, pappa, syskon eller den som kör med <strong>${escapeHtml(invitation.studentName)}</strong>. En länk per person — ni kan bjuda in fler sen.</p>
            <label for="invite-url">Länk</label>
            <input id="invite-url" class="invite-url" readonly value="${escapeHtml(invitation.inviteUrl)}" onclick="this.select()">
            <button type="button" class="btn btn-secondary" id="copy-invite">Kopiera länk</button>

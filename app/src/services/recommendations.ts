@@ -13,7 +13,7 @@ const REASON_MESSAGES: Record<RecommendedSkill["reason"], string> = {
   training_focus: "Valt fokus",
   needs_help: "Behöver mer träning",
   with_support: "Träna vidare",
-  core_unobserved: "Bra att börja med",
+  core_unobserved: "Värt att ta nästa gång",
 };
 
 export async function recommendNextFocus(

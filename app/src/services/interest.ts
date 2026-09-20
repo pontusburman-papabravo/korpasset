@@ -77,7 +77,7 @@ export function formatInterestPlatforms(signup: Pick<InterestSignup, "platformIo
   const labels: string[] = [];
   if (signup.platformIos) labels.push("iPhone");
   if (signup.platformAndroid) labels.push("Android");
-  return labels.length > 0 ? labels.join(" · ") : "—";
+  return labels.length > 0 ? labels.join(" · ") : "Ej angivet";
 }
 
 export function validateInterestInput(input: InterestInput): {

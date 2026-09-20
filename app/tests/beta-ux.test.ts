@@ -138,6 +138,7 @@ describe("beta UX HTTP", () => {
     assert.match(studentHome.body, /Pappa/);
     assert.match(studentHome.body, /Utveckling/);
     assert.match(studentHome.body, /Mina handledare/);
+    assert.match(studentHome.body, /Kör pappa, mamma eller ett syskon också/);
     assert.match(studentHome.body, /Växellåda/);
     assert.match(studentHome.body, /Nästa gång/);
     assert.match(studentHome.body, /Så gick det/);
@@ -357,5 +358,24 @@ describe("beta UX HTTP", () => {
     }
     assert.equal(lastStatus, 429);
     await app.close();
+  });
+
+  it("asks students to invite any supervisor, not only the first one", async () => {
+    const { journey, userId } = await createJourneyForStudent("Ella");
+    const app = await createTestApp();
+    const home = await injectWithSession(app, session(userId), {
+      method: "GET",
+      url: `/journey/${journey.id}`,
+    });
+    assert.match(home.body, /Bjud in mamma, pappa eller den som kör med er/);
+    await app.close();
+  });
+
+  it("recommends unobserved core skills as next practice, not beginner-only", async () => {
+    const { journey } = await createJourneyForStudent("Ella");
+    const recommendations = await recommendNextFocus(journey.id);
+    assert.ok(recommendations.length >= 1);
+    assert.equal(recommendations[0].reason, "core_unobserved");
+    assert.equal(recommendations[0].message, "Värt att ta nästa gång");
   });
 });

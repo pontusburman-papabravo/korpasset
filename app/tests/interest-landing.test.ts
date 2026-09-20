@@ -30,6 +30,12 @@ describe("landing and interest waitlist", () => {
     assert.match(response.body, /minst en, båda går bra/);
     assert.match(response.body, /integritetspolicyn/);
     assert.match(response.body, /Vi söker just nu våra första 25/);
+    assert.match(response.body, /oavsett om ni just börjat eller redan kört ett år/);
+    assert.match(response.body, /Mamma, pappa, syskon/);
+    assert.match(response.body, /Vi har redan övningskört ett tag/);
+    assert.match(response.body, /tips på nästa steg/);
+    assert.match(response.body, /dotter 16, just börjat/);
+    assert.doesNotMatch(response.body, /elev \+ mamma och pappa, kört i tre månader/);
     assert.doesNotMatch(response.body, /fonts\.googleapis/);
     await app.close();
   });

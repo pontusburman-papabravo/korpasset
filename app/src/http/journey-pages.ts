@@ -61,7 +61,7 @@ export function renderJourneyHome(options: {
 
   const noSupervisor = !hasSupervisor
     ? `<section class="card">
-         <p class="muted">Bjud in en handledare för att kunna starta ett körpass.</p>
+         <p class="muted">Bjud in mamma, pappa eller den som kör med er. Flera handledare går bra.</p>
        </section>`
     : "";
 
@@ -77,7 +77,7 @@ export function renderJourneyHome(options: {
              )
              .join("")}
          </ul>`
-      : `<p class="muted">Inga rekommendationer ännu. Efter första körpasset syns vad som är bra att ta härnäst.</p>`;
+      : `<p class="muted">Välj 2–3 moment som känns osäkra — även om ni redan kört länge. Efter första bedömningen blir tipsen mer träffsäkra.</p>`;
 
   const nextSection = `<section class="card">
     <h2>Nästa gång</h2>
@@ -136,7 +136,8 @@ export function renderJourneyHome(options: {
     <h2>${isStudent ? "Mina handledare" : "Handledare"}</h2>
     ${
       hasSupervisor
-        ? `<ul class="supervisor-list">${supervisorList}</ul>`
+        ? `<ul class="supervisor-list">${supervisorList}</ul>
+           ${isStudent ? `<p class="muted">Kör pappa, mamma eller ett syskon också? Bjud in dem så de ser samma historik.</p>` : ""}`
         : `<p class="muted">Ingen handledare ännu.</p>`
     }
     ${inviteForm}
