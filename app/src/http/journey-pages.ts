@@ -4,7 +4,7 @@ import { transmissionLabel } from "../services/journeys.js";
 import type { EndedDriveSummary } from "../services/drives.js";
 import type { RecommendedSkill } from "../services/recommendations.js";
 import { actorDisplayName } from "../services/actor-display.js";
-import type { AreaProgress } from "../services/progression.js";
+import type { AreaProgress, JourneyReadiness } from "../services/progression.js";
 import { formatDay } from "../services/progression.js";
 import { escapeHtml, primaryButton } from "./layout.js";
 
@@ -17,6 +17,7 @@ export function renderJourneyHome(options: {
   pendingRating: boolean;
   recommendations: RecommendedSkill[];
   areas: AreaProgress[];
+  readiness: JourneyReadiness;
 }): string {
   const { journey, access, supervisors, activeDriveId, latestEnded, pendingRating } =
     options;
@@ -102,7 +103,11 @@ export function renderJourneyHome(options: {
     .map((area) => {
       const last = formatDay(area.lastTrainedAt);
       return `<a class="progress-row" href="/journey/${journeyId}/utveckling#${escapeHtml(area.areaKey)}">
-        <span class="progress-row__title">${escapeHtml(area.areaTitle)}</span>
+        <span class="progress-row__head">
+          <span class="progress-row__title">${escapeHtml(area.areaTitle)}</span>
+          <span class="progress-row__percent">${area.readinessPercent}%</span>
+        </span>
+        <span class="readiness-bar" aria-hidden="true"><span style="width:${area.readinessPercent}%"></span></span>
         <span class="progress-row__meta">${area.trainedCount} av ${area.skillCount} moment tränade${
           area.independentCount
             ? ` · ${area.independentCount} senast utan hjälp`
@@ -113,10 +118,17 @@ export function renderJourneyHome(options: {
     .join("");
 
   const developmentSection = `<section class="card">
-    <h2>Utveckling</h2>
-    <p class="muted">Evidens från körpassen — inte ett betyg eller en uppkörningsprocent.</p>
+    <h2>Så här ligger ni till</h2>
+    <div class="readiness-total">
+      <div class="readiness-total__head">
+        <span class="readiness-total__value">${options.readiness.percent}%</span>
+        <span class="readiness-total__label">Totalt läge</span>
+      </div>
+      <span class="readiness-bar readiness-bar--total" aria-hidden="true"><span style="width:${options.readiness.percent}%"></span></span>
+      <p class="muted">${options.readiness.trainedCount} av ${options.readiness.skillCount} moment har bedömts. Från era körpass — inte ett officiellt körkortsresultat.</p>
+    </div>
     <div class="progress-list">${areaRows}</div>
-    <p><a href="/journey/${journeyId}/utveckling">Alla moment</a></p>
+    <p><a href="/journey/${journeyId}/utveckling">Alla kapitel</a></p>
   </section>`;
 
   const supervisorList = supervisors
@@ -173,6 +185,7 @@ export function renderJourneyHome(options: {
 export function renderDevelopmentPage(options: {
   journeyId: string;
   studentName: string;
+  readiness: JourneyReadiness;
   skills: {
     skillId: string;
     title: string;
@@ -187,11 +200,18 @@ export function renderDevelopmentPage(options: {
     if (existing) existing.skills.push(skill);
     else groups.set(skill.areaKey, { areaTitle: skill.areaTitle, skills: [skill] });
   }
+  const areaByKey = new Map(options.readiness.areas.map((area) => [area.areaKey, area]));
 
   const areas = [...groups.entries()]
-    .map(
-      ([areaKey, group]) => `<section class="skill-area" id="${escapeHtml(areaKey)}">
-        <h2>${escapeHtml(group.areaTitle)}</h2>
+    .map(([areaKey, group]) => {
+      const area = areaByKey.get(areaKey);
+      const percent = area?.readinessPercent ?? 0;
+      return `<section class="skill-area" id="${escapeHtml(areaKey)}">
+        <div class="skill-area__head">
+          <h2>${escapeHtml(group.areaTitle)}</h2>
+          <span class="progress-row__percent">${percent}%</span>
+        </div>
+        <span class="readiness-bar" aria-hidden="true"><span style="width:${percent}%"></span></span>
         <ul class="development-list">
           ${group.skills
             .map(
@@ -202,12 +222,19 @@ export function renderDevelopmentPage(options: {
             )
             .join("")}
         </ul>
-      </section>`,
-    )
+      </section>`;
+    })
     .join("");
 
-  return `<h1>Utveckling</h1>
-    <p class="muted">${escapeHtml(options.studentName)} — vad som har tränats, inte om ni är redo för uppkörning.</p>
+  return `<h1>Så här ligger ni till</h1>
+    <div class="readiness-total">
+      <div class="readiness-total__head">
+        <span class="readiness-total__value">${options.readiness.percent}%</span>
+        <span class="readiness-total__label">Totalt läge</span>
+      </div>
+      <span class="readiness-bar readiness-bar--total" aria-hidden="true"><span style="width:${options.readiness.percent}%"></span></span>
+    </div>
+    <p class="muted">${escapeHtml(options.studentName)} — läge per kapitel från era bedömningar, inte ett officiellt körkortsresultat.</p>
     ${areas}
     <p><a class="btn btn-secondary" href="/journey/${escapeHtml(options.journeyId)}">Tillbaka till resan</a></p>`;
 }

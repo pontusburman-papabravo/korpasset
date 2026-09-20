@@ -66,11 +66,23 @@ export async function countCompletedRatedDrives(
      FROM drives d
      WHERE d.journey_id = $1
        AND d.ended_at IS NOT NULL
-       AND EXISTS (
-         SELECT 1 FROM drive_observations o
-         WHERE o.journey_id = d.journey_id
-           AND o.drive_id = d.id
-           AND o.source_type = 'supervisor'
+       AND NOT EXISTS (
+         SELECT 1
+         FROM drive_focus_skills dfs
+         WHERE dfs.drive_id = d.id
+           AND dfs.journey_id = d.journey_id
+           AND NOT EXISTS (
+             SELECT 1 FROM drive_observations o
+             WHERE o.journey_id = d.journey_id
+               AND o.drive_id = d.id
+               AND o.skill_id = dfs.skill_id
+               AND o.source_type = 'supervisor'
+               AND NOT EXISTS (
+                 SELECT 1 FROM drive_observations newer
+                 WHERE newer.supersedes_observation_id = o.id
+                   AND newer.journey_id = o.journey_id
+               )
+           )
        )`,
     [journeyId],
   );

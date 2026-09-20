@@ -5,6 +5,23 @@ import { listSkillsForTaxonomy } from "./skills.js";
 import type { AssessmentLevel } from "./observations.js";
 import { ASSESSMENT_DISPLAY } from "./observations.js";
 
+export const ASSESSMENT_SCORE: Record<AssessmentLevel, number> = {
+  needs_help: 1,
+  with_support: 2,
+  independent: 3,
+};
+
+export const READINESS_SCORE_MAX = 3;
+
+export function assessmentScore(assessment: AssessmentLevel | null): number {
+  return assessment ? ASSESSMENT_SCORE[assessment] : 0;
+}
+
+export function readinessPercent(scored: number, max: number): number {
+  if (max <= 0) return 0;
+  return Math.round((scored / max) * 100);
+}
+
 export interface AreaProgress {
   areaKey: string;
   areaTitle: string;
@@ -13,6 +30,18 @@ export interface AreaProgress {
   independentCount: number;
   driveCount: number;
   lastTrainedAt: Date | null;
+  scored: number;
+  max: number;
+  readinessPercent: number;
+}
+
+export interface JourneyReadiness {
+  percent: number;
+  scored: number;
+  max: number;
+  trainedCount: number;
+  skillCount: number;
+  areas: AreaProgress[];
 }
 
 export interface SkillProgress {
@@ -98,20 +127,45 @@ export async function listAreaProgress(
         independentCount: 0,
         driveCount: drivesByArea.get(skill.areaKey) ?? 0,
         lastTrainedAt: null,
+        scored: 0,
+        max: 0,
+        readinessPercent: 0,
       };
     area.skillCount += 1;
+    area.max += READINESS_SCORE_MAX;
     const observation = latestBySkill.get(skill.skillId);
     if (observation) {
       area.trainedCount += 1;
+      area.scored += assessmentScore(observation.assessment);
       if (observation.assessment === "independent") area.independentCount += 1;
       if (!area.lastTrainedAt || observation.observedAt > area.lastTrainedAt) {
         area.lastTrainedAt = observation.observedAt;
       }
     }
+    area.readinessPercent = readinessPercent(area.scored, area.max);
     areas.set(skill.areaKey, area);
   }
 
   return [...areas.values()];
+}
+
+export async function listJourneyReadiness(
+  journeyId: string,
+  client?: pg.PoolClient,
+): Promise<JourneyReadiness> {
+  const areas = await listAreaProgress(journeyId, client);
+  const scored = areas.reduce((sum, area) => sum + area.scored, 0);
+  const max = areas.reduce((sum, area) => sum + area.max, 0);
+  const trainedCount = areas.reduce((sum, area) => sum + area.trainedCount, 0);
+  const skillCount = areas.reduce((sum, area) => sum + area.skillCount, 0);
+  return {
+    percent: readinessPercent(scored, max),
+    scored,
+    max,
+    trainedCount,
+    skillCount,
+    areas,
+  };
 }
 
 export async function listSkillProgress(
