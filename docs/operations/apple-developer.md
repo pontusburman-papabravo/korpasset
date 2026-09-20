@@ -88,3 +88,5 @@ Ordning efter App Store Connect-appen:
 6. **Apple-webhook** mot `https://korpasset.se/api/apple/notifications` (konto-radering / Apple-events).
 
 Push och betalning ingår inte i första betan.
+
+Android / Play: [google-play.md](google-play.md).

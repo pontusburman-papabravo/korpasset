@@ -901,7 +901,7 @@ Beta-ready kräver också:
 - kontakt/feedbackväg,
 - grundläggande error/crash-observability,
 - iOS-distribution via TestFlight (App ID `se.korpasset.app`, [apple-developer.md](operations/apple-developer.md)),
-- Android-distribution via Google Play test track,
+- Android-distribution via Google Play test track ([google-play.md](operations/google-play.md)),
 - Sign in with Apple och Sign in with Google i appen.
 
 Betalning ingår inte som blockerare för första beta. Se [Beta Validation och kommersiell gate](#16-beta-validation-och-kommersiell-gate).
