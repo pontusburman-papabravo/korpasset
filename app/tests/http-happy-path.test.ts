@@ -49,6 +49,8 @@ describe("HTTP happy path (two isolated sessions)", () => {
       url: `/journey/${journeyId}/invitations`,
     });
     assert.equal(inviteResponse.statusCode, 200, "invitation page loads");
+    assert.match(inviteResponse.body, /Kopiera länk/);
+    assert.match(inviteResponse.body, /id="invite-url"/);
     const inviteToken = extractInviteToken(inviteResponse.body);
 
     // B1–B3: separate supervisor session accepts invitation

@@ -243,9 +243,23 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
           "Inbjudan",
           `<h1>Bjud in handledare</h1>
            <p>Dela med <strong>${escapeHtml(invitation.studentName)}</strong>s handledare.</p>
-           <div class="invite-url">${escapeHtml(invitation.inviteUrl)}</div>
+           <label for="invite-url">Länk</label>
+           <input id="invite-url" class="invite-url" readonly value="${escapeHtml(invitation.inviteUrl)}" onclick="this.select()">
+           <button type="button" class="btn btn-secondary" id="copy-invite">Kopiera länk</button>
            <div class="qr-wrap"><img src="${qrDataUrl}" alt="QR-kod för inbjudan"></div>
-           <a class="btn btn-secondary" href="/journey/${escapeHtml(journeyId)}">Tillbaka till resan</a>`,
+           <a class="btn btn-secondary" href="/journey/${escapeHtml(journeyId)}">Tillbaka till resan</a>
+           <script>
+             document.getElementById('copy-invite').addEventListener('click', async function () {
+               const input = document.getElementById('invite-url');
+               try {
+                 await navigator.clipboard.writeText(input.value);
+                 this.textContent = 'Kopierad';
+               } catch (err) {
+                 input.select();
+               }
+             });
+           </script>`,
+          { journeyId, role: "student" },
         ),
       );
     } catch (error) {
