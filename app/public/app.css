@@ -34,6 +34,76 @@ body {
   padding: 1.25rem 1rem 2.5rem;
 }
 
+.app-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.app-bar__brand {
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.app-bar__nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.app-bar__nav a {
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.app-footer {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 1rem 1rem 1.5rem;
+}
+
+.app-footer a {
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.oauth-stack {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+}
+
+.btn-apple {
+  background: #000;
+  color: #fff;
+}
+
+.btn-apple:active {
+  background: #111;
+}
+
+.btn-google {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.oauth-web-hint {
+  font-size: 0.875rem;
+}
+
+.account-delete {
+  margin-top: 2rem;
+}
+
 h1 {
   font-size: 1.75rem;
   line-height: 1.2;
@@ -57,13 +127,20 @@ label {
 }
 
 input[type="text"],
-select.supervisor-select {
+select.supervisor-select,
+textarea {
   width: 100%;
   font-size: 1.125rem;
   padding: 0.875rem 1rem;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   background: var(--surface);
+  font-family: inherit;
+}
+
+textarea {
+  min-height: 8rem;
+  resize: vertical;
 }
 
 .btn {
@@ -102,6 +179,10 @@ select.supervisor-select {
   border-radius: 1rem;
   padding: 1rem;
   margin-bottom: 1rem;
+}
+
+.card > h2:first-child {
+  margin-top: 0;
 }
 
 a.journey-choice {
@@ -151,6 +232,7 @@ a.journey-choice {
   margin-bottom: 1.25rem;
 }
 
+.skill-area h2,
 .skill-area h3 {
   font-size: 0.95rem;
   text-transform: uppercase;
@@ -387,4 +469,58 @@ a.journey-choice {
 .focus-list li {
   margin-bottom: 0.35rem;
   font-weight: 600;
+}
+
+.progress-list {
+  display: grid;
+  margin-bottom: 0.75rem;
+}
+
+.progress-row {
+  display: grid;
+  gap: 0.125rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
+}
+
+.progress-row:last-child {
+  border-bottom: none;
+}
+
+.progress-row__title {
+  font-weight: 700;
+}
+
+.progress-row__meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.development-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+
+.development-list li {
+  display: grid;
+  gap: 0.125rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.development-title {
+  font-weight: 700;
+}
+
+.development-label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.supervisor-list {
+  margin: 0 0 0.75rem;
+  padding-left: 1.25rem;
 }

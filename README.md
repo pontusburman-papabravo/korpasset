@@ -38,6 +38,7 @@ v1 är strikt fokuserad på den praktiska privata övningskörningen.
 - [Database](docs/architecture/database.md)
 - [Production](docs/operations/production.md) — env, health, backup/restore
 - [VPS-access](docs/operations/vps-access.md) — korpasset.se host, Compose, redeploy
+- [Native apps](docs/operations/native-apps.md) — Capacitor, Apple/Google-inloggning, TestFlight/Play
 
 ### Beslut (ADR)
 
@@ -99,4 +100,4 @@ Health: `GET /health` → `{ "status": "ok" }`.
 
 ## Status
 
-Canonical produkt- och databasgrund. Första vertical slice: journey → invitation → körpass → observation → rekommendation. Publik landning med intresseanmälan på `https://korpasset.se`. Nästa fas: **Beta Readiness** (app-shell, Apple/Google-konto enligt [ADR-008](docs/decisions/ADR-008-app-oauth-accounts.md), legal i produktion, observability, iOS/Android).
+Canonical produkt- och databasgrund. Vertical slice + publik landning med intresseanmälan på `https://korpasset.se`. Produktkonton: Sign in with Apple och Google i appen (`/app`, ADR-008). Store-publicering: [native-apps.md](docs/operations/native-apps.md).

@@ -11,6 +11,8 @@ import { redactRequestPath } from "./log.js";
 import { registerAdminRoutes } from "./admin.js";
 import { registerMarketingRoutes } from "./marketing.js";
 import { registerResendWebhook } from "./resend-webhook.js";
+import { registerOAuthRoutes } from "./oauth.js";
+import { registerHelpRoutes } from "./help.js";
 import { registerRoutes } from "./routes.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -99,6 +101,8 @@ export async function buildServer() {
   });
 
   await registerResendWebhook(app);
+  await registerOAuthRoutes(app);
+  await registerHelpRoutes(app);
   await registerMarketingRoutes(app);
   await registerAdminRoutes(app);
   await registerRoutes(app);

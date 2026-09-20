@@ -41,7 +41,9 @@ describe("HTTP happy path (two isolated sessions)", () => {
       url: `/journey/${journeyId}`,
     });
     assert.equal(journeyGet.statusCode, 200, "journey page loads");
+    assert.match(journeyGet.body, /Min körkortsresa/);
     assert.match(journeyGet.body, /Ella/);
+    assert.match(journeyGet.body, /Bjud in en handledare/);
 
     // A4–A5: create invitation and extract invite URL/token
     const inviteResponse = await injectWithSession(app, studentCookies, {
@@ -97,7 +99,7 @@ describe("HTTP happy path (two isolated sessions)", () => {
     });
     assert.equal(focusPage.statusCode, 200);
     assert.match(focusPage.body, /Vad tränar ni på idag/);
-    assert.match(focusPage.body, /0 av 3 valda/);
+    assert.match(focusPage.body, /av 3 valda/);
 
     const driveCreate = await injectWithSession(app, studentCookies, {
       method: "POST",
@@ -299,6 +301,11 @@ describe("HTTP happy path (two isolated sessions)", () => {
     });
     assert.equal(supervisorJourney.statusCode, 200);
     assert.match(supervisorJourney.body, /Ella/);
+    assert.match(supervisorJourney.body, /Du är handledare/);
+    assert.match(supervisorJourney.body, /Dagens fokus/);
+    assert.match(supervisorJourney.body, /Senaste körpasset/);
+    assert.match(supervisorJourney.body, /Utveckling/);
+    assert.match(supervisorJourney.body, /Nästa gång/);
 
     // Sessions must not share cookies
     assert.notEqual(

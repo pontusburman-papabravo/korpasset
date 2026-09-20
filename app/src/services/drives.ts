@@ -8,6 +8,7 @@ import {
 import { listActiveSupervisors } from "./journeys.js";
 import type { SkillWithDefinition } from "./skills.js";
 import { getSkillsByIds } from "./skills.js";
+import { actorDisplayName } from "./actor-display.js";
 
 export interface Drive {
   id: string;
@@ -16,6 +17,46 @@ export interface Drive {
   supervisorUserId: string;
   startedAt: Date;
   endedAt: Date | null;
+}
+
+export interface EndedDriveSummary {
+  id: string;
+  endedAt: Date;
+  supervisorUserId: string;
+  supervisorLabel: string;
+  rated: boolean;
+}
+
+export async function getLatestEndedDrive(
+  journeyId: string,
+  client?: pg.PoolClient,
+): Promise<EndedDriveSummary | null> {
+  const db = client ?? getPool();
+  const result = await db.query(
+    `SELECT d.id, d.ended_at, d.supervisor_user_id,
+            u.display_name, u.account_state,
+            EXISTS (
+              SELECT 1 FROM drive_observations o
+              WHERE o.journey_id = d.journey_id
+                AND o.drive_id = d.id
+                AND o.source_type = 'supervisor'
+            ) AS rated
+     FROM drives d
+     JOIN users u ON u.id = d.supervisor_user_id
+     WHERE d.journey_id = $1 AND d.ended_at IS NOT NULL
+     ORDER BY d.ended_at DESC
+     LIMIT 1`,
+    [journeyId],
+  );
+  if (result.rowCount === 0) return null;
+  const row = result.rows[0];
+  return {
+    id: String(row.id),
+    endedAt: new Date(row.ended_at),
+    supervisorUserId: String(row.supervisor_user_id),
+    supervisorLabel: actorDisplayName(row.display_name, row.account_state, "supervisor"),
+    rated: Boolean(row.rated),
+  };
 }
 
 export async function getActiveDrive(
