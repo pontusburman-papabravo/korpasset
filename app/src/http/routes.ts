@@ -101,6 +101,7 @@ function groupSkillsByArea(
 function onboardingForm(errorMessage?: string, name = ""): string {
   return `${errorMessage ? errorBanner(errorMessage) : ""}
          <h1>Vad heter du?</h1>
+         <p class="muted">Du bjuder sedan in mamma, pappa eller den som kör med er. Flera handledare går bra.</p>
          <form method="post" action="/start" class="stack">
            <div>
              <label for="name">Namn</label>

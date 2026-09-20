@@ -8,7 +8,7 @@ export function privacyPage(): string {
      <p>Papa Bravo AB är personuppgiftsansvarig för Körpasset. Vi samlar in så lite som möjligt, säljer inte dina uppgifter och använder dem inte för riktad annonsmarknadsföring.</p>
 
      <h2>Intresseanmälan till betan</h2>
-     <p>När du anmäler intresse behandlar vi namn, e-post, roll (elev, förälder, handledare eller annat), om ni använder iPhone och/eller Android, samt valfri ort och fritext. Rättslig grund är samtycke. Syftet är att kontakta dig om betan och administrera kön.</p>
+     <p>När du anmäler intresse behandlar vi namn, e-post, roll (elev, förälder, handledare eller annat), om ni använder iPhone och/eller Android, samt valfri ort och fritext. Rättslig grund är samtycke. Syftet är att kontakta dig om betan och administrera kön. Vi skickar en bekräftelse till samma adress.</p>
      <p>Vi använder inte uppgifterna till nyhetsbrev, säljmejl eller profilering.</p>
 
      <h2>När du använder produkten</h2>
