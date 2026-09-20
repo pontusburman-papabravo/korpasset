@@ -21,7 +21,9 @@ import {
   formatDay,
   isSkillNotApplicable,
   listAreaProgress,
+  listJourneyReadiness,
   listSkillProgress,
+  readinessPercent,
   skillProgressLabel,
 } from "../src/services/progression.js";
 import { recommendNextFocus } from "../src/services/recommendations.js";
@@ -80,12 +82,19 @@ describe("progression read model", () => {
     assert.equal(isSkillNotApplicable("mirrors", "automatic_only"), false);
   });
 
-  it("summarises trained skills without a percentage", async () => {
+  it("summarises trained skills with readiness percent per area and total", async () => {
     const { journey } = await setupRatedJourney();
     const areas = await listAreaProgress(journey.id);
     const trained = areas.reduce((sum, area) => sum + area.trainedCount, 0);
     assert.equal(trained, 3);
     assert.ok(areas.every((area) => !/%|redo|godkänd/i.test(area.areaTitle)));
+    const readiness = await listJourneyReadiness(journey.id);
+    assert.equal(readiness.trainedCount, 3);
+    assert.equal(readiness.scored, 1 + 2 + 3);
+    assert.equal(readiness.max, readiness.skillCount * 3);
+    assert.equal(readiness.percent, readinessPercent(readiness.scored, readiness.max));
+    assert.ok(readiness.areas.some((area) => area.readinessPercent > 0));
+    assert.ok(readiness.areas.every((area) => area.max === area.skillCount * 3));
     const labels = (await listSkillProgress(journey.id)).map(skillProgressLabel);
     assert.ok(labels.includes("Behöver hjälp"));
     assert.ok(labels.includes("Med påminnelse"));
@@ -143,7 +152,10 @@ describe("beta UX HTTP", () => {
     assert.match(studentHome.body, /Nästa gång/);
     assert.match(studentHome.body, /Så gick det/);
     assert.match(studentHome.body, /app-tabbar/);
-    assert.doesNotMatch(studentHome.body, /87\s*%|uppkörningsklar|Godkänd/);
+    assert.match(studentHome.body, /Så här ligger ni till/);
+    assert.match(studentHome.body, /Totalt läge/);
+    assert.match(studentHome.body, /\d+%/);
+    assert.doesNotMatch(studentHome.body, /uppkörningsklar|Godkänd/);
     assert.match(studentHome.body, /href="\/hjalp"/);
 
     const supervisorHome = await injectWithSession(app, session(supervisor.userId), {
@@ -191,6 +203,59 @@ describe("beta UX HTTP", () => {
     await app.close();
   });
 
+  it("lets the supervisor add a live note during the drive", async () => {
+    const { journey, userId: studentId } = await createJourneyForStudent("Ella");
+    const invitation = await createInvitation(journey.id, studentId);
+    const supervisor = await acceptInvitation(invitation.token, "Pappa", null);
+    const skills = await getPool().query(
+      `SELECT id, skill_key FROM skills ORDER BY skill_key LIMIT 2`,
+    );
+    const skillIds = skills.rows.map((row) => row.id as string);
+    const { drive } = await createDriveWithFocus(journey.id, studentId, skillIds);
+
+    const app = await createTestApp();
+    const supervisorDrive = await injectWithSession(app, session(supervisor.userId), {
+      method: "GET",
+      url: `/journey/${journey.id}/drive/${drive.id}`,
+    });
+    assert.equal(supervisorDrive.statusCode, 200);
+    assert.match(supervisorDrive.body, /Körpass pågår/);
+    assert.match(supervisorDrive.body, /Notera hur det går när det är säkert/);
+    assert.match(supervisorDrive.body, /Kort anteckning/);
+    assert.match(
+      supervisorDrive.body,
+      new RegExp(`/journey/${journey.id}/drive/${drive.id}/observe`),
+    );
+
+    const observed = await injectWithSession(app, session(supervisor.userId), {
+      method: "POST",
+      url: `/journey/${journey.id}/drive/${drive.id}/observe`,
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({
+        skill_id: skillIds[0],
+        assessment: "needs_help",
+        note: "Stannade för sent vid övergångsstället",
+      }),
+    });
+    assert.equal(observed.statusCode, 302);
+    assert.equal(observed.headers.location, `/journey/${journey.id}/drive/${drive.id}`);
+
+    const studentDrive = await injectWithSession(app, session(studentId), {
+      method: "GET",
+      url: `/journey/${journey.id}/drive/${drive.id}`,
+    });
+    assert.match(studentDrive.body, /Behöver hjälp/);
+    assert.match(studentDrive.body, /Stannade för sent vid övergångsstället/);
+
+    await endDrive(journey.id, drive.id, studentId);
+    const recap = await injectWithSession(app, session(studentId), {
+      method: "GET",
+      url: `/journey/${journey.id}/drive/${drive.id}/done`,
+    });
+    assert.match(recap.body, /Stannade för sent vid övergångsstället/);
+    await app.close();
+  });
+
   it("shows development per skill and saves transmission", async () => {
     const { journey, studentId, supervisor } = await setupRatedJourney();
     const app = await createTestApp();
@@ -201,9 +266,12 @@ describe("beta UX HTTP", () => {
     });
     assert.equal(page.statusCode, 200);
     assert.match(page.body, /Utveckling/);
+    assert.match(page.body, /Så här ligger ni till/);
+    assert.match(page.body, /Totalt läge/);
+    assert.match(page.body, /\d+%/);
     assert.match(page.body, /Behöver hjälp/);
     assert.match(page.body, /Inte tränat ännu/);
-    assert.doesNotMatch(page.body, /87\s*%|Godkänd/);
+    assert.doesNotMatch(page.body, /uppkörningsklar|Godkänd/);
 
     const saved = await injectWithSession(app, session(studentId), {
       method: "POST",
