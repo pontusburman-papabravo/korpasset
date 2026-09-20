@@ -82,7 +82,14 @@ describe("live observations", () => {
         `SELECT id, skill_key FROM skills WHERE skill_key = 'positioning_lane_change'`,
       );
       const skillId = String(skill.rows[0].id);
-      const { drive } = await createDriveWithFocus(journey.id, studentId, [skillId]);
+      const extra = await getPool().query(
+        `SELECT id FROM skills WHERE skill_key = 'observation_signaling'`,
+      );
+      const extraId = String(extra.rows[0].id);
+      const { drive } = await createDriveWithFocus(journey.id, studentId, [
+        skillId,
+        extraId,
+      ]);
 
       await addLiveObservation(journey.id, drive.id, supervisors[0].userId, {
         skillId,
@@ -99,7 +106,7 @@ describe("live observations", () => {
         "Anna",
         ["Erik"],
       );
-      const ids = await skillIds(1);
+      const ids = await skillIds(2);
       const { drive } = await createDriveWithFocus(journey.id, studentId, ids);
 
       await assert.rejects(
