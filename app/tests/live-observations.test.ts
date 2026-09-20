@@ -73,6 +73,47 @@ describe("live observations", () => {
       assert.equal(count.rows[0].count, 1);
     });
 
+    it("stores completed coaching steps with the live observation", async () => {
+      const { journey, studentId, supervisors } = await setupJourneyWithSupervisors(
+        "Anna",
+        ["Erik"],
+      );
+      const skill = await getPool().query(
+        `SELECT id, skill_key FROM skills WHERE skill_key = 'positioning_lane_change'`,
+      );
+      const skillId = String(skill.rows[0].id);
+      const { drive } = await createDriveWithFocus(journey.id, studentId, [skillId]);
+
+      await addLiveObservation(journey.id, drive.id, supervisors[0].userId, {
+        skillId,
+        assessment: "with_support",
+        completedStepKeys: ["mirror", "signal"],
+      });
+
+      const latest = await getLatestDriveObservationsBySkill(journey.id, drive.id);
+      assert.deepEqual(latest[0].completedStepKeys, ["mirror", "signal"]);
+    });
+
+    it("rejects unknown coaching step keys", async () => {
+      const { journey, studentId, supervisors } = await setupJourneyWithSupervisors(
+        "Anna",
+        ["Erik"],
+      );
+      const ids = await skillIds(1);
+      const { drive } = await createDriveWithFocus(journey.id, studentId, ids);
+
+      await assert.rejects(
+        () =>
+          addLiveObservation(journey.id, drive.id, supervisors[0].userId, {
+            skillId: ids[0],
+            assessment: "needs_help",
+            completedStepKeys: ["not-a-real-step"],
+          }),
+        (error: Error) =>
+          error instanceof AppError && error.message.includes("övningssteg"),
+      );
+    });
+
     it("rejects observation after drive ended", async () => {
       const { journey, studentId, supervisors } = await setupJourneyWithSupervisors(
         "Anna",
