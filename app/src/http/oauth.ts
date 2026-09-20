@@ -17,7 +17,7 @@ import {
   listLinkedProviders,
   providerLabel,
 } from "../services/oauth-accounts.js";
-import { getReusableSessionUserId, getUserById } from "../services/users.js";
+import { getReusableSessionUserId, getUserById, updateDisplayName } from "../services/users.js";
 import { acceptInvitation } from "../services/invitations.js";
 import { deleteProductAccount } from "../services/account-lifecycle.js";
 import { parseInviteReturnTo, signedInRedirectPath } from "./navigation.js";
@@ -69,6 +69,51 @@ function loginPage(errorMessage?: string): string {
      <p>Fortsätt med Apple eller Google för att skapa konto eller logga in.</p>
      ${oauthButtons({ returnTo: "/app" })}`,
   );
+}
+
+function accountPage(options: {
+  displayName: string;
+  linked: string;
+  errorMessage?: string;
+}): string {
+  return layout(
+    "Konto",
+    `${options.errorMessage ? errorBanner(options.errorMessage) : ""}
+     <h1>Konto</h1>
+     <form method="post" action="/konto/namn" class="stack">
+       <div>
+         <label for="name">Namn</label>
+         <input id="name" name="name" type="text" required maxlength="80" autocomplete="name" placeholder="Ditt namn" value="${escapeHtml(options.displayName)}">
+       </div>
+       ${primaryButton("Spara namn")}
+     </form>
+     <p class="muted">Inloggning: ${escapeHtml(options.linked)}</p>
+     <form method="post" action="/logout">
+       <button type="submit" class="btn btn-secondary">Logga ut</button>
+     </form>
+     <section class="card account-delete">
+       <h2>Radera konto</h2>
+       <p>Det tar bort din inloggning. Om du är elev raderas din körkortsresa. Om du är handledare behålls historiken hos eleven, utan ditt namn.</p>
+       <form method="post" action="/konto/radera" class="stack">
+         <label for="confirm">Skriv RADERA för att bekräfta</label>
+         <input id="confirm" name="confirm" type="text" autocomplete="off" required>
+         ${primaryButton("Radera mitt konto")}
+       </form>
+     </section>`,
+  );
+}
+
+async function accountView(userId: string): Promise<{ displayName: string; linked: string }> {
+  const user = await getUserById(userId);
+  const providers = await listLinkedProviders(userId);
+  const linked =
+    providers.length > 0
+      ? providers.map((provider) => providerLabel(provider)).join(" och ")
+      : "Inget Apple- eller Google-konto kopplat ännu";
+  return {
+    displayName: user?.displayName ?? "",
+    linked,
+  };
 }
 
 function accountDeletedPage(): string {
@@ -240,37 +285,30 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
       clearSessionCookie(reply);
       return reply.redirect("/app");
     }
-    const user = await getUserById(userId);
-    if (!user) {
+    const view = await accountView(userId);
+    return reply.type("text/html").send(accountPage(view));
+  });
+
+  app.post("/konto/namn", async (request, reply) => {
+    const sessionUserId = getSessionUserId(request);
+    const userId = await getReusableSessionUserId(sessionUserId);
+    if (!userId) {
       clearSessionCookie(reply);
       return reply.redirect("/app");
     }
-    const providers = await listLinkedProviders(userId);
-    const linked =
-      providers.length > 0
-        ? providers.map((provider) => providerLabel(provider)).join(" och ")
-        : "Inget Apple- eller Google-konto kopplat ännu";
-
-    return reply.type("text/html").send(
-      layout(
-        "Konto",
-        `<h1>Konto</h1>
-         <p>${escapeHtml(user.displayName ?? "Utan namn")}</p>
-         <p class="muted">Inloggning: ${escapeHtml(linked)}</p>
-         <form method="post" action="/logout">
-           <button type="submit" class="btn btn-secondary">Logga ut</button>
-         </form>
-         <section class="card account-delete">
-           <h2>Radera konto</h2>
-           <p>Det tar bort din inloggning. Om du är elev raderas din körkortsresa. Om du är handledare behålls historiken hos eleven, utan ditt namn.</p>
-           <form method="post" action="/konto/radera" class="stack">
-             <label for="confirm">Skriv RADERA för att bekräfta</label>
-             <input id="confirm" name="confirm" type="text" autocomplete="off" required>
-             ${primaryButton("Radera mitt konto")}
-           </form>
-         </section>`,
-      ),
-    );
+    const body = (request.body ?? {}) as { name?: string };
+    const name = body.name?.trim() ?? "";
+    if (!name || name.length > 80) {
+      const view = await accountView(userId);
+      return reply.status(400).type("text/html").send(
+        accountPage({
+          ...view,
+          errorMessage: "Ange ett namn.",
+        }),
+      );
+    }
+    await updateDisplayName(userId, name);
+    return reply.redirect("/konto");
   });
 
   app.post("/konto/radera", async (request, reply) => {
@@ -282,19 +320,12 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
     }
     const body = (request.body ?? {}) as { confirm?: string };
     if ((body.confirm ?? "").trim() !== "RADERA") {
-      const user = await getUserById(userId);
-      const providers = await listLinkedProviders(userId);
+      const view = await accountView(userId);
       return reply.status(400).type("text/html").send(
-        layout(
-          "Konto",
-          `${errorBanner("Skriv RADERA för att bekräfta.")}
-           <h1>Konto</h1>
-           <p>${escapeHtml(user?.displayName ?? "Utan namn")}</p>
-           <p class="muted">Inloggning: ${escapeHtml(
-             providers.map((provider) => providerLabel(provider)).join(" och ") ||
-               "Inget Apple- eller Google-konto kopplat ännu",
-           )}</p>`,
-        ),
+        accountPage({
+          ...view,
+          errorMessage: "Skriv RADERA för att bekräfta.",
+        }),
       );
     }
 

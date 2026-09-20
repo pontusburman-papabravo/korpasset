@@ -39,12 +39,42 @@ export function layout(title: string, body: string): string {
   <header class="app-bar">
     <a class="app-bar__brand" href="/app">Körpasset</a>
     <nav class="app-bar__nav" aria-label="Konto">
+      <a href="/hjalp">Hjälp</a>
       <a href="/konto">Konto</a>
     </nav>
   </header>
   <main class="container">
     ${body}
   </main>
+  <script>
+    window.addEventListener("error", function (event) {
+      try {
+        fetch("/api/client-error", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            message: String(event.message || "error").slice(0, 500),
+            path: location.pathname
+          }),
+          keepalive: true
+        });
+      } catch (ignore) {}
+    });
+    window.addEventListener("unhandledrejection", function (event) {
+      try {
+        var reason = event.reason;
+        fetch("/api/client-error", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            message: String(reason && reason.message || reason || "rejection").slice(0, 500),
+            path: location.pathname
+          }),
+          keepalive: true
+        });
+      } catch (ignore) {}
+    });
+  </script>
 </body>
 </html>`;
 }

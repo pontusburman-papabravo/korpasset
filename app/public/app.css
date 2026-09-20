@@ -50,6 +50,11 @@ body {
   text-decoration: none;
 }
 
+.app-bar__nav {
+  display: flex;
+  gap: 1rem;
+}
+
 .app-bar__nav a {
   color: var(--text);
   font-weight: 600;
@@ -108,13 +113,20 @@ label {
 }
 
 input[type="text"],
-select.supervisor-select {
+select.supervisor-select,
+textarea {
   width: 100%;
   font-size: 1.125rem;
   padding: 0.875rem 1rem;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   background: var(--surface);
+  font-family: inherit;
+}
+
+textarea {
+  min-height: 8rem;
+  resize: vertical;
 }
 
 .btn {
@@ -153,6 +165,10 @@ select.supervisor-select {
   border-radius: 1rem;
   padding: 1rem;
   margin-bottom: 1rem;
+}
+
+.card > h2:first-child {
+  margin-top: 0;
 }
 
 a.journey-choice {
@@ -202,6 +218,7 @@ a.journey-choice {
   margin-bottom: 1.25rem;
 }
 
+.skill-area h2,
 .skill-area h3 {
   font-size: 0.95rem;
   text-transform: uppercase;
@@ -438,4 +455,58 @@ a.journey-choice {
 .focus-list li {
   margin-bottom: 0.35rem;
   font-weight: 600;
+}
+
+.progress-list {
+  display: grid;
+  margin-bottom: 0.75rem;
+}
+
+.progress-row {
+  display: grid;
+  gap: 0.125rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
+}
+
+.progress-row:last-child {
+  border-bottom: none;
+}
+
+.progress-row__title {
+  font-weight: 700;
+}
+
+.progress-row__meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.development-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+
+.development-list li {
+  display: grid;
+  gap: 0.125rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.development-title {
+  font-weight: 700;
+}
+
+.development-label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.supervisor-list {
+  margin: 0 0 0.75rem;
+  padding-left: 1.25rem;
 }
