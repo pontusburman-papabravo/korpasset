@@ -11,16 +11,24 @@ Ett origin:
 | URL | Vad |
 | --- | --- |
 | `https://korpasset.se` | Landning + intresseanmälan. Skapar **inte** produktkonto. |
-| `https://korpasset.se/onboarding` | Slice-fallback för att skapa elevresa. Inte betans kontomodell. |
-| `https://korpasset.se/invite/<token>` | Canonical invitation-länk; i beta öppnas den i appen |
+| `https://korpasset.se/app` | Native app-yta. Fortsätt med Apple eller Google. Skapar produktkonto. |
+| `https://korpasset.se/api/auth/apple` `.../google` | Verifierar identity token och sätter session |
+| `https://korpasset.se/konto` | Konto, utloggning och kontoradering (app-shell) |
+| `https://korpasset.se/onboarding` | Skapa elevresa efter inloggning. Slice-fallback utan OAuth är utvecklingsfallback. |
+| `https://korpasset.se/invite/<token>` | Canonical invitation-länk; öppnas i appen via Universal Link / App Link |
+| `https://korpasset.se/.well-known/apple-app-site-association` | iOS Universal Links |
+| `https://korpasset.se/.well-known/assetlinks.json` | Android App Links |
 | `https://korpasset.se/integritet` `/villkor` `/kontakt` | Legal |
-| `https://korpasset.se/admin` | Waitlist-admin (e-post + lösenord, skapas med `admin:create`) |
+| `https://korpasset.se/admin` | Waitlist-admin (`pontus.burman@papabravo.se`). Inte produktkonto, inte Play-granskning. |
 | `https://korpasset.se/health` | Health, ingen auth |
 | `https://korpasset.se/api/resend/webhook` | Resend-händelser (Svix-signatur, ingen användar-auth) |
 
 Ingen `app.`-subdomän i första betan. Samma host förenklar cookies, QR, SMS och en Capacitor-shell som laddar produktionens origin. Produktkonton skapas i den shellen via Apple och Google, inte på landningen.
 
 Invitationer byggs från `APP_BASE_URL`. Den **måste** vara `https://korpasset.se` i produktion — annars pekar QR mot localhost.
+
+iOS App ID `se.korpasset.app`, Team ID `PQ7M3B7VW5` (Sign in with Apple, Associated Domains): [apple-developer.md](apple-developer.md).
+Play-granskning loggar in med `korpasset@gmail.com` (Cursor-secrets `GMAIL_LOGGIN` / `GMAIL_LOGGIN_PASSWORD`): [google-play.md](google-play.md).
 
 ## Vad som måste sättas utanför repo
 
@@ -34,15 +42,22 @@ Invitationer byggs från `APP_BASE_URL`. Den **måste** vara `https://korpasset.
 | `RESEND_API_KEY` | Valfritt men krävs för att faktiskt skicka admin-resetmejl. Utan nyckel loggas felet och användaren får samma neutrala text. |
 | `RESEND_WEBHOOK_SECRET` | Valfritt. Svix-signing secret från Resend → Webhooks. Utan secret svarar `POST /api/resend/webhook` 503. |
 | `EMAIL_FROM` | Valfritt. Default `Körpasset <support@korpasset.se>` |
+| `APPLE_CLIENT_ID` / `APPLE_CLIENT_IDS` | Audience för Sign in with Apple (bundle id och ev. Services ID). Utan dem svarar Apple-inloggning 503. |
+| `APPLE_TEAM_ID` | Apple Team ID `PQ7M3B7VW5` för Universal Links. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_IDS` | Audience för Google-id-token (web, iOS, Android). Utan dem svarar Google-inloggning 503. |
+| `GOOGLE_WEB_CLIENT_ID` / `GOOGLE_IOS_CLIENT_ID` | Publika client-id som native-appen initierar plugin med. Inte secrets. |
+| `ANDROID_SHA256_CERT_FINGERPRINTS` | Play App signing-certifikat, kolon-separerad SHA-256, för `assetlinks.json`. |
 
-Första waitlist-admin skapas **inte** via env och inte via publik signup:
+Första waitlist-admin skapas **inte** via env och inte via publik signup.
+Produktion har redan `pontus.burman@papabravo.se` (aktiv sedan 2026-09-18).
+Play-granskning använder `korpasset@gmail.com`, inte den här inloggningen.
 
 ```bash
 # Lokal utveckling
-cd app && npm run admin:create -- --email you@korpasset.se
+cd app && npm run admin:create -- --email pontus.burman@papabravo.se
 
-# Produktion (efter image-build, interaktivt)
-node dist/cli/create-admin.js --email you@korpasset.se
+# Produktion (efter image-build, interaktivt — bara om raden saknas)
+node dist/cli/create-admin.js --email pontus.burman@papabravo.se
 ```
 
 Skriptet frågar efter lösenord (minst 12 tecken), hashar med Argon2id och skriver till `admin_users`. Inget plaintext-lösen i env. Utan minst en aktiv admin-rad svarar `/admin` 404.
@@ -80,6 +95,8 @@ Appen vägrar starta i `NODE_ENV=production` om secrets saknas, om `SESSION_SECR
 Session-cookien `bilklar_session` sätts med `Secure` när `APP_BASE_URL` är https.
 
 Mall: [`app/.env.example`](../../app/.env.example). Committa aldrig `.env`.
+
+Native iOS/Android (TestFlight / Play): [`native-apps.md`](native-apps.md).
 
 ## Image och start
 
