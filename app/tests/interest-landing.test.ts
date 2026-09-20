@@ -27,6 +27,7 @@ describe("landing and interest waitlist", () => {
     assert.match(response.body, /name="platform_ios"/);
     assert.match(response.body, /name="platform_android"/);
     assert.match(response.body, /Vi använder/);
+    assert.match(response.body, /minst en, båda går bra/);
     assert.match(response.body, /integritetspolicyn/);
     assert.match(response.body, /Vi söker just nu våra första 25/);
     assert.doesNotMatch(response.body, /fonts\.googleapis/);
@@ -146,6 +147,33 @@ describe("landing and interest waitlist", () => {
     await app.close();
   });
 
+  it("accepts both iPhone and Android when selected", async () => {
+    const app = await createTestApp();
+    const response = await app.inject({
+      method: "POST",
+      url: "/interest",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({
+        name: "Familjen Svensson",
+        email: "familjen@example.com",
+        role: "parent",
+        platform_ios: "yes",
+        platform_android: "yes",
+        consent: "yes",
+      }),
+    });
+    assert.equal(response.statusCode, 302);
+
+    const rows = await getPool().query(
+      `SELECT platform_ios, platform_android FROM interest_signups WHERE email_normalized = $1`,
+      ["familjen@example.com"],
+    );
+    assert.equal(rows.rowCount, 1);
+    assert.equal(rows.rows[0].platform_ios, true);
+    assert.equal(rows.rows[0].platform_android, true);
+    await app.close();
+  });
+
   it("requires at least one platform choice", async () => {
     const app = await createTestApp();
     const missingPlatform = await app.inject({
@@ -160,7 +188,7 @@ describe("landing and interest waitlist", () => {
       }),
     });
     assert.equal(missingPlatform.statusCode, 400);
-    assert.match(missingPlatform.body, /Kryssa i iPhone eller Android/);
+    assert.match(missingPlatform.body, /Kryssa i minst en: iPhone, Android eller båda/);
 
     const count = await getPool().query(`SELECT count(*)::int AS n FROM interest_signups`);
     assert.equal(count.rows[0].n, 0);
