@@ -108,7 +108,7 @@ export function validateInterestInput(input: InterestInput): {
     throw new AppError("Välj hur du är med i övningskörningen", 400, "invalid_role");
   }
   if (!platformIos && !platformAndroid) {
-    throw new AppError("Kryssa i iPhone eller Android", 400, "invalid_platform");
+    throw new AppError("Kryssa i minst en: iPhone, Android eller båda", 400, "invalid_platform");
   }
   if (city.length > 80) {
     throw new AppError("Staden är för lång", 400, "invalid_city");

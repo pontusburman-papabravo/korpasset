@@ -406,7 +406,7 @@ function interestSection(
           </select>
         </div>
         <fieldset class="platform-choice">
-          <legend>Vi använder</legend>
+          <legend>Vi använder <span class="optional">(minst en, båda går bra)</span></legend>
           <label class="consent">
             <input type="checkbox" name="platform_ios" value="yes"${values.platformIos ? " checked" : ""}>
             <span>iPhone</span>
