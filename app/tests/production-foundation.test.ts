@@ -195,6 +195,7 @@ describe("production foundation / fresh database migrate", () => {
       "0003_admin_auth.sql",
       "0004_resend_webhook_events.sql",
       "0005_admin_audit_events.sql",
+      "0006_interest_signups_platform.sql",
     ]);
     assert.deepEqual(first.stamped, []);
 
@@ -261,6 +262,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
       "0003_admin_auth.sql",
       "0004_resend_webhook_events.sql",
       "0005_admin_audit_events.sql",
+      "0006_interest_signups_platform.sql",
     ]);
     assert.deepEqual(first.skipped, []);
 
@@ -286,6 +288,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
         "0003_admin_auth.sql",
         "0004_resend_webhook_events.sql",
         "0005_admin_audit_events.sql",
+        "0006_interest_signups_platform.sql",
       ],
     );
 

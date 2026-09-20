@@ -424,6 +424,20 @@ a { color: inherit; }
 
 .consent input { width: auto; margin-top: 0.25rem; }
 
+.platform-choice {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.platform-choice legend {
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  padding: 0;
+}
+
 .optional { font-weight: 500; color: #9bb8b1; }
 
 .hp {

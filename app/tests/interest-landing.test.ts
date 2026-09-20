@@ -24,6 +24,9 @@ describe("landing and interest waitlist", () => {
     assert.match(response.body, /0 av 25 platser fyllda/);
     assert.match(response.body, /Ska du övningsköra privat/);
     assert.match(response.body, /action="\/interest"/);
+    assert.match(response.body, /name="platform_ios"/);
+    assert.match(response.body, /name="platform_android"/);
+    assert.match(response.body, /Vi använder/);
     assert.match(response.body, /integritetspolicyn/);
     assert.match(response.body, /Vi söker just nu våra första 25/);
     assert.doesNotMatch(response.body, /fonts\.googleapis/);
@@ -118,6 +121,7 @@ describe("landing and interest waitlist", () => {
         name: "Anna Andersson",
         email: "Anna@Example.com",
         role: "parent",
+        platform_ios: "yes",
         city: "Uppsala",
         message: "Elev + två handledare",
         consent: "yes",
@@ -130,13 +134,36 @@ describe("landing and interest waitlist", () => {
     assert.match(thanks.body, /Tack — vi hör av oss/);
 
     const rows = await getPool().query(
-      `SELECT name, email, email_normalized, role, city, message, status
+      `SELECT name, email, email_normalized, role, city, message, platform_ios, platform_android, status
        FROM interest_signups`,
     );
     assert.equal(rows.rowCount, 1);
     assert.equal(rows.rows[0].email_normalized, "anna@example.com");
     assert.equal(rows.rows[0].role, "parent");
+    assert.equal(rows.rows[0].platform_ios, true);
+    assert.equal(rows.rows[0].platform_android, false);
     assert.equal(rows.rows[0].status, "new");
+    await app.close();
+  });
+
+  it("requires at least one platform choice", async () => {
+    const app = await createTestApp();
+    const missingPlatform = await app.inject({
+      method: "POST",
+      url: "/interest",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({
+        name: "Anna",
+        email: "anna@example.com",
+        role: "parent",
+        consent: "yes",
+      }),
+    });
+    assert.equal(missingPlatform.statusCode, 400);
+    assert.match(missingPlatform.body, /Kryssa i iPhone eller Android/);
+
+    const count = await getPool().query(`SELECT count(*)::int AS n FROM interest_signups`);
+    assert.equal(count.rows[0].n, 0);
     await app.close();
   });
 
@@ -150,6 +177,7 @@ describe("landing and interest waitlist", () => {
         name: "Anna",
         email: "anna@example.com",
         role: "parent",
+        platform_ios: "yes",
         consent: "",
       }),
     });
@@ -164,6 +192,7 @@ describe("landing and interest waitlist", () => {
         name: "Anna",
         email: "inte-en-epost",
         role: "parent",
+        platform_ios: "yes",
         consent: "yes",
       }),
     });
@@ -181,6 +210,7 @@ describe("landing and interest waitlist", () => {
       name: "Anna",
       email: "anna@example.com",
       role: "parent",
+      platform_android: "yes",
       consent: "yes",
     };
     await app.inject({
@@ -197,6 +227,7 @@ describe("landing and interest waitlist", () => {
         ...payload,
         name: "Anna A",
         role: "supervisor",
+        platform_ios: "yes",
         city: "Lund",
       }),
     });
@@ -219,6 +250,7 @@ describe("landing and interest waitlist", () => {
         name: "Bot",
         email: "bot@example.com",
         role: "other",
+        platform_ios: "yes",
         website: "https://spam.test",
         consent: "yes",
       }),
@@ -235,12 +267,14 @@ describe("landing and interest waitlist", () => {
         name: `Familj ${i}`,
         email: `familj${i}@example.com`,
         role: "parent",
+        platformIos: true,
       });
     }
     const declined = await saveInterestSignup({
       name: "Avböjd",
       email: "avbojd@example.com",
       role: "other",
+      platformAndroid: true,
     });
     assert.ok(declined);
     await updateInterestSignup(declined.signup.id, { status: "declined" });
@@ -259,6 +293,7 @@ describe("landing and interest waitlist", () => {
         name: `Person ${i}`,
         email: `person${i}@example.com`,
         role: "student",
+        platformIos: true,
       });
     }
     const app = await createTestApp();

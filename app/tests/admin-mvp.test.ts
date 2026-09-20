@@ -147,6 +147,7 @@ describe("admin MVP v1", () => {
         name: `Person ${String(i).padStart(2, "0")}`,
         email: `person${i}@example.com`,
         role: "parent",
+        platformIos: true,
       });
       assert.ok(saved);
       await getPool().query(
@@ -260,6 +261,7 @@ describe("admin MVP v1", () => {
       name: "Björn",
       email: "bjorn@example.com",
       role: "student",
+      platformAndroid: true,
     });
     const seeded = await seedRatedDrive();
     await getPool().query(
@@ -314,6 +316,7 @@ describe("admin MVP v1", () => {
       name: "Pappa waitlist",
       email: "pappa@example.com",
       role: "supervisor",
+      platformIos: true,
     });
     assert.ok(both);
     const mixed = await app.inject({
@@ -348,6 +351,7 @@ describe("admin MVP v1", () => {
       name: "Pappa",
       email: "pappa@example.com",
       role: "supervisor",
+      platformIos: true,
     });
     await getPool().query(
       `UPDATE drive_observations SET note = 'privat anteckning' WHERE drive_id = $1`,
@@ -437,6 +441,7 @@ describe("admin MVP v1", () => {
       name: "Anna",
       email: "anna@example.com",
       role: "parent",
+      platformIos: true,
     });
     assert.ok(saved);
     const app = await createTestApp();

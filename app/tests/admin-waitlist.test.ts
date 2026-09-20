@@ -35,6 +35,7 @@ describe("waitlist admin", () => {
       role: "student",
       city: "Umeå",
       message: "Kört två månader",
+      platformIos: true,
     });
     const app = await createTestApp();
     const token = createAdminToken(admin.id);
