@@ -160,10 +160,10 @@ def copy_sources() -> None:
         "korpasset-og-1200x630.png",
         "korpasset-social-1024.png",
         "korpasset-social-dark-1024.png",
-        "README.md",
     ]
     for name in names:
         shutil.copy2(REPO_BRAND / name, source / name)
+    shutil.copy2(REPO_BRAND / "README.md", source / "brand-README.md")
 
 
 def build_logo_and_icon() -> dict[str, Image.Image]:
