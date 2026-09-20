@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
 import { getPool } from "../src/db/pool.js";
+import {
+  type OutboundEmail,
+  setMailerForTests,
+} from "../src/services/email.js";
 import {
   saveInterestSignup,
   updateInterestSignup,
@@ -13,6 +17,11 @@ import { resetDatabaseData } from "./setup.js";
 describe("landing and interest waitlist", () => {
   beforeEach(async () => {
     await resetDatabaseData();
+  });
+
+  afterEach(() => {
+    setMailerForTests(null);
+    delete process.env.RESEND_API_KEY;
   });
 
   it("serves the marketing homepage to anonymous visitors", async () => {
@@ -100,6 +109,7 @@ describe("landing and interest waitlist", () => {
     const onboarding = await app.inject({ method: "GET", url: "/onboarding" });
     assert.equal(onboarding.statusCode, 200);
     assert.match(onboarding.body, /Starta min körkortsresa/);
+    assert.match(onboarding.body, /mamma, pappa eller den som kör med er/);
     await app.close();
   });
 
@@ -139,6 +149,7 @@ describe("landing and interest waitlist", () => {
 
     const thanks = await app.inject({ method: "GET", url: "/interest/tack" });
     assert.match(thanks.body, /Tack — vi hör av oss/);
+    assert.match(thanks.body, /bekräftelse till din mejladress/);
 
     const rows = await getPool().query(
       `SELECT name, email, email_normalized, role, city, message, platform_ios, platform_android, status
@@ -352,6 +363,57 @@ describe("landing and interest waitlist", () => {
     for (const href of externals) {
       assert.match(href, /^https:\/\/www\.transportstyrelsen\.se\//);
     }
+    await app.close();
+  });
+
+  it("emails the applicant and support when a new waitlist row is created", async () => {
+    const sent: OutboundEmail[] = [];
+    setMailerForTests({
+      async send(email) {
+        sent.push(email);
+      },
+    });
+    process.env.RESEND_API_KEY = "test-resend";
+    const app = await createTestApp();
+    const first = await app.inject({
+      method: "POST",
+      url: "/interest",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({
+        name: "Mia",
+        email: "mia@example.com",
+        role: "parent",
+        platform_ios: "yes",
+        city: "Härnösand",
+        message: "Vill ha tips på nästa steg",
+        consent: "yes",
+      }),
+    });
+    assert.equal(first.statusCode, 302);
+    assert.equal(sent.length, 2);
+    assert.equal(sent[0]?.to, "mia@example.com");
+    assert.match(sent[0]?.subject ?? "", /Tack/);
+    assert.match(sent[0]?.text ?? "", /när det är er tur/);
+    assert.equal(sent[1]?.to, "support@korpasset.se");
+    assert.match(sent[1]?.subject ?? "", /Mia/);
+    assert.match(sent[1]?.text ?? "", /Vill ha tips på nästa steg/);
+    assert.match(sent[1]?.text ?? "", /Härnösand/);
+
+    sent.length = 0;
+    const again = await app.inject({
+      method: "POST",
+      url: "/interest",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({
+        name: "Mia",
+        email: "mia@example.com",
+        role: "parent",
+        platform_ios: "yes",
+        consent: "yes",
+      }),
+    });
+    assert.equal(again.statusCode, 302);
+    assert.equal(sent.length, 0);
     await app.close();
   });
 });

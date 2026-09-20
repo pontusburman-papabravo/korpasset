@@ -1,4 +1,18 @@
 import { config } from "../config.js";
+import {
+  formatInterestPlatforms,
+  type InterestRole,
+  type InterestSignup,
+} from "./interest.js";
+
+const WAITLIST_ROLE_LABELS: Record<InterestRole, string> = {
+  parent: "Förälder / vårdnadshavare",
+  student: "Elev",
+  supervisor: "Handledare",
+  other: "Annat",
+};
+
+const WAITLIST_ADMIN_INBOX = "support@korpasset.se";
 
 export interface OutboundEmail {
   to: string;
@@ -80,5 +94,55 @@ export async function sendAdminResetEmail(
     to,
     subject: "Återställ lösenordet till Körpasset",
     text: adminResetEmailText(resetUrl),
+  });
+}
+
+export function waitlistConfirmEmailText(name: string): string {
+  return [
+    `Hej ${name},`,
+    "",
+    "Tack för att du skrivit upp dig på Körpassets beta.",
+    "",
+    "Vi tar in familjer löpande och mejlar när det är er tur. En anmälan ger inte automatisk access.",
+    "",
+    "Körpasset hjälper er se vad som är bra att öva på nästa gång — även om mamma, pappa och syskon turas om.",
+    "",
+    "Hälsningar",
+    "Körpasset",
+  ].join("\n");
+}
+
+export function waitlistAdminNotifyText(signup: InterestSignup): string {
+  return [
+    "Ny intresseanmälan till betan.",
+    "",
+    `Namn: ${signup.name}`,
+    `E-post: ${signup.email}`,
+    `Roll: ${WAITLIST_ROLE_LABELS[signup.role]}`,
+    `Plattform: ${formatInterestPlatforms(signup)}`,
+    `Ort: ${signup.city ?? "—"}`,
+    "",
+    "Meddelande:",
+    signup.message?.trim() || "(inget)",
+    "",
+    `Admin: ${config.appBaseUrl}/admin/signups/${signup.id}`,
+  ].join("\n");
+}
+
+export async function notifyWaitlistSignup(
+  signup: InterestSignup,
+  created: boolean,
+): Promise<void> {
+  if (!created || !config.resendApiKey) return;
+  const mailer = getMailer();
+  await mailer.send({
+    to: signup.email,
+    subject: "Tack — vi har tagit emot din anmälan till Körpasset",
+    text: waitlistConfirmEmailText(signup.name),
+  });
+  await mailer.send({
+    to: WAITLIST_ADMIN_INBOX,
+    subject: `Beta-anmälan: ${signup.name}`,
+    text: waitlistAdminNotifyText(signup),
   });
 }

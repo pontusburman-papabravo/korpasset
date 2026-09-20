@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { AppError } from "../errors.js";
+import { EmailSendError, notifyWaitlistSignup } from "../services/email.js";
 import { countBetaWaitlist, saveInterestSignup } from "../services/interest.js";
 import {
   renderInterestFormError,
@@ -77,6 +78,15 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
       });
       if (!result) {
         return reply.redirect("/interest/tack");
+      }
+      try {
+        await notifyWaitlistSignup(result.signup, result.created);
+      } catch (error) {
+        if (error instanceof EmailSendError) {
+          request.log.error({ err: error }, "waitlist mailer failed");
+        } else {
+          request.log.error({ err: error }, "waitlist notify failed");
+        }
       }
       return reply.redirect("/interest/tack");
     } catch (error) {

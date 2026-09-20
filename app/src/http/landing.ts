@@ -78,7 +78,7 @@ export function renderInterestThanksPage(): string {
          <div class="site-inner site-inner--narrow">
            <p class="eyebrow">Betan</p>
            <h1>Tack — vi hör av oss.</h1>
-           <p class="lede">Din intresseanmälan är inne. Vi tar in familjer löpande och mejlar när det är dags — inte automatisk access.</p>
+           <p class="lede">Din intresseanmälan är inne. Vi skickar en bekräftelse till din mejladress, tar in familjer löpande och mejlar när det är dags — inte automatisk access.</p>
            <p><a class="btn-link" href="/">Tillbaka till startsidan</a></p>
          </div>
        </section>
