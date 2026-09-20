@@ -67,3 +67,4 @@ Inbjudan öppnas som Universal Link / App Link in i appen. Webbläsare som träf
 - [Onboarding & handoff](../product/onboarding-handoff.md)
 - [Data model](../domain/data-model.md)
 - [Kravspec FR-11](../kravspec.md)
+- [Apple Developer App ID](../operations/apple-developer.md) — `se.korpasset.app`, Sign in with Apple som Primary

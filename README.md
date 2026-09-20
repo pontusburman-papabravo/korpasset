@@ -38,6 +38,7 @@ v1 är strikt fokuserad på den praktiska privata övningskörningen.
 - [Database](docs/architecture/database.md)
 - [Production](docs/operations/production.md) — env, health, backup/restore
 - [VPS-access](docs/operations/vps-access.md) — korpasset.se host, Compose, redeploy
+- [Apple Developer](docs/operations/apple-developer.md) — App ID och SKU `se.korpasset.app`
 
 ### Beslut (ADR)
 

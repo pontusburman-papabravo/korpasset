@@ -22,6 +22,8 @@ Ingen `app.`-subdomän i första betan. Samma host förenklar cookies, QR, SMS o
 
 Invitationer byggs från `APP_BASE_URL`. Den **måste** vara `https://korpasset.se` i produktion — annars pekar QR mot localhost.
 
+iOS App ID `se.korpasset.app` (Sign in with Apple, Associated Domains): [apple-developer.md](apple-developer.md).
+
 ## Vad som måste sättas utanför repo
 
 | Variabel | Krav |

@@ -376,7 +376,7 @@ utan dubbletter. `archived`/`completed` räknas inte. Collaborator-access i v1 �
 | Identitet | `provider_subject` är Apple respektive Google `sub`. E-post är inte nyckel och används inte för auto-merge. |
 | Kanal | Bara iOS- och Android-appen. `korpasset.se` skapar inte produktkonton (intresseanmälan är waitlist, inte signup). |
 | Inte v1 | E-post + lösenord, magic link, OTP, passkey och publik webb-signup. |
-| App Store | Sign in with Apple krävs när Google erbjuds. Konto ska kunna raderas i appen. |
+| App Store | Sign in with Apple krävs när Google erbjuds. Konto ska kunna raderas i appen. Bundle ID `se.korpasset.app` ([Apple Developer](operations/apple-developer.md)). |
 | Undantag | Waitlist-admin är intern e-post+lösenord och inte ett användarkonto. |
 
 ---
@@ -900,7 +900,7 @@ Beta-ready kräver också:
 - användarvillkor,
 - kontakt/feedbackväg,
 - grundläggande error/crash-observability,
-- iOS-distribution via TestFlight,
+- iOS-distribution via TestFlight (App ID `se.korpasset.app`, [apple-developer.md](operations/apple-developer.md)),
 - Android-distribution via Google Play test track,
 - Sign in with Apple och Sign in with Google i appen.
 
