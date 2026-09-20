@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" rx="180" fill="#1A2B4C"/>
+  <g transform="translate(155,250) scale(2.45)">
+    <g id="korpasset-symbol-dark">
+      <rect x="34" y="68" width="150" height="78" rx="39" ry="39" fill="none" stroke="#FFFFFF" stroke-width="28" transform="rotate(-35 109 107)"/>
+      <rect x="34" y="68" width="150" height="78" rx="39" ry="39" fill="none" stroke="#1A2B4C" stroke-width="4" stroke-linecap="round" stroke-dasharray="12 10" transform="rotate(-35 109 107)"/>
+      <rect x="108" y="68" width="150" height="78" rx="39" ry="39" fill="none" stroke="#00C896" stroke-width="28" transform="rotate(35 183 107)"/>
+      <rect x="108" y="68" width="150" height="78" rx="39" ry="39" fill="none" stroke="#1A2B4C" stroke-width="4" stroke-linecap="round" stroke-dasharray="12 10" transform="rotate(35 183 107)"/>
+    </g>
+  </g>
+</svg>
