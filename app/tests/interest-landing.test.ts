@@ -120,8 +120,14 @@ describe("landing and interest waitlist", () => {
     const contact = await app.inject({ method: "GET", url: "/kontakt" });
     assert.equal(privacy.statusCode, 200);
     assert.match(privacy.body, /personuppgiftsansvarig/i);
+    assert.match(privacy.body, /Sign in with Apple/);
+    assert.match(privacy.body, /Sign in with Google/);
     assert.equal(terms.statusCode, 200);
     assert.match(terms.body, /gratis/i);
+    assert.match(terms.body, /Apple eller Google/);
+    assert.match(terms.body, /inte ett officiellt körkortsresultat/);
+    assert.doesNotMatch(terms.body, /uppkörningsklar/);
+    assert.doesNotMatch(terms.body, /visar inte påstådd uppkörningsberedskap i procent/);
     assert.equal(contact.statusCode, 200);
     assert.match(contact.body, /info@korpasset\.se/);
     assert.doesNotMatch(privacy.body, /fonts\.googleapis/);

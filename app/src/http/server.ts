@@ -15,6 +15,7 @@ import { registerMarketingRoutes } from "./marketing.js";
 import { registerResendWebhook } from "./resend-webhook.js";
 import { registerHelpRoutes } from "./help.js";
 import { registerAccountRoutes } from "./account.js";
+import { registerOAuthRoutes } from "./oauth.js";
 import { registerRoutes } from "./routes.js";
 
 function wantsJson(request: { headers: { accept?: string } }): boolean {
@@ -117,6 +118,7 @@ export async function buildServer() {
   });
 
   await registerResendWebhook(app);
+  await registerOAuthRoutes(app);
   await registerHelpRoutes(app);
   await registerAccountRoutes(app);
   await registerMarketingRoutes(app);
