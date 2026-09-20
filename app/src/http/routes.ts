@@ -661,6 +661,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
             `<h1>Körpasset är klart</h1>
              <p>Handledaren kan nu bedöma valda moment.</p>
              <a class="btn btn-secondary" href="/journey/${escapeHtml(journeyId)}">Tillbaka till resan</a>`,
+            { journeyId, role: access.role },
           ),
         );
       }
@@ -702,6 +703,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
              <p class="live-observe__safety">Notera hur det går när det är säkert. Kort anteckning är valfritt.</p>
              <ul class="live-observe__list">${focusList}</ul>
              ${endSection}`,
+            { journeyId, role: access.role },
           ),
         );
         return;
@@ -729,6 +731,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
            <p>Ni tränar på:</p>
            <ul class="focus-list">${focusList}</ul>
            ${endSection}`,
+          { journeyId, role: access.role },
         ),
       );
     } catch (error) {
@@ -853,6 +856,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
              ${ratingItems}
              ${primaryButton("Spara bedömning")}
            </form>`,
+          { journeyId, role: "supervisor" },
         ),
       );
     } catch (error) {
