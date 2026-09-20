@@ -48,17 +48,30 @@ Välj **Nej** tills APK:n faktiskt har inloggning, annars fastnar granskningen.
 Fyll inte i waitlist-admin där.
 
 Klistra in i **Annan information som krävs för åtkomst till appen**
-(engelska så granskaren förstår oavsett språk):
+(max 500 tecken, engelska):
 
 ```
-Sign in with the "Fortsätt med Google" (Continue with Google) button. Use the Google account from the username and password fields above (korpasset@gmail.com). The app has no in-app email or password form.
-
-No two-step verification, biometrics, membership, or location-based access is required. No QR code, barcode, or static URL is needed to open the app. Invitation QR codes appear only after login (student inviting a supervisor) and can be skipped.
-
-The first Google sign-in creates the review test account. No payment, promo codes, or guest-mode gate. Sign in with Apple is iOS-only and is not needed for this Android review.
-
-Do not use https://korpasset.se/admin — that is internal staff login (not a product account).
+Sign in with "Fortsätt med Google" using korpasset@gmail.com (fields above). No in-app password. No 2FA, biometrics, membership, location, or QR to open the app. Skip invitation QR. First login creates test data. No payment/codes. Apple is iOS-only. Do not use /admin (staff).
 ```
+
+## Innehållsklassificering (IARC, klart 2026-09-20)
+
+Kategori i frågeformuläret: **Alla andra apptyper** (inte spel). Körpasset
+har inget våld, sex, droger, gambling eller obehagligt språk. Spara de
+här betygen:
+
+| Territorium | Organisation | Betyg |
+| --- | --- | --- |
+| Brasilien | ClassInd | Alla åldrar |
+| Nordamerika | ESRB | Ingen åldersgräns |
+| Europa | PEGI | PEGI 3 |
+| Tyskland | USK | Alla åldrar |
+| Övriga världen | IARC Generic | 3-årsgräns |
+| Ryssland / Sydkorea | Google Play | 3-årsgräns |
+
+Sydkoreas GRAC-krav för 19+ **spel** gäller inte. App Store-motsvarigheten
+är 4+. Målgruppen är övningskörning (ofta 16+), men det är inte
+innehållsklassificeringen.
 
 ## Cursor Agent-secrets
 
