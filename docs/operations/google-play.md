@@ -42,10 +42,23 @@ Ingen ny Play-utvecklaravgift. Samma Papa Bravo-konto som My Starday. Skapa
 | Är någon del av appen begränsad? | **Ja** när Google-inloggning finns i APK:n, annars **Nej** |
 | Användarnamn | `korpasset@gmail.com` |
 | Lösenord | lösenordet till det Gmail-kontot (Cursor-secret, inte git) |
-| Extra instruktioner | `Logga in med Google. Använd kontot ovan. Första inloggningen skapar testdata. Ingen betalning, inga koder. Apple-inloggning finns bara på iOS.` |
+| Extra instruktioner | se rutan under |
 
 Välj **Nej** tills APK:n faktiskt har inloggning, annars fastnar granskningen.
 Fyll inte i waitlist-admin där.
+
+Klistra in i **Annan information som krävs för åtkomst till appen**
+(engelska så granskaren förstår oavsett språk):
+
+```
+Sign in with the "Fortsätt med Google" (Continue with Google) button. Use the Google account from the username and password fields above (korpasset@gmail.com). The app has no in-app email or password form.
+
+No two-step verification, biometrics, membership, or location-based access is required. No QR code, barcode, or static URL is needed to open the app. Invitation QR codes appear only after login (student inviting a supervisor) and can be skipped.
+
+The first Google sign-in creates the review test account. No payment, promo codes, or guest-mode gate. Sign in with Apple is iOS-only and is not needed for this Android review.
+
+Do not use https://korpasset.se/admin — that is internal staff login (not a product account).
+```
 
 ## Cursor Agent-secrets
 
