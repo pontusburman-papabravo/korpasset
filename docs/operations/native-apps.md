@@ -4,6 +4,22 @@ Körpasset är en native Capacitor-app som laddar `https://korpasset.se/app`. Pr
 
 Koden i [`native/`](../../native/) är skalet. iOS-arkivering görs på en Mac med Xcode. Android kan byggas i Android Studio.
 
+## Återanvänd My Starday-kontona
+
+Papa Bravo har redan Apple Developer, App Store Connect, Google Play Console och Google Cloud för **Min Stjärndag** (`se.mystarday.app`). Körpasset ska **inte** skapa nya betalda utvecklarprogram. Det är en andra app under samma team.
+
+| Återanvänd | Skapa nytt för Körpasset |
+| --- | --- |
+| Apple Developer-team (samma Team ID) | App ID `se.korpasset.app` |
+| App Store Connect-organisation | Ny app **Körpasset** |
+| Sign in with Apple på teamet | Sign in with Apple på Körpassets App ID |
+| Google Play Console-utvecklare | Ny app / nytt package `se.korpasset.app` |
+| Google Cloud-projekt (eller ett syskonprojekt) | Nya OAuth-klienter: Web, iOS, Android för Körpasset |
+
+Återanvänd **inte** My Stardays bundle id, client id eller Services ID. `aud` på identity token måste vara Körpassets egna klienter, annars avvisar servern inloggningen.
+
+My Starday har Apple på iOS och Google på Android. Körpasset ska ha **båda på båda** — App Store kräver Sign in with Apple när Google erbjuds.
+
 ## Vad som redan finns i servern
 
 | Yta | URL |
@@ -36,12 +52,12 @@ ANDROID_SHA256_CERT_FINGERPRINTS=<Play App signing SHA-256>
 
 Utan client-id svarar inloggningen 503. Waitlist fortsätter att fungera.
 
-## Apple (en gång)
+## Apple (en gång, samma team som My Starday)
 
-1. Apple Developer Program.
-2. App ID `se.korpasset.app` med Sign in with Apple och Associated Domains (`applinks:korpasset.se`).
-3. För Android-Apple: Services ID t.ex. `se.korpasset.app.android` med return URL `https://korpasset.se/app`.
-4. App Store Connect: app **Körpasset**, privacy policy `https://korpasset.se/integritet`, terms `https://korpasset.se/villkor`.
+1. Apple Developer → Identifiers → ny App ID `se.korpasset.app` med Sign in with Apple och Associated Domains (`applinks:korpasset.se`).
+2. Team ID är samma som på Min Stjärndag (10 tecken i Xcode eller Membership).
+3. För Apple-inloggning på Android: Services ID t.ex. `se.korpasset.app.android` med return URL `https://korpasset.se/app`.
+4. App Store Connect: ny app **Körpasset** (inte en ny version av Min Stjärndag). Privacy `https://korpasset.se/integritet`, villkor `https://korpasset.se/villkor`.
 5. Bygg på Mac:
 
 ```bash
@@ -56,12 +72,12 @@ I Xcode: team, associated domains, Sign in with Apple capability. Archive → Te
 
 Ikon: `app/public/brand/korpasset-social-1024.png` (1024×1024).
 
-## Google (en gång)
+## Google (en gång, samma Play-konto som My Starday)
 
-1. Google Play Console (engångsavgift) + Google Cloud-projekt.
-2. OAuth-klienter: Web, iOS (`se.korpasset.app`) och Android (`se.korpasset.app` + SHA-1 från Play App signing).
-3. Web-client-id är `aud` på id-token som servern verifierar. Sätt den i `GOOGLE_WEB_CLIENT_ID` och i Capacitor-init.
-4. SHA-256 från Play App signing in i `ANDROID_SHA256_CERT_FINGERPRINTS` (kolon-separerad hex). Redeploy så `assetlinks.json` stämmer.
+1. Play Console → skapa appen **Körpasset** (package `se.korpasset.app`). Ingen ny 25-dollarsavgift.
+2. I Google Cloud: tre OAuth-klienter för Körpasset — Web, iOS (`se.korpasset.app`) och Android (`se.korpasset.app` + SHA-1 från Play App signing för Körpasset, inte My Starday).
+3. Web-client-id är `aud` på id-token som servern verifierar. Sätt den i `GOOGLE_WEB_CLIENT_ID` och i Capacitor-init. Kopiera inte My Stardays `GOOGLE_WEB_CLIENT_ID`.
+4. SHA-256 från **Körpassets** Play App signing in i `ANDROID_SHA256_CERT_FINGERPRINTS` (kolon-separerad hex). Redeploy så `assetlinks.json` stämmer.
 5. Bygg:
 
 ```bash
