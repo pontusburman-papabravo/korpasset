@@ -234,7 +234,7 @@ Kraven nedan beskriver det kanoniska v1-flödet. Där vertical slice redan finns
 | --- | --- |
 | ID | FR-1 |
 | Aktör | Elev |
-| Status | Implementerat som namn+session i vertical slice; betakonto enligt ADR-008 |
+| Status | Implementerat som namn+session efter Apple/Google; `/onboarding` utan OAuth är utvecklingsfallback |
 | Beskrivning | En inloggad elev (Apple eller Google i appen) anger visningsnamn vid behov och får en `driving_journey` med `licence_type = B`. |
 | Session | Servern skapar eller återanvänder `user_id` från verifierad Apple/Google-identity. Identity skickas inte in som betrodd klientdata. |
 | Efter steg | Eleven landar på sin journey-sida och kan bjuda in handledare. |
@@ -361,7 +361,7 @@ utan dubbletter. `archived`/`completed` räknas inte. Collaborator-access i v1 �
 | --- | --- |
 | ID | FR-10 |
 | Aktör | Handledare |
-| Status | Specificerat, auth-providers inte byggda |
+| Status | Specificerat och implementerat i appen; claim av identity som redan hör till annan user returnerar 409 |
 | Beskrivning | Guest kan senare claima Apple eller Google i appen utan att byta `user_id`. |
 | Undantag | Claim av identity som redan hör till annan user är ett separat reconciliation-fall och ingår inte i första vertical slice. |
 
@@ -371,7 +371,7 @@ utan dubbletter. `archived`/`completed` räknas inte. Collaborator-access i v1 �
 | --- | --- |
 | ID | FR-11 |
 | Aktör | Elev eller handledare |
-| Status | Specificerat, inte byggt |
+| Status | Implementerat i appen (`/app`, `POST /api/auth/apple`, `POST /api/auth/google`). Store-utlägg kräver Apple/Google-developer-konton. |
 | Beskrivning | Det finns ingen separat registrering. Första lyckade Sign in with Apple eller Sign in with Google i appen skapar `users` (`account_state = active`) och en rad i `auth_identities`. Samma knapp är återkommande inloggning. |
 | Identitet | `provider_subject` är Apple respektive Google `sub`. E-post är inte nyckel och används inte för auto-merge. |
 | Kanal | Bara iOS- och Android-appen. `korpasset.se` skapar inte produktkonton (intresseanmälan är waitlist, inte signup). |
@@ -763,15 +763,15 @@ När en handledare är tombstoned:
 
 #### Implementation status (vertical slice v1)
 
-Fullständig kontoradering är **inte** ett produktflöde i vertical slice. Befintligt schema kan stödja handledar-tombstoning utan ny arkitektur eller ny migration:
+Kontoradering finns som produktflöde på `/konto` (skriv `RADERA`) och som privileged admin-flöde. Processen anropar `deleteProductAccount`:
 
-- `users.account_state` inkluderar redan `deleted` (oanvänd i produktkod före denna delta).
-- Hard `DELETE` av en handledare **blockeras** av default RESTRICT/NO ACTION på `drives.supervisor_user_id`, `drives.started_by_user_id`, `drive_observations.observer_user_id`, `journey_collaborators.user_id` och invitation-FK:er.
-- Hard `DELETE` av en elev **blockeras** av `driving_journeys.student_user_id` (RESTRICT). Om journeyn raderas först CASCADE:ar journey-barn (drives, observations, m.m.) — det är en privileged process, inte handledar-delete.
-- `observer_user_id` är nullable på kolumnnivå, men CHECK kräver värdet för `source_type` supervisor/student. SET NULL skulle alltså bryta constraint:et; tombstone ska **behålla** `user_id`.
-- Enda direkta identifieraren på `users` är `display_name`. E-post och provider-subject ligger i `auth_identities` (oanvänd i slice).
-- Sessioner är signerade cookies; det finns ingen session-tabell att återkalla mot.
-- Återstår som separat implementation: privileged delete-account-API, radering av `auth_identities`, nollning av `display_name`, `account_state = deleted`, collaborator `removed`, server-side session revoke, och historisk UI-etikett där observer-namn visas.
+- raderar `auth_identities`, nollar `display_name`, sätter `account_state = deleted`
+- raderar elevägda journeys (CASCADE av journey-barn)
+- tar bort handledaren från aktiv collaborator-status
+- behåller `user_id` på historiska drives/observations
+- rensar session-cookien (det finns ingen session-tabell att återkalla mot)
+
+Historisk UI-etikett **"Tidigare handledare"** för tombstonade namn är fortfarande separat.
 
 ---
 

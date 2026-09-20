@@ -4,7 +4,7 @@ export function privacyPage(): string {
   return renderLegalPage(
     "Integritetspolicy",
     `<h1>Integritetspolicy</h1>
-     <p>Senast uppdaterad: 17 september 2026.</p>
+     <p>Senast uppdaterad: 20 september 2026.</p>
      <p>Papa Bravo AB är personuppgiftsansvarig för Körpasset. Vi samlar in så lite som möjligt, säljer inte dina uppgifter och använder dem inte för riktad annonsmarknadsföring.</p>
 
      <h2>Intresseanmälan till betan</h2>
@@ -13,6 +13,7 @@ export function privacyPage(): string {
 
      <h2>När du använder produkten</h2>
      <p>Om du senare får tillgång till Körpasset behandlar vi det som behövs för körkortsresan: visningsnamn, session, inbjudningar, körpass, observationer och rekommendationer. Rättslig grund är att tillhandahålla tjänsten.</p>
+     <p>Produktkonton skapas i appen via Sign in with Apple eller Sign in with Google. Vi tar emot en identitetstoken från Apple eller Google, verifierar den på servern och lagrar provider samt deras användar-id (<code>sub</code>) — inte e-postadressen som inloggningsnyckel. Apple och Google är därmed mottagare av den inloggningsuppgift du väljer att använda. E-post som följer med från dem används inte för att slå ihop konton.</p>
      <p>Vi samlar inte in personnummer, GPS-spår eller hälsodata.</p>
 
      <h2>Lagring</h2>
@@ -31,11 +32,11 @@ export function termsPage(): string {
   return renderLegalPage(
     "Användarvillkor",
     `<h1>Användarvillkor</h1>
-     <p>Senast uppdaterad: 17 september 2026.</p>
+     <p>Senast uppdaterad: 20 september 2026.</p>
      <p>Körpasset är en digital tjänst för privat övningskörning mot svenskt B-körkort. Tjänsten tillhandahålls av Papa Bravo AB.</p>
 
      <h2>Beta</h2>
-     <p>Under den första betan är Körpasset gratis. En intresseanmälan ger inte automatiskt tillgång och är inte ett löfte om livstidsfri användning. Vi väljer in familjer löpande.</p>
+     <p>Under den första betan är Körpasset gratis. En intresseanmälan ger inte automatiskt tillgång och är inte ett löfte om livstidsfri användning. Vi väljer in familjer löpande. Produktkonton skapas i appen med Apple eller Google. Kontot kan raderas under Konto i appen.</p>
 
      <h2>Vad tjänsten är — och inte är</h2>
      <p>Körpasset hjälper elev och handledare att planera, följa upp och hålla ihop praktisk träning. Det är inte en teoriapp, inte en AI-trafiklärare, inte en trafikskoleportal och inte ett officiellt körkortsdokument. Körpasset är inte utvecklat av, anslutet till eller godkänt av Transportstyrelsen eller Trafikverket.</p>

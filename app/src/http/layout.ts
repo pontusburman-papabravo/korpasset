@@ -36,6 +36,12 @@ export function layout(title: string, body: string): string {
   <link rel="stylesheet" href="/app.css">
 </head>
 <body>
+  <header class="app-bar">
+    <a class="app-bar__brand" href="/app">Körpasset</a>
+    <nav class="app-bar__nav" aria-label="Konto">
+      <a href="/konto">Konto</a>
+    </nav>
+  </header>
   <main class="container">
     ${body}
   </main>

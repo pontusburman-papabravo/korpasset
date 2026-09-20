@@ -100,6 +100,8 @@ describe("landing and interest waitlist", () => {
     const contact = await app.inject({ method: "GET", url: "/kontakt" });
     assert.equal(privacy.statusCode, 200);
     assert.match(privacy.body, /personuppgiftsansvarig/i);
+    assert.match(privacy.body, /Sign in with Apple/);
+    assert.match(privacy.body, /Sign in with Google/);
     assert.equal(terms.statusCode, 200);
     assert.match(terms.body, /gratis/i);
     assert.equal(contact.statusCode, 200);

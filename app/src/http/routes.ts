@@ -45,6 +45,8 @@ import {
   errorBanner,
 } from "./layout.js";
 import { renderLandingPage } from "./landing.js";
+import { oauthButtons } from "./oauth.js";
+import { getReusableSessionUserId, getUserById } from "../services/users.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -91,13 +93,13 @@ function groupSkillsByArea(
   return groups;
 }
 
-function onboardingForm(errorMessage?: string): string {
+function onboardingForm(errorMessage?: string, name = ""): string {
   return `${errorMessage ? errorBanner(errorMessage) : ""}
          <h1>Vad heter du?</h1>
          <form method="post" action="/start" class="stack">
            <div>
              <label for="name">Namn</label>
-             <input id="name" name="name" type="text" required autocomplete="name" placeholder="Ditt namn">
+             <input id="name" name="name" type="text" required autocomplete="name" placeholder="Ditt namn" value="${escapeHtml(name)}">
            </div>
            ${primaryButton("Starta min körkortsresa")}
          </form>`;
@@ -135,9 +137,14 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     );
   });
 
-  app.get("/onboarding", async (_request, reply) => {
+  app.get("/onboarding", async (request, reply) => {
+    const sessionUserId = await getReusableSessionUserId(getSessionUserId(request));
+    const user = sessionUserId ? await getUserById(sessionUserId) : null;
     reply.type("text/html").send(
-      layout("Starta din körkortsresa", onboardingForm()),
+      layout(
+        "Starta din körkortsresa",
+        onboardingForm(undefined, user?.displayName ?? ""),
+      ),
     );
   });
 
@@ -312,17 +319,34 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       );
     }
 
+    const sessionUserId = await getReusableSessionUserId(getSessionUserId(request));
+    const sessionUser = sessionUserId ? await getUserById(sessionUserId) : null;
+    const sessionName = sessionUser?.displayName?.trim() ?? "";
+
     reply.type("text/html").send(
       layout(
         "Anslut som handledare",
         `<h1>Du ska övningsköra med ${escapeHtml(invitation.studentName)}</h1>
-         <form method="post" action="/invite/${escapeHtml(token)}/accept" class="stack">
-           <div>
-             <label for="name">Vad heter du?</label>
-             <input id="name" name="name" type="text" required autocomplete="name" placeholder="Ditt namn">
-           </div>
-           ${primaryButton("Anslut")}
-         </form>`,
+         ${
+           sessionUser && sessionName
+             ? `<form method="post" action="/invite/${escapeHtml(token)}/accept" class="stack">
+                  <input type="hidden" name="name" value="${escapeHtml(sessionName)}">
+                  <p>Du ansluter som ${escapeHtml(sessionName)}.</p>
+                  ${primaryButton("Anslut")}
+                </form>`
+             : `<form method="post" action="/invite/${escapeHtml(token)}/accept" class="stack">
+                  <div>
+                    <label for="name">Vad heter du?</label>
+                    <input id="name" name="name" type="text" required autocomplete="name" placeholder="Ditt namn" value="${escapeHtml(sessionName)}">
+                  </div>
+                  ${primaryButton(sessionUser ? "Anslut" : "Anslut som gäst")}
+                </form>
+                ${sessionUser ? "" : `<p class="muted">Gäst är inte ett konto. Du kan fortsätta med Apple eller Google nu eller senare.</p>`}`
+         }
+         ${oauthButtons({
+           returnTo: `/invite/${token}`,
+           lead: "Fortsätt med Apple eller Google i appen, eller anslut som gäst.",
+         })}`,
       ),
     );
   });
@@ -330,7 +354,12 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
   app.post("/invite/:token/accept", async (request, reply) => {
     const { token } = request.params as { token: string };
     const body = request.body as { name?: string };
-    const name = body.name?.trim();
+    const sessionUserId = getSessionUserId(request);
+    let name = body.name?.trim() ?? "";
+    if (!name && sessionUserId) {
+      const user = await getUserById(sessionUserId);
+      name = user?.displayName?.trim() ?? "";
+    }
 
     if (!name) {
       return reply.status(400).type("text/html").send(
