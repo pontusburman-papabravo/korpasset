@@ -208,7 +208,9 @@ describe("beta UX HTTP", () => {
     const invitation = await createInvitation(journey.id, studentId);
     const supervisor = await acceptInvitation(invitation.token, "Pappa", null);
     const skills = await getPool().query(
-      `SELECT id, skill_key FROM skills ORDER BY skill_key LIMIT 2`,
+      `SELECT id, skill_key FROM skills
+       WHERE skill_key IN ('positioning_lane_change', 'observation_signaling')
+       ORDER BY skill_key`,
     );
     const skillIds = skills.rows.map((row) => row.id as string);
     const { drive } = await createDriveWithFocus(journey.id, studentId, skillIds);
@@ -221,20 +223,27 @@ describe("beta UX HTTP", () => {
     assert.equal(supervisorDrive.statusCode, 200);
     assert.match(supervisorDrive.body, /Körpass pågår/);
     assert.match(supervisorDrive.body, /Notera hur det går när det är säkert/);
+    assert.match(supervisorDrive.body, /Steg att öva/);
+    assert.match(supervisorDrive.body, /Spegel/);
+    assert.match(supervisorDrive.body, /Blinkers/);
+    assert.match(supervisorDrive.body, /type="checkbox"/);
     assert.match(supervisorDrive.body, /Kort anteckning/);
     assert.match(
       supervisorDrive.body,
       new RegExp(`/journey/${journey.id}/drive/${drive.id}/observe`),
     );
 
+    const laneChange = skills.rows.find((row) => row.skill_key === "positioning_lane_change");
+    assert.ok(laneChange);
     const observed = await injectWithSession(app, session(supervisor.userId), {
       method: "POST",
       url: `/journey/${journey.id}/drive/${drive.id}/observe`,
       headers: { "content-type": "application/x-www-form-urlencoded" },
       payload: formBody({
-        skill_id: skillIds[0],
+        skill_id: String(laneChange.id),
         assessment: "needs_help",
         note: "Stannade för sent vid övergångsstället",
+        completed_steps: ["mirror", "signal"],
       }),
     });
     assert.equal(observed.statusCode, 302);
@@ -246,6 +255,8 @@ describe("beta UX HTTP", () => {
     });
     assert.match(studentDrive.body, /Behöver hjälp/);
     assert.match(studentDrive.body, /Stannade för sent vid övergångsstället/);
+    assert.match(studentDrive.body, /Spegel/);
+    assert.match(studentDrive.body, /Blinkers/);
 
     await endDrive(journey.id, drive.id, studentId);
     const recap = await injectWithSession(app, session(studentId), {

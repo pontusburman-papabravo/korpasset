@@ -59,6 +59,10 @@ import {
 } from "./layout.js";
 import { renderDevelopmentPage, renderJourneyHome } from "./journey-pages.js";
 import { renderLandingPage } from "./landing.js";
+import {
+  coachingStepsForSkillKey,
+  parseFormStringList,
+} from "../domain/coaching-steps.js";
 
 function handleError(error: unknown): { status: number; message: string } {
   if (error instanceof AppError) {
@@ -84,11 +88,47 @@ function renderLiveAssessmentButton(level: AssessmentLevel): string {
   >${escapeHtml(display.label)}</button>`;
 }
 
+function renderCoachingStepChecklist(options: {
+  skillKey: string;
+  fieldName: string;
+  completedStepKeys?: string[];
+  readOnly?: boolean;
+}): string {
+  const steps = coachingStepsForSkillKey(options.skillKey);
+  if (steps.length === 0) return "";
+  const done = new Set(options.completedStepKeys ?? []);
+  const items = steps
+    .map((step) => {
+      if (options.readOnly) {
+        return `<li class="coaching-steps__item${done.has(step.key) ? " coaching-steps__item--done" : ""}">
+          <span aria-hidden="true">${done.has(step.key) ? "☑" : "☐"}</span>
+          ${escapeHtml(step.label)}
+        </li>`;
+      }
+      const checked = done.has(step.key) ? " checked" : "";
+      return `<li class="coaching-steps__item">
+        <label>
+          <input type="checkbox" name="${escapeHtml(options.fieldName)}" value="${escapeHtml(step.key)}"${checked}>
+          ${escapeHtml(step.label)}
+        </label>
+      </li>`;
+    })
+    .join("");
+  return `<fieldset class="coaching-steps">
+    <legend>Steg att öva</legend>
+    <ol class="coaching-steps__list">${items}</ol>
+  </fieldset>`;
+}
+
 function renderSupervisorLiveFocusRow(
   journeyId: string,
   driveId: string,
-  skill: { skillId: string; title: string },
-  latest: { assessment: AssessmentLevel; note: string | null } | null,
+  skill: { skillId: string; skillKey: string; title: string },
+  latest: {
+    assessment: AssessmentLevel;
+    note: string | null;
+    completedStepKeys: string[];
+  } | null,
 ): string {
   const statusHtml = latest
     ? `<p class="live-observe__status">
@@ -105,6 +145,11 @@ function renderSupervisorLiveFocusRow(
     </div>
     <form method="post" action="/journey/${escapeHtml(journeyId)}/drive/${escapeHtml(driveId)}/observe" class="live-observe__form">
       <input type="hidden" name="skill_id" value="${escapeHtml(skill.skillId)}">
+      ${renderCoachingStepChecklist({
+        skillKey: skill.skillKey,
+        fieldName: "completed_steps",
+        completedStepKeys: latest?.completedStepKeys,
+      })}
       <label for="note-${escapeHtml(skill.skillId)}">Kort anteckning <span class="muted">(valfritt)</span></label>
       <textarea id="note-${escapeHtml(skill.skillId)}" name="note" rows="2" maxlength="280" placeholder="T.ex. stannade för sent vid övergångsstället">${latest?.note ? escapeHtml(latest.note) : ""}</textarea>
       <div class="live-observe__choices">
@@ -118,6 +163,8 @@ function renderReadOnlyObservedSkill(
   title: string,
   assessment: AssessmentLevel,
   note?: string | null,
+  skillKey?: string,
+  completedStepKeys?: string[],
 ): string {
   const display = ASSESSMENT_DISPLAY[assessment];
   return `<div class="rating-item rating-item--observed">
@@ -126,6 +173,16 @@ function renderReadOnlyObservedSkill(
       <span class="drive-recap-signal" aria-hidden="true">${display.signal}</span>
       <span>${escapeHtml(display.label)}</span>
     </p>
+    ${
+      skillKey
+        ? renderCoachingStepChecklist({
+            skillKey,
+            fieldName: "completed_steps",
+            completedStepKeys,
+            readOnly: true,
+          })
+        : ""
+    }
     ${note ? `<p class="live-observe__note">${escapeHtml(note)}</p>` : ""}
   </div>`;
 }
@@ -700,7 +757,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
           layout(
             "Körpass",
             `<h1>Körpass pågår</h1>
-             <p class="live-observe__safety">Notera hur det går när det är säkert. Kort anteckning är valfritt.</p>
+             <p class="live-observe__safety">Notera hur det går när det är säkert. Bocka av steg ni övat — bedömningen är fortfarande läget. Stegen är träningsstöd från kursplan och körprov, inte ett officiellt resultat. Kort anteckning är valfritt.</p>
              <ul class="live-observe__list">${focusList}</ul>
              ${endSection}`,
             { journeyId, role: access.role },
@@ -717,8 +774,18 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
             ${
               latest
                 ? `<span class="muted"> · ${escapeHtml(ASSESSMENT_DISPLAY[latest.assessment].label)}</span>
+                   ${renderCoachingStepChecklist({
+                     skillKey: skill.skillKey,
+                     fieldName: "completed_steps",
+                     completedStepKeys: latest.completedStepKeys,
+                     readOnly: true,
+                   })}
                    ${latest.note ? `<p class="live-observe__note">${escapeHtml(latest.note)}</p>` : ""}`
-                : ""
+                : renderCoachingStepChecklist({
+                    skillKey: skill.skillKey,
+                    fieldName: "completed_steps",
+                    readOnly: true,
+                  })
             }
           </li>`;
         })
@@ -778,13 +845,19 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       driveId: string;
     };
     const observerUserId = requireSessionUserId(request);
-    const body = request.body as { skill_id?: string; assessment?: string; note?: string };
+    const body = request.body as {
+      skill_id?: string;
+      assessment?: string;
+      note?: string;
+      completed_steps?: string | string[];
+    };
 
     try {
       await addLiveObservation(journeyId, driveId, observerUserId, {
         skillId: body.skill_id ?? "",
         assessment: body.assessment as AssessmentLevel,
         note: body.note,
+        completedStepKeys: parseFormStringList(body.completed_steps),
       });
       return reply.redirect(`/journey/${journeyId}/drive/${driveId}`);
     } catch (error) {
@@ -829,10 +902,20 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         .map((skill) => {
           const latest = latestMap.get(skill.skillId);
           if (latest && !missingSet.has(skill.skillId)) {
-            return renderReadOnlyObservedSkill(skill.title, latest.assessment, latest.note);
+            return renderReadOnlyObservedSkill(
+              skill.title,
+              latest.assessment,
+              latest.note,
+              skill.skillKey,
+              latest.completedStepKeys,
+            );
           }
           return `<div class="rating-item">
             <h3>${escapeHtml(skill.title)}</h3>
+            ${renderCoachingStepChecklist({
+              skillKey: skill.skillKey,
+              fieldName: `completed_steps_${skill.skillId}`,
+            })}
             <div class="rating-buttons">
               ${RATING_LEVELS.map((level) => renderRatingOption(skill.skillId, level)).join("")}
             </div>
@@ -845,7 +928,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
 
       const intro = hasPartialObservations
         ? "<p>Komplettera de moment som saknar bedömning.</p>"
-        : "<p>Handledaren bedömer valda moment. Kort anteckning är valfritt.</p>";
+        : "<p>Handledaren bedömer valda moment. Bocka av steg ni övat. Kort anteckning är valfritt.</p>";
 
       reply.type("text/html").send(
         layout(
@@ -889,6 +972,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         skillId,
         assessment,
         note: typeof note === "string" ? note : null,
+        completedStepKeys: parseFormStringList(body[`completed_steps_${skillId}`]),
       };
     });
 
@@ -947,6 +1031,12 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
                    <span class="drive-recap-copy">
                      <span class="drive-recap-title">${escapeHtml(item.title)}</span>
                      <span class="drive-recap-label">${escapeHtml(display.label)}</span>
+                     ${renderCoachingStepChecklist({
+                       skillKey: item.skillKey,
+                       fieldName: "completed_steps",
+                       completedStepKeys: item.completedStepKeys,
+                       readOnly: true,
+                     })}
                      ${item.note ? `<span class="live-observe__note">${escapeHtml(item.note)}</span>` : ""}
                    </span>
                  </li>`;

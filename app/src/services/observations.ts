@@ -1,6 +1,7 @@
 import type pg from "pg";
 import { AppError } from "../errors.js";
 import { getPool, withTransaction } from "../db/pool.js";
+import { normalizeCompletedStepKeys } from "../domain/coaching-steps.js";
 import { assertDriveSupervisorForObservation } from "./drives.js";
 import { listActiveSupervisors } from "./journeys.js";
 import {
@@ -49,22 +50,27 @@ const NON_SUPERSEDED_CLAUSE = `
 
 export interface DriveObservationRecap {
   skillId: string;
+  skillKey: string;
   title: string;
   assessment: AssessmentLevel;
   note: string | null;
+  completedStepKeys: string[];
 }
 
 export interface LatestDriveObservation {
   skillId: string;
+  skillKey: string;
   title: string;
   assessment: AssessmentLevel;
   note: string | null;
+  completedStepKeys: string[];
 }
 
 export interface ObservationInput {
   skillId: string;
   assessment: AssessmentLevel;
   note?: string | null;
+  completedStepKeys?: string[];
 }
 
 type Queryable = Pick<pg.Pool, "query"> | pg.PoolClient;
@@ -133,6 +139,19 @@ function validateObservationPayload(
   }
 }
 
+async function skillKeyById(
+  client: Queryable,
+  skillId: string,
+): Promise<string> {
+  const result = await client.query(`SELECT skill_key FROM skills WHERE id = $1`, [
+    skillId,
+  ]);
+  if (result.rowCount === 0) {
+    throw new AppError("Unknown skill", 400);
+  }
+  return String(result.rows[0].skill_key);
+}
+
 async function insertSupervisorObservations(
   client: pg.PoolClient,
   journeyId: string,
@@ -141,12 +160,17 @@ async function insertSupervisorObservations(
   observations: ObservationInput[],
 ): Promise<void> {
   for (const obs of observations) {
+    const skillKey = await skillKeyById(client, obs.skillId);
+    const completedStepKeys = normalizeCompletedStepKeys(
+      skillKey,
+      obs.completedStepKeys,
+    );
     await client.query(
       `INSERT INTO drive_observations (
          journey_id, drive_id, skill_id, observer_user_id,
-         source_type, assessment, note
+         source_type, assessment, note, completed_step_keys
        )
-       VALUES ($1, $2, $3, $4, 'supervisor', $5, $6)`,
+       VALUES ($1, $2, $3, $4, 'supervisor', $5, $6, $7)`,
       [
         journeyId,
         driveId,
@@ -154,6 +178,7 @@ async function insertSupervisorObservations(
         observerUserId,
         obs.assessment,
         normalizeNote(obs.note),
+        completedStepKeys,
       ],
     );
   }
@@ -203,8 +228,10 @@ export async function getLatestDriveObservationsBySkill(
   const db = client ?? getPool();
   const result = await db.query(
     `SELECT DISTINCT ON (o.skill_id)
-            o.skill_id, o.assessment, o.note, sd.title, sd.sort_order
+            o.skill_id, s.skill_key, o.assessment, o.note, o.completed_step_keys,
+            sd.title, sd.sort_order
      FROM drive_observations o
+     JOIN skills s ON s.id = o.skill_id
      JOIN skill_definitions sd ON sd.skill_id = o.skill_id AND sd.taxonomy_version = 1
      WHERE o.journey_id = $1
        AND o.drive_id = $2
@@ -218,9 +245,13 @@ export async function getLatestDriveObservationsBySkill(
     .sort((a, b) => Number(a.sort_order) - Number(b.sort_order))
     .map((row) => ({
       skillId: String(row.skill_id),
+      skillKey: String(row.skill_key),
       title: String(row.title),
       assessment: row.assessment as AssessmentLevel,
       note: row.note == null ? null : String(row.note),
+      completedStepKeys: Array.isArray(row.completed_step_keys)
+        ? row.completed_step_keys.map((key: string) => String(key))
+        : [],
     }));
 }
 
@@ -287,13 +318,27 @@ export async function addLiveObservation(
       throw new AppError("Observation skill must be part of drive focus");
     }
 
+    const skillKey = await skillKeyById(client, input.skillId);
+    const completedStepKeys = normalizeCompletedStepKeys(
+      skillKey,
+      input.completedStepKeys,
+    );
+
     await client.query(
       `INSERT INTO drive_observations (
          journey_id, drive_id, skill_id, observer_user_id,
-         source_type, assessment, note
+         source_type, assessment, note, completed_step_keys
        )
-       VALUES ($1, $2, $3, $4, 'supervisor', $5, $6)`,
-      [journeyId, driveId, input.skillId, observerUserId, input.assessment, note],
+       VALUES ($1, $2, $3, $4, 'supervisor', $5, $6, $7)`,
+      [
+        journeyId,
+        driveId,
+        input.skillId,
+        observerUserId,
+        input.assessment,
+        note,
+        completedStepKeys,
+      ],
     );
   });
 }
