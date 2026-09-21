@@ -13,7 +13,7 @@ Ett origin:
 | `https://korpasset.se` | Landning + intresseanmälan. Skapar **inte** produktkonto. |
 | `https://korpasset.se/onboarding` | Slice-fallback för att skapa elevresa. Inte betans kontomodell. |
 | `https://korpasset.se/invite/<token>` | Canonical invitation-länk; i beta öppnas den i appen |
-| `https://korpasset.se/integritet` `/villkor` `/kontakt` | Legal |
+| `https://korpasset.se/integritet` `/villkor` `/kontakt` `/radera-konto` | Legal. `/radera-konto` är Play Consoles länk för kontoradering |
 | `https://korpasset.se/admin` | Waitlist-admin (e-post + lösenord, skapas med `admin:create`) |
 | `https://korpasset.se/health` | Health, ingen auth |
 | `https://korpasset.se/api/resend/webhook` | Resend-händelser (Svix-signatur, ingen användar-auth) |

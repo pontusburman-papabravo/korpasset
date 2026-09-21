@@ -242,6 +242,7 @@ export function siteFooter(): string {
         <a href="/integritet">Integritet</a>
         <a href="/villkor">Villkor</a>
         <a href="/kontakt">Kontakt</a>
+        <a href="/radera-konto">Radera konto</a>
         <a href="mailto:info@korpasset.se">info@korpasset.se</a>
       </div>
       <p class="muted">Körpasset är en fristående tjänst från Papa Bravo AB. Inte utvecklad av, ansluten till eller godkänd av Transportstyrelsen eller Trafikverket.</p>

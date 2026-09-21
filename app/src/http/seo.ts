@@ -33,6 +33,11 @@ export const PUBLIC_INDEX_PAGES = [
     priority: "0.4",
     changefreq: "yearly",
   },
+  {
+    path: "/radera-konto",
+    priority: "0.4",
+    changefreq: "yearly",
+  },
 ] as const;
 
 const ROBOTS_DISALLOW = [
