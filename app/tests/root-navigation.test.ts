@@ -263,6 +263,10 @@ describe("root navigation (GET /)", () => {
     assert.equal(onboarding.statusCode, 200);
     assert.match(onboarding.body, /Vad heter du/);
     assert.match(onboarding.body, /Starta min körkortsresa/);
+    assert.match(
+      onboarding.body,
+      /viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/,
+    );
     await app.close();
   });
 
