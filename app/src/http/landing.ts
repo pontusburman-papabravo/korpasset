@@ -1,5 +1,10 @@
 import { BETA_COHORT_SIZE, type InterestRole } from "../services/interest.js";
 import { BRAND_ASSETS, escapeHtml, errorBanner, primaryButton, siteLayout } from "./layout.js";
+import {
+  publicPageJsonLd,
+  SITE_DESCRIPTION,
+  type FaqItem,
+} from "./seo.js";
 
 const BRAND_TAGLINE = "ÖVNING IDAG. FRIHET IMORGON.";
 
@@ -27,12 +32,51 @@ export const TRANSPORTSTYRELSEN_LINKS = {
     "https://www.transportstyrelsen.se/sv/vagtrafik/korkort/ta-korkort/valj-behorighet/personbil-och-latt-lastbil/b-personbil-och-latt-lastbil/",
 } as const;
 
-const LANDING_DESCRIPTION =
-  "Körpasset hjälper elev och handledare att se vad som är bra att öva på nästa gång — även när flera turas om. Gratis beta för B-körkort.";
+const LANDING_DESCRIPTION = SITE_DESCRIPTION;
+const LANDING_DOCUMENT_TITLE = "Körpasset – övningskör med en plan";
 
 function tsLink(href: string, label: string): string {
   return `<a href="${escapeHtml(href)}" rel="noopener noreferrer" target="_blank">${escapeHtml(label)}</a>`;
 }
+
+const LANDING_FAQ: Array<FaqItem & { answerHtml?: string }> = [
+  {
+    question: "Vad är Körpasset?",
+    answer:
+      "Ett enkelt stöd för privat övningskörning. Elev och handledare håller koll på vad ni har tränat på, dokumenterar körpassen och ser utvecklingen över tid.",
+  },
+  {
+    question: "Vem kan bli betatestare?",
+    answer:
+      "Elever, handledare och föräldrar som övningskör privat mot B-körkort. En anmälan ger inte automatisk access — vi tar in familjer löpande.",
+  },
+  {
+    question: "Kostar betan något?",
+    answer:
+      "Nej. Körpasset är gratis under betan. En anmälan är inget löfte om livstidsfri användning, och betalning införs inte via den här sidan.",
+  },
+  {
+    question: "Kan jag ha flera handledare?",
+    answer:
+      "Ja. Mamma och pappa, ett syskon eller någon annan godkänd handledare. Samma elevresa, gemensam historik. Nästa körpass kan fortsätta där det förra slutade.",
+  },
+  {
+    question: "Vi har redan övningskört ett tag — är det för sent?",
+    answer:
+      "Nej. Många som skriver upp sig har kört i månader. Körpasset hjälper er välja nästa fokus, inte bara första lektionen.",
+  },
+  {
+    question: "Ersätter Körpasset en trafikskola?",
+    answer:
+      "Nej. Körpasset ersätter inte trafikskola, bedömer inte om eleven är redo för uppkörning och garanterar inte körkort. Det är ett stöd för att hålla ihop den privata träningen.",
+  },
+  {
+    question: "Var hittar jag de officiella reglerna för privat övningskörning?",
+    answer:
+      "Hos Transportstyrelsen. Börja med sidorna Övningsköra och Handledare. Körpasset är inte Transportstyrelsens tjänst.",
+    answerHtml: `Hos Transportstyrelsen. Börja med ${tsLink(TRANSPORTSTYRELSEN_LINKS.ovningskora, "Övningsköra")} och ${tsLink(TRANSPORTSTYRELSEN_LINKS.handledare, "Handledare")}. Körpasset är inte Transportstyrelsens tjänst.`,
+  },
+];
 
 export function renderLandingPage(options: {
   errorMessage?: string;
@@ -65,7 +109,18 @@ export function renderLandingPage(options: {
        ${interestSection(formError, values, betaFilled)}
      </main>
      ${siteFooter()}`,
-    { description: LANDING_DESCRIPTION, path: "/" },
+    {
+      description: LANDING_DESCRIPTION,
+      path: "/",
+      documentTitle: LANDING_DOCUMENT_TITLE,
+      jsonLd: publicPageJsonLd({
+        path: "/",
+        title: LANDING_DOCUMENT_TITLE,
+        description: LANDING_DESCRIPTION,
+        faq: LANDING_FAQ,
+        includeApp: true,
+      }),
+    },
   );
 }
 
@@ -87,11 +142,19 @@ export function renderInterestThanksPage(): string {
     {
       description: "Tack för din intresseanmälan till Körpassets beta.",
       path: "/interest/tack",
+      robots: "noindex, follow",
     },
   );
 }
 
-export function renderLegalPage(title: string, body: string, path = "/"): string {
+export function renderLegalPage(
+  title: string,
+  body: string,
+  path = "/",
+  description?: string,
+): string {
+  const pageDescription = description ?? SITE_DESCRIPTION;
+  const documentTitle = `${title} · Körpasset`;
   return siteLayout(
     title,
     `${siteHeader()}
@@ -103,7 +166,15 @@ export function renderLegalPage(title: string, body: string, path = "/"): string
        </article>
      </main>
      ${siteFooter()}`,
-    { path },
+    {
+      path,
+      description: pageDescription,
+      jsonLd: publicPageJsonLd({
+        path,
+        title: documentTitle,
+        description: pageDescription,
+      }),
+    },
   );
 }
 
@@ -185,13 +256,13 @@ function hero(): string {
 function trafficPhotos(): string {
   return `<section class="photo-strip" aria-label="Svensk övningskörning">
     <figure>
-      <img src="/images/landing/residential-street.jpg" width="1280" height="720" alt="Elev och handledare övningskör i sommarkväll" decoding="async">
+      <img src="/images/landing/residential-street.jpg" width="1280" height="720" alt="Elev och handledare övningskör i sommarkväll" decoding="async" loading="lazy">
     </figure>
     <figure>
-      <img src="/images/landing/roundabout.jpg" width="1280" height="720" alt="Bil i en solig rondell i svenskt villaområde" decoding="async">
+      <img src="/images/landing/roundabout.jpg" width="1280" height="720" alt="Bil i en solig rondell i svenskt villaområde" decoding="async" loading="lazy">
     </figure>
     <figure>
-      <img src="/images/landing/country-road.jpg" width="1280" height="720" alt="Bil på öppen landsväg i kvällssol" decoding="async">
+      <img src="/images/landing/country-road.jpg" width="1280" height="720" alt="Bil på öppen landsväg i kvällssol" decoding="async" loading="lazy">
     </figure>
   </section>`;
 }
@@ -319,39 +390,21 @@ function officialRules(): string {
 }
 
 function faq(): string {
+  const items = LANDING_FAQ.map((item, index) => {
+    const open = index === 0 ? " open" : "";
+    const body = item.answerHtml ?? escapeHtml(item.answer);
+    return `<details${open}>
+          <summary>${escapeHtml(item.question)}</summary>
+          <p>${body}</p>
+        </details>`;
+  }).join("");
+
   return `<section class="site-section site-section--cream" id="fragor">
     <div class="site-inner site-inner--narrow">
       <p class="eyebrow">Vanliga frågor</p>
       <h2>Innan ni anmäler er</h2>
       <div class="faq">
-        <details open>
-          <summary>Vad är Körpasset?</summary>
-          <p>Ett enkelt stöd för privat övningskörning. Elev och handledare håller koll på vad ni har tränat på, dokumenterar körpassen och ser utvecklingen över tid.</p>
-        </details>
-        <details>
-          <summary>Vem kan bli betatestare?</summary>
-          <p>Elever, handledare och föräldrar som övningskör privat mot B-körkort. En anmälan ger inte automatisk access — vi tar in familjer löpande.</p>
-        </details>
-        <details>
-          <summary>Kostar betan något?</summary>
-          <p>Nej. Körpasset är gratis under betan. En anmälan är inget löfte om livstidsfri användning, och betalning införs inte via den här sidan.</p>
-        </details>
-        <details>
-          <summary>Kan jag ha flera handledare?</summary>
-          <p>Ja. Mamma och pappa, ett syskon eller någon annan godkänd handledare. Samma elevresa, gemensam historik. Nästa körpass kan fortsätta där det förra slutade.</p>
-        </details>
-        <details>
-          <summary>Vi har redan övningskört ett tag — är det för sent?</summary>
-          <p>Nej. Många som skriver upp sig har kört i månader. Körpasset hjälper er välja nästa fokus, inte bara första lektionen.</p>
-        </details>
-        <details>
-          <summary>Ersätter Körpasset en trafikskola?</summary>
-          <p>Nej. Körpasset ersätter inte trafikskola, bedömer inte om eleven är redo för uppkörning och garanterar inte körkort. Det är ett stöd för att hålla ihop den privata träningen.</p>
-        </details>
-        <details>
-          <summary>Var hittar jag de officiella reglerna för privat övningskörning?</summary>
-          <p>Hos Transportstyrelsen. Börja med ${tsLink(TRANSPORTSTYRELSEN_LINKS.ovningskora, "Övningsköra")} och ${tsLink(TRANSPORTSTYRELSEN_LINKS.handledare, "Handledare")}. Körpasset är inte Transportstyrelsens tjänst.</p>
-        </details>
+        ${items}
       </div>
     </div>
   </section>`;

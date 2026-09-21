@@ -71,6 +71,7 @@ describe("landing and interest waitlist", () => {
     assert.match(response.body, /property="og:image"[^>]*korpasset-og-1200x630\.png/);
     assert.match(response.body, /property="og:url"[^>]*http:\/\/localhost:3000\//);
     assert.match(response.body, /property="og:type" content="website"/);
+    assert.match(response.body, /<link rel="canonical" href="http:\/\/localhost:3000\/">/);
 
     const logo = await app.inject({ method: "GET", url: "/brand/korpasset-logo.svg" });
     const favicon = await app.inject({ method: "GET", url: "/brand/favicon.svg" });

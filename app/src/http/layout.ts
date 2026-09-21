@@ -1,8 +1,10 @@
 import { config } from "../config.js";
+import { jsonLdScript, SITE_DESCRIPTION, SITE_NAME, SITE_THEME_COLOR } from "./seo.js";
 
 export const BRAND_ASSETS = {
   logo: "/brand/korpasset-logo.svg",
   favicon: "/brand/favicon.svg",
+  appleTouchIcon: "/brand/korpasset-social-1024.png",
   ogImage: "/brand/korpasset-og-1200x630.png",
 } as const;
 
@@ -52,6 +54,7 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)} · Körpasset</title>
+  <meta name="robots" content="noindex, nofollow">
   ${faviconLink()}
   <link rel="stylesheet" href="/app.css">
 </head>
@@ -127,17 +130,24 @@ export function invitationAlreadyUsedPage(studentName: string): string {
 export function siteLayout(
   title: string,
   body: string,
-  options: { description?: string; extraCss?: string[]; path?: string } = {},
+  options: {
+    description?: string;
+    extraCss?: string[];
+    path?: string;
+    documentTitle?: string;
+    robots?: string;
+    jsonLd?: unknown;
+  } = {},
 ): string {
-  const description =
-    options.description ??
-    "Övningskör med en plan. Körpasset hjälper elev och handledare att välja dagens fokus, följa upp på några sekunder och hålla ihop träningen mellan flera handledare.";
+  const description = options.description ?? SITE_DESCRIPTION;
   const extraCss = (options.extraCss ?? [])
     .map((href) => `<link rel="stylesheet" href="${escapeHtml(href)}">`)
     .join("\n  ");
-  const pageTitle = `${title} · Körpasset`;
+  const pageTitle = options.documentTitle ?? `${title} · ${SITE_NAME}`;
   const canonicalUrl = publicUrl(options.path ?? "/");
   const imageUrl = publicUrl(BRAND_ASSETS.ogImage);
+  const robots = options.robots ?? "index, follow";
+  const structuredData = options.jsonLd ? `\n  ${jsonLdScript(options.jsonLd)}` : "";
 
   return `<!DOCTYPE html>
 <html lang="sv">
@@ -146,14 +156,29 @@ export function siteLayout(
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(pageTitle)}</title>
   <meta name="description" content="${escapeHtml(description)}">
+  <meta name="robots" content="${escapeHtml(robots)}">
+  <link rel="canonical" href="${escapeHtml(canonicalUrl)}">
+  <link rel="alternate" hreflang="sv" href="${escapeHtml(canonicalUrl)}">
+  <link rel="alternate" hreflang="x-default" href="${escapeHtml(canonicalUrl)}">
   ${faviconLink()}
+  <link rel="apple-touch-icon" href="${BRAND_ASSETS.appleTouchIcon}">
+  <meta name="theme-color" content="${SITE_THEME_COLOR}">
+  <meta property="og:site_name" content="${SITE_NAME}">
+  <meta property="og:locale" content="sv_SE">
   <meta property="og:title" content="${escapeHtml(pageTitle)}">
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:image" content="${escapeHtml(imageUrl)}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="${escapeHtml(`${SITE_NAME} – övningskör med en plan`)}">
   <meta property="og:url" content="${escapeHtml(canonicalUrl)}">
   <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escapeHtml(pageTitle)}">
+  <meta name="twitter:description" content="${escapeHtml(description)}">
+  <meta name="twitter:image" content="${escapeHtml(imageUrl)}">
   <link rel="stylesheet" href="/landing.css">
-  ${extraCss}
+  ${extraCss}${structuredData}
 </head>
 <body class="site">
   ${body}
