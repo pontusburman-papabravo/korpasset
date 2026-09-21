@@ -63,6 +63,7 @@ export function adminPage(
       signedIn: options.signedIn,
       adminNav: options.signedIn ? options.nav : undefined,
     })}${body}${siteFooter()}`,
+    { robots: "noindex, nofollow", path: "/admin" },
   );
 }
 
@@ -72,6 +73,7 @@ export function notConfigured() {
     html: siteLayout(
       "Inte hittad",
       `${siteHeader()}<main class="site-section"><div class="site-inner site-inner--narrow"><h1>Sidan finns inte</h1></div></main>${siteFooter()}`,
+      { robots: "noindex, nofollow" },
     ),
   };
 }

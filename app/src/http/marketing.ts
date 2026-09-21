@@ -7,6 +7,7 @@ import {
   renderInterestThanksPage,
 } from "./landing.js";
 import { contactPage, privacyPage, termsPage } from "./legal.js";
+import { robotsTxt, sitemapXml } from "./seo.js";
 import { INTEREST_RATE_LIMIT, allowRequest } from "./rate-limit.js";
 
 function checkboxChecked(value: unknown): boolean {
@@ -26,6 +27,20 @@ function formValues(body: Record<string, unknown>) {
 }
 
 export async function registerMarketingRoutes(app: FastifyInstance): Promise<void> {
+  app.get("/robots.txt", async (_request, reply) => {
+    return reply
+      .type("text/plain; charset=utf-8")
+      .header("cache-control", "public, max-age=3600")
+      .send(robotsTxt());
+  });
+
+  app.get("/sitemap.xml", async (_request, reply) => {
+    return reply
+      .type("application/xml; charset=utf-8")
+      .header("cache-control", "public, max-age=3600")
+      .send(sitemapXml());
+  });
+
   app.get("/integritet", async (_request, reply) => {
     return reply.type("text/html").send(privacyPage());
   });

@@ -71,6 +71,7 @@ describe("landing and interest waitlist", () => {
     assert.match(response.body, /property="og:image"[^>]*korpasset-og-1200x630\.png/);
     assert.match(response.body, /property="og:url"[^>]*http:\/\/localhost:3000\//);
     assert.match(response.body, /property="og:type" content="website"/);
+    assert.match(response.body, /<link rel="canonical" href="http:\/\/localhost:3000\/">/);
 
     const logo = await app.inject({ method: "GET", url: "/brand/korpasset-logo.svg" });
     const favicon = await app.inject({ method: "GET", url: "/brand/favicon.svg" });
@@ -356,7 +357,7 @@ describe("landing and interest waitlist", () => {
     for (const href of Object.values(TRANSPORTSTYRELSEN_LINKS)) {
       assert.match(home.body, new RegExp(href.replaceAll("/", "\\/")));
     }
-    const externals = [...home.body.matchAll(/href="(https?:[^"]+)"/g)].map(
+    const externals = [...home.body.matchAll(/<a [^>]*href="(https?:[^"]+)"/g)].map(
       (match) => match[1],
     );
     assert.ok(externals.length >= 5);

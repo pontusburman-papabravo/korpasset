@@ -24,6 +24,7 @@ export function privacyPage(): string {
      <h2>Cookies</h2>
      <p>På landningssidan sätter vi inga analys- eller reklamcookies och gör inga tredjepartsanrop för typsnitt. Om du loggar in i produkten används en nödvändig sessionscookie. Waitlist-admin använder en separat HttpOnly-cookie på <code>/admin</code>.</p>`,
     "/integritet",
+    "Hur Körpasset och Papa Bravo AB behandlar personuppgifter i betan och i produkten. Vi säljer inte dina uppgifter.",
   );
 }
 
@@ -47,6 +48,7 @@ export function termsPage(): string {
      <h2>Kontakt</h2>
      <p>Allmänt: <a href="mailto:info@korpasset.se">info@korpasset.se</a>. Support: <a href="mailto:support@korpasset.se">support@korpasset.se</a>.</p>`,
     "/villkor",
+    "Användarvillkor för Körpasset, en digital tjänst för privat övningskörning mot svenskt B-körkort från Papa Bravo AB.",
   );
 }
 
@@ -60,5 +62,6 @@ export function contactPage(): string {
      <p>Personuppgiftsansvarig: Papa Bravo AB.</p>
      <p>Körpasset är en fristående tjänst och är inte utvecklad av, ansluten till eller godkänd av Transportstyrelsen eller Trafikverket.</p>`,
     "/kontakt",
+    "Kontakta Körpasset. Intresseanmälan till betan, support och personuppgiftsfrågor till Papa Bravo AB.",
   );
 }
