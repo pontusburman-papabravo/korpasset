@@ -19,7 +19,7 @@ App Store kräver Sign in with Apple om någon annan tredjeparts-inloggning (Goo
 - **v1-providers för produktkonton är bara `apple` och `google`.** `passkey` och `email_magic_link` stannar i enum för schema-kompatibilitet men används inte som produkt-auth.
 - **Identitetsnyckel är provider `sub`, inte e-post.** Apple Hide My Email och byten av Gmail-adress får inte skapa ett nytt konto eller tysta-merga två personer.
 - **Guest är inte ett konto.** Guest får finnas i appen vid QR/länk så handledaren kan delta direkt. Claim sker med Apple eller Google mot samma `user_id` (ADR-002). Eleven skapar körkortsresa först efter Apple/Google.
-- **Waitlist-admin** (`admin_users`, e-post + lösenord) är intern personalinloggning, inte användarkonto.
+- **Waitlist-admin** (`admin_users`, e-post + lösenord) är intern personalinloggning, inte användarkonto. Produktion: `pontus.burman@papabravo.se`. Play-granskning: `korpasset@gmail.com` ([google-play.md](../operations/google-play.md)).
 
 ## Flöde
 
@@ -67,3 +67,6 @@ Inbjudan öppnas som Universal Link / App Link in i appen. Webbläsare som träf
 - [Onboarding & handoff](../product/onboarding-handoff.md)
 - [Data model](../domain/data-model.md)
 - [Kravspec FR-11](../kravspec.md)
+- [Apple Developer App ID](../operations/apple-developer.md) — `se.korpasset.app`, Sign in with Apple som Primary
+- [Google Play](../operations/google-play.md) — granskningskonto `korpasset@gmail.com`
+- [Native apps](../operations/native-apps.md) — Capacitor-skal och VPS-env

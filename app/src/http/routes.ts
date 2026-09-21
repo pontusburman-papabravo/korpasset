@@ -59,6 +59,7 @@ import {
 } from "./layout.js";
 import { renderDevelopmentPage, renderJourneyHome } from "./journey-pages.js";
 import { renderLandingPage } from "./landing.js";
+import { oauthButtons } from "./oauth.js";
 import {
   coachingStepsForSkillKey,
   parseFormStringList,
@@ -506,7 +507,11 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
                   </div>
                   ${primaryButton(sessionUser ? "Anslut" : "Anslut som gäst")}
                 </form>`
-         }`,
+         }
+         ${oauthButtons({
+           returnTo: `/invite/${token}`,
+           lead: "Fortsätt med Apple eller Google i appen, eller anslut som gäst.",
+         })}`,
       ),
     );
   });

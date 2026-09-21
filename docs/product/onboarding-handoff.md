@@ -75,4 +75,5 @@ Exakt en caller får raden. `RETURNING` tom → invitation redan accepterad, exp
 - [Data model](../domain/data-model.md) — `journey_invitations`, `journey_collaborators`
 - [ADR-002: Actor/auth separation](../decisions/ADR-002-actor-auth-separation.md)
 - [ADR-008: App-only konton via Apple och Google](../decisions/ADR-008-app-oauth-accounts.md)
+- [Apple Developer App ID](../operations/apple-developer.md) — Associated Domains för Universal Links
 - [ADR-001: Student-owned journey](../decisions/ADR-001-student-owned-journey.md)
