@@ -38,6 +38,8 @@ v1 är strikt fokuserad på den praktiska privata övningskörningen.
 - [Database](docs/architecture/database.md)
 - [Production](docs/operations/production.md) — env, health, backup/restore
 - [VPS-access](docs/operations/vps-access.md) — korpasset.se host, Compose, redeploy
+- [Apple Developer](docs/operations/apple-developer.md) — App ID och SKU `se.korpasset.app`
+- [Google Play](docs/operations/google-play.md) — granskningskonto `korpasset@gmail.com`
 
 ### Beslut (ADR)
 
@@ -76,11 +78,12 @@ npm run dev
 
 Öppna `http://localhost:3000` i två olika webbläsare/sessioner för att testa elev- och handledarflödet.
 
-Första waitlist-admin (ingen publik signup):
+Första waitlist-admin (ingen publik signup): `pontus.burman@papabravo.se`.
+Det är inte Play-granskning (`korpasset@gmail.com`).
 
 ```bash
 cd app
-npm run admin:create -- --email you@korpasset.se
+npm run admin:create -- --email pontus.burman@papabravo.se
 ```
 
 ## Produktion
@@ -90,7 +93,7 @@ Se [Production](docs/operations/production.md) och [VPS-access](docs/operations/
 ```bash
 docker build -f deploy/Dockerfile -t korpasset-app .
 # Kräver DATABASE_URL, SESSION_SECRET, APP_BASE_URL=https://korpasset.se
-# Första admin: node dist/cli/create-admin.js --email you@korpasset.se
+# Första admin: pontus.burman@papabravo.se (finns i produktion)
 # Mejlreset: RESEND_API_KEY (valfritt tills reset ska fungera)
 # Resend webhook: RESEND_WEBHOOK_SECRET + POST https://korpasset.se/api/resend/webhook
 ```
