@@ -361,7 +361,7 @@ utan dubbletter. `archived`/`completed` räknas inte. Collaborator-access i v1 �
 | --- | --- |
 | ID | FR-10 |
 | Aktör | Handledare |
-| Status | Specificerat, auth-providers inte byggda |
+| Status | Implementerat i servern; claim av identity som redan hör till annan user returnerar 409 |
 | Beskrivning | Guest kan senare claima Apple eller Google i appen utan att byta `user_id`. |
 | Undantag | Claim av identity som redan hör till annan user är ett separat reconciliation-fall och ingår inte i första vertical slice. |
 
@@ -371,12 +371,12 @@ utan dubbletter. `archived`/`completed` räknas inte. Collaborator-access i v1 �
 | --- | --- |
 | ID | FR-11 |
 | Aktör | Elev eller handledare |
-| Status | Specificerat, inte byggt |
+| Status | Implementerat i appen (`/app`, `POST /api/auth/apple`, `POST /api/auth/google`). Store-utlägg kräver Apple/Google-developer-klienter. |
 | Beskrivning | Det finns ingen separat registrering. Första lyckade Sign in with Apple eller Sign in with Google i appen skapar `users` (`account_state = active`) och en rad i `auth_identities`. Samma knapp är återkommande inloggning. |
 | Identitet | `provider_subject` är Apple respektive Google `sub`. E-post är inte nyckel och används inte för auto-merge. |
 | Kanal | Bara iOS- och Android-appen. `korpasset.se` skapar inte produktkonton (intresseanmälan är waitlist, inte signup). |
 | Inte v1 | E-post + lösenord, magic link, OTP, passkey och publik webb-signup. |
-| App Store | Sign in with Apple krävs när Google erbjuds. Konto ska kunna raderas i appen. |
+| App Store | Sign in with Apple krävs när Google erbjuds. Konto ska kunna raderas i appen. Bundle ID `se.korpasset.app` ([Apple Developer](operations/apple-developer.md)). |
 | Undantag | Waitlist-admin är intern e-post+lösenord och inte ett användarkonto. |
 
 ---
@@ -900,8 +900,8 @@ Beta-ready kräver också:
 - användarvillkor,
 - kontakt/feedbackväg,
 - grundläggande error/crash-observability,
-- iOS-distribution via TestFlight,
-- Android-distribution via Google Play test track,
+- iOS-distribution via TestFlight (App ID `se.korpasset.app`, [apple-developer.md](operations/apple-developer.md)),
+- Android-distribution via Google Play test track ([google-play.md](operations/google-play.md)),
 - Sign in with Apple och Sign in with Google i appen.
 
 Betalning ingår inte som blockerare för första beta. Se [Beta Validation och kommersiell gate](#16-beta-validation-och-kommersiell-gate).
