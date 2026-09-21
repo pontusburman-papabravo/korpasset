@@ -595,6 +595,46 @@ a.journey-choice {
   text-align: left;
 }
 
+.coaching-steps {
+  border: 0;
+  margin: 0.35rem 0 0.5rem;
+  padding: 0;
+}
+
+.coaching-steps legend {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 0;
+}
+
+.coaching-steps__list {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.coaching-steps__item {
+  font-size: 0.95rem;
+  color: var(--navy);
+}
+
+.coaching-steps__item label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.coaching-steps__item input[type="checkbox"] {
+  margin-top: 0.25rem;
+}
+
+.coaching-steps__item--done {
+  color: var(--muted);
+}
+
 .rating-item--observed h3 {
   margin: 0 0 0.35rem;
   font-size: 1rem;
