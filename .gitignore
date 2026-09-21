@@ -3,3 +3,6 @@ deploy/.env
 *.pem
 id_ed25519
 id_ed25519.pub
+secrets/
+*.jks
+*.keystore
