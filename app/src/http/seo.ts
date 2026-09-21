@@ -43,6 +43,8 @@ export const PUBLIC_INDEX_PAGES = [
 const ROBOTS_DISALLOW = [
   "/admin",
   "/admin/",
+  "/app",
+  "/app/",
   "/api/",
   "/health",
   "/hjalp",

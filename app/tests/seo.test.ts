@@ -20,6 +20,7 @@ describe("public SEO files and metadata", () => {
     assert.match(response.body, /Disallow: \/journey\//);
     assert.match(response.body, /Disallow: \/invite\//);
     assert.match(response.body, /Disallow: \/onboarding/);
+    assert.match(response.body, /Disallow: \/app/);
     assert.match(response.body, /Disallow: \/konto/);
     assert.match(response.body, /Sitemap: http:\/\/localhost:3000\/sitemap\.xml/);
     assert.doesNotMatch(response.body, /Disallow: \/integritet/);

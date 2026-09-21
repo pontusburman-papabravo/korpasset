@@ -213,6 +213,45 @@ describe("root navigation (GET /)", () => {
     await app.close();
   });
 
+  it("opens the product from the native app entry instead of the marketing page", async () => {
+    const app = await createTestApp();
+
+    const anonymous = await app.inject({ method: "GET", url: "/app" });
+    assert.equal(anonymous.statusCode, 302);
+    assert.equal(anonymous.headers.location, "/onboarding");
+    assert.doesNotMatch(anonymous.body, /Route GET:\/app not found/);
+
+    const trailing = await app.inject({ method: "GET", url: "/app/" });
+    assert.equal(trailing.statusCode, 302);
+    assert.equal(trailing.headers.location, "/onboarding");
+
+    const { journey, userId } = await createJourneyForStudent("Ella");
+    const signedIn = await injectWithSession(app, {
+      bilklar_session: createSessionToken(userId),
+    }, {
+      method: "GET",
+      url: "/app",
+    });
+    assert.equal(signedIn.statusCode, 302);
+    assert.equal(signedIn.headers.location, `/journey/${journey.id}`);
+
+    const clara = await createJourneyForStudent("Clara");
+    const ella = await createJourneyForStudent("Ella");
+    const accepted = await addSupervisor(clara.journey.id, clara.userId, "Pappa");
+    await addSupervisor(ella.journey.id, ella.userId, "Pappa", accepted.userId);
+    const chooser = await injectWithSession(app, {
+      bilklar_session: createSessionToken(accepted.userId),
+    }, {
+      method: "GET",
+      url: "/app",
+    });
+    assert.equal(chooser.statusCode, 200);
+    assert.match(chooser.body, /<h1>Välj elev<\/h1>/);
+    assert.match(chooser.body, /Clara/);
+    assert.match(chooser.body, /Ella/);
+    await app.close();
+  });
+
   it("shows the marketing homepage to anonymous users", async () => {
     const app = await createTestApp();
     const response = await app.inject({ method: "GET", url: "/" });
