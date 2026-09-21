@@ -104,16 +104,33 @@ npx cap sync android
 npx cap open android
 ```
 
-7. Signerad AAB på Mac (upload-keystore ligger i `secrets/`, inte i git):
+7. Signerad AAB på Mac. Upload-keystore ligger utanför git, i `~/korpasset-keys/korpasset-upload.jks`. `android/` kommer med branchen `cursor/app-oauth-native-99e8` — kör inte `cap add android` om mappen saknas, byt branch först.
 
 ```bash
-cd native/android
+cd /Users/pontusburman/korpasset
+git fetch origin
+git checkout cursor/app-oauth-native-99e8
+git pull origin cursor/app-oauth-native-99e8
+ls native/android
+cd native
+npm install
+npx cap sync android
+keytool -list -keystore /Users/pontusburman/korpasset-keys/korpasset-upload.jks
+cd android
 cp keystore.properties.example keystore.properties
-# fyll storePassword, keyPassword, keyAlias (samma som keytool -list)
+open -e keystore.properties
+```
+
+Fyll `storePassword`, `keyPassword` och `keyAlias` från keytool-listan. Spara. Sedan:
+
+```bash
+cd /Users/pontusburman/korpasset/native/android
 ./gradlew bundleRelease
 ```
 
 AAB: `native/android/app/build/outputs/bundle/release/app-release.aab`. Ladda upp till intern/closed test track. Play App Signing resignerar; SHA-256 från **Körpassets** app signing (inte My Starday) in i `ANDROID_SHA256_CERT_FINGERPRINTS`.
+
+Klistra inte in rader som börjar med `#` i zsh — de är inte kommentarer där.
 
 ## Store-copy (beta)
 
