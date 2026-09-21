@@ -931,7 +931,7 @@ Följ upp på några sekunder.
 → Officiella källor/metodik
 → Disclaimer
 → Beta CTA / intresseanmälan
-→ Privacy / Terms / Contact
+→ Privacy / Terms / Contact / Radera konto
 ```
 
 Canonical multi-handledar-copy:

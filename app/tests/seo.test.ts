@@ -23,6 +23,7 @@ describe("public SEO files and metadata", () => {
     assert.match(response.body, /Disallow: \/konto/);
     assert.match(response.body, /Sitemap: http:\/\/localhost:3000\/sitemap\.xml/);
     assert.doesNotMatch(response.body, /Disallow: \/integritet/);
+    assert.doesNotMatch(response.body, /Disallow: \/radera-konto/);
     await app.close();
   });
 
@@ -102,6 +103,7 @@ describe("public SEO files and metadata", () => {
     const app = await createTestApp();
     const privacy = await app.inject({ method: "GET", url: "/integritet" });
     const contact = await app.inject({ method: "GET", url: "/kontakt" });
+    const deletion = await app.inject({ method: "GET", url: "/radera-konto" });
     assert.equal(privacy.statusCode, 200);
     assert.match(privacy.body, /<link rel="canonical" href="http:\/\/localhost:3000\/integritet">/);
     assert.match(privacy.body, /personuppgifter/);
@@ -109,6 +111,9 @@ describe("public SEO files and metadata", () => {
     assert.equal(contact.statusCode, 200);
     assert.match(contact.body, /<link rel="canonical" href="http:\/\/localhost:3000\/kontakt">/);
     assert.match(contact.body, /<meta name="description" content="Kontakta Körpasset/);
+    assert.equal(deletion.statusCode, 200);
+    assert.match(deletion.body, /<link rel="canonical" href="http:\/\/localhost:3000\/radera-konto">/);
+    assert.match(deletion.body, /<meta name="description" content="Radera ditt Körpasset-konto/);
     await app.close();
   });
 

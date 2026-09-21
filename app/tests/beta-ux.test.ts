@@ -348,6 +348,8 @@ describe("beta UX HTTP", () => {
     });
     assert.match(page.body, /action="\/konto\/namn"/);
     assert.match(page.body, /value="Ella"/);
+    assert.match(page.body, /href="\/radera-konto"/);
+    assert.match(page.body, /Radera mitt konto/);
 
     const saved = await injectWithSession(app, session(userId), {
       method: "POST",

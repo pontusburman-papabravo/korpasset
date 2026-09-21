@@ -119,13 +119,26 @@ describe("landing and interest waitlist", () => {
     const privacy = await app.inject({ method: "GET", url: "/integritet" });
     const terms = await app.inject({ method: "GET", url: "/villkor" });
     const contact = await app.inject({ method: "GET", url: "/kontakt" });
+    const deletion = await app.inject({ method: "GET", url: "/radera-konto" });
     assert.equal(privacy.statusCode, 200);
     assert.match(privacy.body, /personuppgiftsansvarig/i);
+    assert.match(privacy.body, /href="\/radera-konto"/);
     assert.equal(terms.statusCode, 200);
     assert.match(terms.body, /gratis/i);
     assert.equal(contact.statusCode, 200);
     assert.match(contact.body, /info@korpasset\.se/);
+    assert.match(contact.body, /href="\/radera-konto"/);
     assert.doesNotMatch(privacy.body, /fonts\.googleapis/);
+    assert.equal(deletion.statusCode, 200);
+    assert.match(deletion.body, /Radera ditt Körpasset-konto/);
+    assert.match(deletion.body, /Papa Bravo AB/);
+    assert.match(deletion.body, /mailto:support@korpasset\.se/);
+    assert.match(deletion.body, /Vad som raderas/);
+    assert.match(deletion.body, /Vad som behålls/);
+    assert.match(deletion.body, /Du behöver inte ha appen installerad/);
+    assert.match(deletion.body, /Radera mitt konto/);
+    assert.match(deletion.body, /intresseanmälan/i);
+    assert.match(deletion.body, /href="\/radera-konto"/);
     await app.close();
   });
 
