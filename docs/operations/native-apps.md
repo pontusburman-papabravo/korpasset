@@ -61,19 +61,31 @@ App ID `se.korpasset.app` är redan registrerad som Explicit + Sign in with Appl
 1. Team ID är `PQ7M3B7VW5` (samma som Min Stjärndag).
 2. För Apple-inloggning på Android: Services ID t.ex. `se.korpasset.app.android` med return URL `https://korpasset.se/app`.
 3. App Store Connect: ny app **Körpasset** (inte en ny version av Min Stjärndag). SKU `se.korpasset.app`. **Privacy Policy URL:** `https://korpasset.se/integritet`. Villkor: `https://korpasset.se/villkor`.
-4. Bygg på Mac:
+4. Bygg på Mac (`ios/` ligger i git):
 
 ```bash
 cd native
+git pull
 npm install
-npx cap add ios
 npx cap sync ios
 npx cap open ios
 ```
 
 I Xcode: team, associated domains (`applinks:korpasset.se`), Sign in with Apple capability. Archive → TestFlight.
 
-Ikon: `app/public/brand/korpasset-social-1024.png` (1024×1024).
+## Appikon (iOS och Android)
+
+App Store kräver 1024×1024 **utan alfa**. Brand-PNG:n `app/public/brand/korpasset-social-1024.png` har transparens, så native-källan är den platta RGB-filen `native/assets/icon.png` (bakgrund `#F8F9FA`).
+
+Genererade filer:
+
+| Plattform | Fil |
+| --- | --- |
+| iOS App Store / hemskärm | `native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png` |
+| Android launcher | `native/android/app/src/main/res/mipmap-*/ic_launcher*.png` |
+| Splash | `native/assets/splash.png` → iOS Splash.imageset och Android `drawable-*/splash.png` |
+
+Byt ikon: ersätt `native/assets/icon.png` (1024 RGB, ingen alfa), kör `npm run assets` i `native/`, committa, `npx cap sync` och bygg om på Mac. Radera appen från telefonen en gång så hemskärmen inte visar cache:ad Capacitor-ikon.
 
 ## Google (en gång, samma Play-konto som My Starday)
 
@@ -82,17 +94,26 @@ Ikon: `app/public/brand/korpasset-social-1024.png` (1024×1024).
 3. I Google Cloud: tre OAuth-klienter för Körpasset — Web, iOS (`se.korpasset.app`) och Android (`se.korpasset.app` + SHA-1 från Play App signing för Körpasset, inte My Stjärndag).
 4. Web-client-id är `aud` på id-token som servern verifierar. Sätt den i `GOOGLE_WEB_CLIENT_ID` och i Capacitor-init. Kopiera inte My Stardays `GOOGLE_WEB_CLIENT_ID`.
 5. SHA-256 från **Körpassets** Play App signing in i `ANDROID_SHA256_CERT_FINGERPRINTS` (kolon-separerad hex). Redeploy så `assetlinks.json` stämmer.
-6. Bygg:
+6. Bygg (`android/` ligger i git):
 
 ```bash
 cd native
+git pull
 npm install
-npx cap add android
 npx cap sync android
 npx cap open android
 ```
 
-Ladda upp AAB till intern/closed test track.
+7. Signerad AAB på Mac (upload-keystore ligger i `secrets/`, inte i git):
+
+```bash
+cd native/android
+cp keystore.properties.example keystore.properties
+# fyll storePassword, keyPassword, keyAlias (samma som keytool -list)
+./gradlew bundleRelease
+```
+
+AAB: `native/android/app/build/outputs/bundle/release/app-release.aab`. Ladda upp till intern/closed test track. Play App Signing resignerar; SHA-256 från **Körpassets** app signing (inte My Starday) in i `ANDROID_SHA256_CERT_FINGERPRINTS`.
 
 ## Store-copy (beta)
 

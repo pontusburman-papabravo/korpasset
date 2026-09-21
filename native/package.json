@@ -5,6 +5,7 @@
   "description": "Capacitor-skal för Körpasset på iOS och Android",
   "scripts": {
     "sync": "cap sync",
+    "assets": "capacitor-assets generate --ios --android --iconBackgroundColor '#F8F9FA' --iconBackgroundColorDark '#1A2B4C' --splashBackgroundColor '#F8F9FA' --splashBackgroundColorDark '#1A2B4C'",
     "open:ios": "cap open ios",
     "open:android": "cap open android"
   },
@@ -15,6 +16,7 @@
     "@capgo/capacitor-social-login": "^8.0.0"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.0.0",
     "typescript": "^5.8.2"
   }

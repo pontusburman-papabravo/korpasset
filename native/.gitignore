@@ -7,3 +7,7 @@ android/.gradle/
 android/build/
 android/app/build/
 android/captain-build/
+android/keystore.properties
+android/local.properties
+*.jks
+*.keystore

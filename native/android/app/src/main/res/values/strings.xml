@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Körpasset</string>
+    <string name="title_activity_main">Körpasset</string>
+    <string name="package_name">se.korpasset.app</string>
+    <string name="custom_url_scheme">se.korpasset.app</string>
+</resources>
