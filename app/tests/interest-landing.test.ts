@@ -357,7 +357,7 @@ describe("landing and interest waitlist", () => {
     for (const href of Object.values(TRANSPORTSTYRELSEN_LINKS)) {
       assert.match(home.body, new RegExp(href.replaceAll("/", "\\/")));
     }
-    const externals = [...home.body.matchAll(/href="(https?:[^"]+)"/g)].map(
+    const externals = [...home.body.matchAll(/<a [^>]*href="(https?:[^"]+)"/g)].map(
       (match) => match[1],
     );
     assert.ok(externals.length >= 5);
