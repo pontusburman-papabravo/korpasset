@@ -33,7 +33,7 @@ export const TRANSPORTSTYRELSEN_LINKS = {
 } as const;
 
 const LANDING_DESCRIPTION = SITE_DESCRIPTION;
-const LANDING_DOCUMENT_TITLE = "Körpasset – övningskör med en plan";
+const LANDING_DOCUMENT_TITLE = "Körpasset – övningskörning för att ta körkort";
 
 function tsLink(href: string, label: string): string {
   return `<a href="${escapeHtml(href)}" rel="noopener noreferrer" target="_blank">${escapeHtml(label)}</a>`;
@@ -43,7 +43,7 @@ const LANDING_FAQ: Array<FaqItem & { answerHtml?: string }> = [
   {
     question: "Vad är Körpasset?",
     answer:
-      "Ett enkelt stöd för privat övningskörning. Elev och handledare håller koll på vad ni har tränat på, dokumenterar körpassen och ser utvecklingen över tid.",
+      "Ett enkelt stöd för privat övningskörning när ni ska ta körkort. Körkortselev och handledare håller koll på vad ni har tränat på, dokumenterar körpassen och ser utvecklingen över tid.",
   },
   {
     question: "Vem kan bli betatestare?",
@@ -66,9 +66,24 @@ const LANDING_FAQ: Array<FaqItem & { answerHtml?: string }> = [
       "Nej. Många som skriver upp sig har kört i månader. Körpasset hjälper er välja nästa fokus, inte bara första lektionen.",
   },
   {
+    question: "Kan Körpasset hjälpa oss träna inför körkort och uppkörning?",
+    answer:
+      "Ja som struktur för träningen. Körpasset hjälper handledare och körkortselev att se vad som är bra att öva på nästa gång. Det bedömer inte om eleven är redo för uppkörning och garanterar inte körkort.",
+  },
+  {
     question: "Ersätter Körpasset en trafikskola?",
     answer:
       "Nej. Körpasset ersätter inte trafikskola, bedömer inte om eleven är redo för uppkörning och garanterar inte körkort. Det är ett stöd för att hålla ihop den privata träningen.",
+  },
+  {
+    question: "Behöver eleven körkortstillstånd för att övningsköra?",
+    answer:
+      "Ja. För privat övningskörning behöver eleven ett giltigt körkortstillstånd och en godkänd handledare. Körpasset är inte Transportstyrelsens tjänst — kontrollera alltid gällande regler där.",
+  },
+  {
+    question: "Hur hjälper Körpasset handledare under övningskörningen?",
+    answer:
+      "Som handledare för körkort får du samma historik som eleven: vad ni tränat på, hur körpasset gick och ett förslag på nästa fokus. Flera handledare kan turas om utan att tappa tråden.",
   },
   {
     question: "Var hittar jag de officiella reglerna för privat övningskörning?",
@@ -103,6 +118,7 @@ export function renderLandingPage(options: {
        ${trafficPhotos()}
        ${betaProgress(betaFilled)}
        ${howItWorks()}
+       ${whoItsFor()}
        ${whyItExists()}
        ${officialRules()}
        ${faq()}
@@ -207,7 +223,7 @@ export function siteHeader(
   return `<header class="site-nav">
     ${siteLogo("/")}
     <nav class="site-nav__links" aria-label="Huvudmeny">
-      <a href="/#sa-funkar-det">Så fungerar det</a>
+      <a href="/#sa-funkar-det">Övningskörning</a>
       <a href="/#regler">Regler</a>
       <a href="/#intresse" class="site-nav__cta">Bli betatestare</a>
     </nav>
@@ -220,7 +236,7 @@ export function siteFooter(): string {
     <div class="site-inner site-footer__grid">
       <div>
         <p class="site-logo site-logo--footer">Körpasset</p>
-        <p>Få bättre struktur på övningskörningen.</p>
+        <p>Stöd för privat övningskörning när ni ska ta körkort.</p>
       </div>
       <div>
         <a href="/integritet">Integritet</a>
@@ -238,9 +254,9 @@ function hero(): string {
     <div class="site-inner hero__grid">
       <div>
         <p class="eyebrow">Privat övningskörning · B-körkort</p>
-        <h1>Övningskör med bättre koll</h1>
-        <p class="lede">Körpasset hjälper elev och handledare att se vad som är bra att öva på nästa gång — oavsett om ni just börjat eller redan kört ett år.</p>
-        <p>Håll koll på vad ni har tränat på, dokumentera körpassen och samarbeta när mamma, pappa eller syskon turas om.</p>
+        <h1>Övningskörning med bättre koll</h1>
+        <p class="lede">Körpasset hjälper körkortselev och handledare att övningsköra med en plan — oavsett om ni just börjat eller redan kört ett år.</p>
+        <p>Håll koll på vad ni har tränat på, dokumentera körpassen och samarbeta när mamma, pappa eller syskon turas om som handledare under övningskörningen. Ett stöd för att träna inför körkort och uppkörning. Eleven behöver körkortstillstånd.</p>
         <div class="hero__ctas">
           <a class="btn btn-primary" href="#intresse">Bli betatestare</a>
           <a class="btn-link" href="#sa-funkar-det">Så fungerar det</a>
@@ -256,13 +272,13 @@ function hero(): string {
 function trafficPhotos(): string {
   return `<section class="photo-strip" aria-label="Svensk övningskörning">
     <figure>
-      <img src="/images/landing/residential-street.jpg" width="1280" height="720" alt="Elev och handledare övningskör i sommarkväll" decoding="async" loading="lazy">
+      <img src="/images/landing/residential-street.jpg" width="1280" height="720" alt="Körkortselev och handledare övningskör i sommarkväll" decoding="async" loading="lazy">
     </figure>
     <figure>
-      <img src="/images/landing/roundabout.jpg" width="1280" height="720" alt="Bil i en solig rondell i svenskt villaområde" decoding="async" loading="lazy">
+      <img src="/images/landing/roundabout.jpg" width="1280" height="720" alt="Övningskörning i en solig rondell i svenskt villaområde" decoding="async" loading="lazy">
     </figure>
     <figure>
-      <img src="/images/landing/country-road.jpg" width="1280" height="720" alt="Bil på öppen landsväg i kvällssol" decoding="async" loading="lazy">
+      <img src="/images/landing/country-road.jpg" width="1280" height="720" alt="Träna inför körkort på öppen landsväg i kvällssol" decoding="async" loading="lazy">
     </figure>
   </section>`;
 }
@@ -322,25 +338,36 @@ function howItWorks(): string {
         <li>
           <span class="steps__num">1</span>
           <div>
-            <h3>Koppla ihop elev och handledare</h3>
+            <h3>Koppla ihop körkortselev och handledare</h3>
             <p>Eleven skapar resan och bjuder in via QR eller länk. Mamma, pappa, syskon eller någon annan godkänd handledare — flera kan dela samma historik.</p>
           </div>
         </li>
         <li>
           <span class="steps__num">2</span>
           <div>
-            <h3>Kör och följ upp</h3>
-            <p>Ni väljer 2–3 moment att träna på, kör, och registrerar kort hur det gick efteråt.</p>
+            <h3>Övningskör och följ upp</h3>
+            <p>Ni väljer 2–3 moment att träna inför körkort, kör, och registrerar kort hur det gick efteråt.</p>
           </div>
         </li>
         <li>
           <span class="steps__num">3</span>
           <div>
             <h3>Se utvecklingen</h3>
-            <p>Körpassen bygger upp en gemensam bild av vad eleven har tränat på och vad som kan vara bra att fokusera på härnäst.</p>
+            <p>Körpassen bygger upp en gemensam bild av vad körkortseleven har tränat på. Det är ett stöd för handledare, körkort och nästa pass — inte ett betyg inför uppkörning.</p>
           </div>
         </li>
       </ol>
+    </div>
+  </section>`;
+}
+
+function whoItsFor(): string {
+  return `<section class="site-section site-section--white" id="for-vem" aria-labelledby="for-vem-heading">
+    <div class="site-inner site-inner--narrow">
+      <p class="eyebrow">För körkort, elev och handledare</p>
+      <h2 id="for-vem-heading">Privat övningskörning när ni ska ta körkort</h2>
+      <p class="lede">Körpasset ger handledare körkortshistoriken och eleven en gemensam plan. Ni övningskör, tränar inför körkort och uppkörning, och ser vad nästa pass bör ta — även när flera turas om.</p>
+      <p>Körkort elev och handledare ser samma körpass, samma fokus och samma nästa steg. Som handledare under övningskörningen ansvarar du i bilen. Körpasset ersätter inte det. Eleven behöver körkortstillstånd. Tjänsten bedömer inte om ni är redo för uppkörning.</p>
     </div>
   </section>`;
 }
@@ -350,8 +377,8 @@ function whyItExists(): string {
     <div class="site-inner site-inner--narrow">
       <p class="eyebrow">Varför Körpasset</p>
       <h2>Få bättre struktur på övningskörningen</h2>
-      <p class="lede">Privat övningskörning kan pågå länge och ske med flera olika personer. Det är lätt att tappa bort vad man redan tränat på, vad som fortfarande är svårt, vad nästa handledare bör fokusera på och hur eleven faktiskt utvecklas.</p>
-      <p>En del har precis börjat. Andra har kört EPA, moped och flera månader i bil och undrar vad de ska ta härnäst. Körpasset är till för båda — utan att ersätta handledarens ansvar i bilen eller en trafikskola.</p>
+      <p class="lede">Privat övningskörning kan pågå länge och ske med flera olika personer. Det är lätt att tappa bort vad man redan tränat på, vad som fortfarande är svårt, vad nästa handledare bör fokusera på och hur eleven faktiskt utvecklas mot att ta körkort.</p>
+      <p>En del har precis börjat. Andra har kört EPA, moped och flera månader i bil och undrar vad de ska ta härnäst. Körpasset är till för båda — för handledare, körkortselev och den som vill träna inför körkort utan att ersätta handledarens ansvar i bilen eller en trafikskola.</p>
     </div>
   </section>`;
 }
@@ -361,7 +388,7 @@ function officialRules(): string {
     <div class="site-inner">
       <p class="eyebrow">Officiella regler</p>
       <h2>Ska du övningsköra privat?</h2>
-      <p class="lede">Här är en kort sammanfattning. Körpasset är inte en myndighet — kontrollera alltid originalinformationen hos Transportstyrelsen.</p>
+      <p class="lede">Här är en kort sammanfattning för handledare, körkort och den som ska övningsköra privat. Körpasset är inte en myndighet — kontrollera alltid originalinformationen hos Transportstyrelsen.</p>
       <ul class="rule-list">
         <li>Eleven behöver ett giltigt körkortstillstånd.</li>
         <li>Privat övningskörning kräver en godkänd handledare.</li>
@@ -402,7 +429,7 @@ function faq(): string {
   return `<section class="site-section site-section--cream" id="fragor">
     <div class="site-inner site-inner--narrow">
       <p class="eyebrow">Vanliga frågor</p>
-      <h2>Innan ni anmäler er</h2>
+      <h2>Vanliga frågor om övningskörning</h2>
       <div class="faq">
         ${items}
       </div>
@@ -438,9 +465,9 @@ function interestSection(
   return `<section class="site-section site-section--cta" id="intresse">
     <div class="site-inner site-inner--narrow">
       <p class="eyebrow">Beta</p>
-      <h2>Vill du testa Körpasset?</h2>
+      <h2>Vill du testa Körpasset i er övningskörning?</h2>
       <p class="lede">${escapeHtml(cohortNote)}</p>
-      <p>Produkten utvecklas fortfarande. Deltagare kan få frågor om hur det fungerar. Ingen betalning under betan.</p>
+      <p>Produkten utvecklas fortfarande. Deltagare kan få frågor om hur det fungerar att övningsköra med Körpasset. Ingen betalning under betan.</p>
       ${formError}
       <form method="post" action="/interest" class="interest-form" novalidate>
         <div class="hp" aria-hidden="true">

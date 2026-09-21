@@ -217,7 +217,7 @@ describe("root navigation (GET /)", () => {
     const app = await createTestApp();
     const response = await app.inject({ method: "GET", url: "/" });
     assert.equal(response.statusCode, 200);
-    assert.match(response.body, /Övningskör med bättre koll/);
+    assert.match(response.body, /Övningskörning med bättre koll/);
     assert.match(response.body, /Bli betatestare/);
 
     const onboarding = await app.inject({ method: "GET", url: "/onboarding" });

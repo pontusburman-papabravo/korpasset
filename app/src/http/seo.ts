@@ -3,7 +3,7 @@ import { config } from "../config.js";
 export const SITE_NAME = "Körpasset";
 export const SITE_THEME_COLOR = "#1A2B4C";
 export const SITE_DESCRIPTION =
-  "Planera privat övningskörning mot B-körkort. Körpasset hjälper elev och handledare att välja dagens fokus, följa upp körpassen och hålla ihop träningen — även när flera turas om.";
+  "Privat övningskörning mot B-körkort. Körpasset hjälper körkortselev och handledare att övningsköra med en plan, träna inför körkort och hålla koll mot uppkörning.";
 const SITE_LOGO_PATH = "/brand/korpasset-logo.svg";
 
 function absoluteUrl(path: string): string {

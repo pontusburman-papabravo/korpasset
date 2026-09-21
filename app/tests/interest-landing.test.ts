@@ -28,7 +28,7 @@ describe("landing and interest waitlist", () => {
     const app = await createTestApp();
     const response = await app.inject({ method: "GET", url: "/" });
     assert.equal(response.statusCode, 200);
-    assert.match(response.body, /Övningskör med bättre koll/);
+    assert.match(response.body, /Övningskörning med bättre koll/);
     assert.match(response.body, /Bli betatestare/);
     assert.match(response.body, /0 av 25 platser fyllda/);
     assert.match(response.body, /Ska du övningsköra privat/);
@@ -64,7 +64,7 @@ describe("landing and interest waitlist", () => {
     assert.doesNotMatch(header, /korpasset-social-dark-1024/);
 
     assert.match(response.body, /ÖVNING IDAG\. FRIHET IMORGON\./);
-    assert.match(response.body, /<h1>Övningskör med bättre koll<\/h1>/);
+    assert.match(response.body, /<h1>Övningskörning med bättre koll<\/h1>/);
     assert.match(response.body, /rel="icon"[^>]*href="\/brand\/favicon\.svg"/);
     assert.match(response.body, /property="og:title"/);
     assert.match(response.body, /property="og:description"/);

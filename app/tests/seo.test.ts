@@ -46,7 +46,7 @@ describe("public SEO files and metadata", () => {
     const app = await createTestApp();
     const response = await app.inject({ method: "GET", url: "/" });
     assert.equal(response.statusCode, 200);
-    assert.match(response.body, /<title>Körpasset – övningskör med en plan<\/title>/);
+    assert.match(response.body, /<title>Körpasset – övningskörning för att ta körkort<\/title>/);
     assert.ok(
       response.body.includes(`<meta name="description" content="${SITE_DESCRIPTION}">`),
     );
@@ -61,6 +61,40 @@ describe("public SEO files and metadata", () => {
     assert.match(response.body, /"@type":"WebApplication"/);
     assert.match(response.body, /"@type":"Organization"/);
     assert.match(response.body, /Vad är Körpasset\?/);
+    await app.close();
+  });
+
+  it("puts target search phrases in homepage and contact page content", async () => {
+    const phrases = [
+      "övningskörning",
+      "övningsköra",
+      "ta körkort",
+      "privat övningskörning",
+      "handledare körkort",
+      "handledare under övningskörningen",
+      "körkort elev",
+      "uppkörning",
+      "körkortstillstånd",
+      "träna inför körkort",
+    ];
+    const app = await createTestApp();
+    const home = await app.inject({ method: "GET", url: "/" });
+    const contact = await app.inject({ method: "GET", url: "/kontakt" });
+    const terms = await app.inject({ method: "GET", url: "/villkor" });
+    assert.equal(home.statusCode, 200);
+    for (const phrase of phrases) {
+      assert.match(home.body, new RegExp(phrase, "i"), `homepage missing ${phrase}`);
+    }
+    assert.match(contact.body, /privat övningskörning/);
+    assert.match(contact.body, /ta körkort/);
+    assert.match(contact.body, /övningsköra/);
+    assert.match(contact.body, /träna inför körkort/);
+    assert.match(contact.body, /uppkörning/);
+    assert.match(contact.body, /körkortstillstånd/);
+    assert.match(contact.body, /handledare under övningskörningen/);
+    assert.match(terms.body, /privat övningskörning/);
+    assert.match(terms.body, /träna inför körkort/);
+    assert.match(terms.body, /uppkörning/);
     await app.close();
   });
 
