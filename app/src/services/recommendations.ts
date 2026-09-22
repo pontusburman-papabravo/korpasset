@@ -1,5 +1,6 @@
 import type pg from "pg";
 import { getPool } from "../db/pool.js";
+import type { PracticeStage } from "./journeys.js";
 
 export interface RecommendedSkill {
   skillId: string;
@@ -16,6 +17,44 @@ const REASON_MESSAGES: Record<RecommendedSkill["reason"], string> = {
   core_unobserved: "Värt att ta nästa gång",
 };
 
+const EMPTY_FOCUS_COPY: Record<PracticeStage, string> = {
+  unknown:
+    "Välj 2–3 moment som känns osäkra — även om ni redan kört länge. Efter första bedömningen blir tipsen mer träffsäkra.",
+  just_started:
+    "Börja med det som känns osäkert i lugn trafik. Efter första bedömningen blir tipsen mer träffsäkra.",
+  building:
+    "Ni har redan kört ett tag. Välj det som fortfarande är osäkert — inte första lektionen.",
+  near_test:
+    "Inför uppkörningen: välj moment som fortfarande kräver påminnelse. Körpasset bedömer inte om ni är redo.",
+};
+
+/** Later-stage families should not get beginner car-control first. */
+const CORE_AREA_PREFERENCE: Record<PracticeStage, string[] | null> = {
+  unknown: null,
+  just_started: null,
+  building: [
+    "intersections_roundabouts",
+    "urban_traffic",
+    "rural_roads",
+    "highway",
+    "independent_safe_driving",
+  ],
+  near_test: [
+    "independent_safe_driving",
+    "highway",
+    "maneuvering",
+    "rural_roads",
+    "intersections_roundabouts",
+  ],
+};
+
+export function emptyFocusCopy(stage: string): string {
+  if (stage === "just_started") return EMPTY_FOCUS_COPY.just_started;
+  if (stage === "building") return EMPTY_FOCUS_COPY.building;
+  if (stage === "near_test") return EMPTY_FOCUS_COPY.near_test;
+  return EMPTY_FOCUS_COPY.unknown;
+}
+
 export async function recommendNextFocus(
   journeyId: string,
   client?: pg.PoolClient,
@@ -23,11 +62,12 @@ export async function recommendNextFocus(
   const db = client ?? getPool();
 
   const journeyResult = await db.query(
-    `SELECT transmission_scope FROM driving_journeys WHERE id = $1`,
+    `SELECT transmission_scope, practice_stage FROM driving_journeys WHERE id = $1`,
     [journeyId],
   );
   if (journeyResult.rowCount === 0) return [];
   const transmissionScope = journeyResult.rows[0].transmission_scope;
+  const practiceStage = String(journeyResult.rows[0].practice_stage) as PracticeStage;
 
   const excludeGearShifting = transmissionScope === "automatic_only";
 
@@ -107,6 +147,7 @@ export async function recommendNextFocus(
     addRecommendation({ ...row, reason: "with_support" });
   }
 
+  const preferredAreas = CORE_AREA_PREFERENCE[practiceStage] ?? null;
   const coreUnobserved = await db.query(
     `SELECT s.id AS skill_id, s.skill_key, sd.title
      FROM skills s
@@ -122,8 +163,13 @@ export async function recommendNextFocus(
                AND newer.journey_id = o.journey_id
            )
        )
-     ORDER BY sd.sort_order`,
-    [journeyId],
+     ORDER BY
+       CASE
+         WHEN $2::text[] IS NULL THEN 0
+         ELSE COALESCE(array_position($2::text[], sd.area_key), 100)
+       END,
+       sd.sort_order`,
+    [journeyId, preferredAreas],
   );
   for (const row of coreUnobserved.rows) {
     addRecommendation({ ...row, reason: "core_unobserved" });

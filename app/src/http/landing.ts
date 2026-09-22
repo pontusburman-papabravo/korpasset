@@ -58,7 +58,7 @@ const LANDING_FAQ: Array<FaqItem & { answerHtml?: string }> = [
   {
     question: "Kan jag ha flera handledare?",
     answer:
-      "Ja. Mamma och pappa, ett syskon eller någon annan godkänd handledare. Samma elevresa, gemensam historik. Nästa körpass kan fortsätta där det förra slutade.",
+      "Ja. Mamma och pappa, partner, ett syskon eller någon annan godkänd handledare. Samma elevresa, gemensam historik. Nästa körpass kan fortsätta där det förra slutade.",
   },
   {
     question: "Vi har redan övningskört ett tag — är det för sent?",
@@ -84,6 +84,21 @@ const LANDING_FAQ: Array<FaqItem & { answerHtml?: string }> = [
     question: "Hur hjälper Körpasset handledare under övningskörningen?",
     answer:
       "Som handledare för körkort får du samma historik som eleven, plus en handledarguide i appen: vad du tittar efter, hur du coachar och en fråga att ta med eleven. Efter körpasset ser ni hur det gick och vad som är nästa fokus. Flera handledare kan turas om utan att tappa tråden.",
+  },
+  {
+    question: "Jag är vuxen och övningskör med min partner — är Körpasset för oss?",
+    answer:
+      "Ja. Många som skriver upp sig är vuxna elever, inte bara 16-åringar. Partner, sambo eller förälder kan vara handledare. Eleven skapar resan och bjuder in.",
+  },
+  {
+    question: "Kan jag följa två barn, eller både partner och barn?",
+    answer:
+      "Ja. En handledare kan vara med på flera körkortsresor. Varje elev har sin egen resa och historik. Du väljer vilken du öppnar.",
+  },
+  {
+    question: "Vi kör för sällan — kan Körpasset hjälpa?",
+    answer:
+      "Ja som påminnelse att komma ut. Det svåra är ofta inte själva körningen, utan att faktiskt köra. Efter ett par dagar visar appen att det är dags för en ny runda.",
   },
   {
     question: "Var hittar jag de officiella reglerna för privat övningskörning?",
@@ -341,7 +356,7 @@ function howItWorks(): string {
           <span class="steps__num">1</span>
           <div>
             <h3>Koppla ihop körkortselev och handledare</h3>
-            <p>Eleven skapar resan och bjuder in via QR eller länk. Mamma, pappa, syskon eller någon annan godkänd handledare — flera kan dela samma historik.</p>
+            <p>Eleven skapar resan och bjuder in via QR eller länk. Mamma, pappa, partner, syskon eller någon annan godkänd handledare — flera kan dela samma historik. En handledare kan följa flera elever.</p>
           </div>
         </li>
         <li>
@@ -397,7 +412,7 @@ function whyItExists(): string {
       <p class="eyebrow">Varför Körpasset</p>
       <h2>Få bättre struktur på övningskörningen</h2>
       <p class="lede">Privat övningskörning kan pågå länge och ske med flera olika personer. Det är lätt att tappa bort vad man redan tränat på, vad som fortfarande är svårt, vad nästa handledare bör fokusera på och hur eleven faktiskt utvecklas mot att ta körkort.</p>
-      <p>En del har precis börjat. Andra har kört EPA, moped och flera månader i bil och undrar vad de ska ta härnäst. Körpasset är till för båda — för handledare, körkortselev och den som vill träna inför körkort utan att ersätta handledarens ansvar i bilen eller en trafikskola.</p>
+      <p>En del har precis börjat. Andra har kört EPA, moped och flera månader i bil och undrar vad de ska ta härnäst. En del är vuxna och övningskör med partner. En del har två barn i olika skeden. Körpasset är till för er — utan att ersätta handledarens ansvar i bilen eller en trafikskola.</p>
     </div>
   </section>`;
 }
@@ -526,7 +541,7 @@ function interestSection(
         <div>
           <label for="message">Kort om er övningskörning <span class="optional">(valfritt)</span></label>
           <p class="muted field-hint" id="message-hint">Hur länge ni kört, vilka som handleder och vad ni vill ha hjälp med — till exempel tips på nästa steg.</p>
-          <textarea id="message" name="message" maxlength="1000" rows="4" aria-describedby="message-hint" placeholder="T.ex. dotter 16, just börjat. Jag kör oftast, pappa ibland.">${escapeHtml(values.message ?? "")}</textarea>
+          <textarea id="message" name="message" maxlength="1000" rows="4" aria-describedby="message-hint" placeholder="T.ex. dotter 16, just börjat. Jag kör oftast, pappa ibland. Eller: son 17, kört ett år, vill ha nästa steg.">${escapeHtml(values.message ?? "")}</textarea>
         </div>
         <label class="consent">
           <input type="checkbox" name="consent" value="yes" required>

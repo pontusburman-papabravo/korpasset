@@ -35,6 +35,7 @@ skills ← skill_definitions (versionerad taxonomi)
 | `weather_condition` | `dry`, `rain`, `snow_ice`, `fog` |
 | `traffic_level` | `light`, `moderate`, `heavy` |
 | `transmission_scope` | `unknown`, `manual`, `automatic_only` |
+| `practice_stage` | `unknown`, `just_started`, `building`, `near_test` |
 | `journey_status` | `active`, `completed`, `archived` |
 | `auth_provider` | `guest`, `apple`, `google`, `passkey`, `email_magic_link` |
 
@@ -77,6 +78,7 @@ Elevägd resa. Studenten är **inte** collaborator.
 | `student_user_id` | `uuid` FK → `users` | Canonical student |
 | `licence_type` | `text` | `B` i v1 |
 | `transmission_scope` | `transmission_scope` | `unknown` default |
+| `practice_stage` | `practice_stage` | `unknown` default. Styr vilka nästa-steg som föreslås. Inte ett betyg inför uppkörning. |
 | `started_at` | `timestamptz` | |
 | `status` | `journey_status` | Högst en `active` B-resa per `student_user_id`. `completed`/`archived` räknas inte |
 | `created_at` | `timestamptz` | |

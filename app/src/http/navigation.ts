@@ -26,17 +26,22 @@ export async function signedInRedirectPath(userId: string): Promise<string> {
   return "/app";
 }
 
-export function renderJourneyPickerPage(journeys: AccessibleJourney[]): string {
+export function renderJourneyPickerPage(
+  journeys: AccessibleJourney[],
+  viewerUserId: string,
+): string {
+  const hasOwnJourney = journeys.some((journey) => journey.studentUserId === viewerUserId);
+  const heading = hasOwnJourney ? "Vilken körkortsresa vill du öppna?" : "Välj elev";
   const choices = journeys
     .map((journey) => {
-      const label = formatAccessibleJourneyLabel(journey);
+      const label = formatAccessibleJourneyLabel(journey, viewerUserId);
       return `<a class="card journey-choice" href="/journey/${escapeHtml(journey.id)}">${escapeHtml(label)}</a>`;
     })
     .join("");
   return layout(
-    "Välj elev",
-    `<h1>Välj elev</h1>
-     <p>Vilken körkortsresa vill du öppna?</p>
+    heading,
+    `<h1>${escapeHtml(heading)}</h1>
+     <p>Du kan följa flera elever — till exempel två barn, eller partner och barn.</p>
      <div class="stack">${choices}</div>`,
   );
 }

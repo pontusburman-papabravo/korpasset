@@ -25,7 +25,7 @@ describe("session and spent-invite fallback", () => {
     assert.equal(response.statusCode, 401);
     assert.match(response.headers["content-type"] ?? "", /text\/html/);
     assert.match(response.body, /Vi känner inte igen den här enheten/);
-    assert.match(response.body, /Starta som elev/);
+    assert.match(response.body, /Öppna Körpasset/);
 
     const json = await app.inject({
       method: "GET",

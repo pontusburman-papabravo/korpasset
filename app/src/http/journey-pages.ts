@@ -1,11 +1,16 @@
 import type { JourneyAccess } from "../services/authorization.js";
 import type { DrivingJourney } from "../services/journeys.js";
-import { transmissionLabel } from "../services/journeys.js";
+import {
+  PRACTICE_STAGES,
+  practiceStageLabel,
+  transmissionLabel,
+} from "../services/journeys.js";
 import type { EndedDriveSummary } from "../services/drives.js";
 import type { RecommendedSkill } from "../services/recommendations.js";
+import { emptyFocusCopy } from "../services/recommendations.js";
 import { actorDisplayName } from "../services/actor-display.js";
 import type { AreaProgress, JourneyReadiness } from "../services/progression.js";
-import { formatDay } from "../services/progression.js";
+import { STALE_DRIVE_DAYS, daysSince, formatDay, formatDaysSince } from "../services/progression.js";
 import type { SkillWithDefinition } from "../services/skills.js";
 import {
   SUPERVISOR_ROLE_CHAPTERS,
@@ -57,19 +62,22 @@ export function renderJourneyHome(options: {
        </section>`
     : "";
 
+  const staleDays =
+    latestEnded && !activeDriveId ? daysSince(latestEnded.endedAt) : 0;
+  const staleDrive = staleDays >= STALE_DRIVE_DAYS;
   const startSection =
     hasSupervisor && !activeDriveId
       ? `<section class="card card--action">
-           <p class="eyebrow">${isStudent ? "Planera" : "I bilen"}</p>
-           <h2>${isStudent ? "Nästa körpass" : "Dagens fokus"}</h2>
-           <p>Välj 2–3 moment att träna på idag.</p>
+           <p class="eyebrow">${staleDrive ? "Dags att komma ut" : isStudent ? "Planera" : "I bilen"}</p>
+           <h2>${staleDrive ? `Det är ${escapeHtml(formatDaysSince(staleDays))} sedan senaste körpasset` : isStudent ? "Nästa körpass" : "Dagens fokus"}</h2>
+           <p>${staleDrive ? "Det svåra är ofta att komma ut och köra — även en kort runda räknas." : "Välj 2–3 moment att träna på idag."}</p>
            <a class="btn btn-primary" href="/journey/${journeyId}/drive/new">Vad tränar ni på idag?</a>
          </section>`
       : "";
 
   const noSupervisor = !hasSupervisor
     ? `<section class="card">
-         <p class="muted">Bjud in mamma, pappa eller den som kör med er. Flera handledare går bra.</p>
+         <p class="muted">Bjud in mamma, pappa, partner eller den som kör med er. Flera handledare går bra.</p>
        </section>`
     : "";
 
@@ -85,7 +93,7 @@ export function renderJourneyHome(options: {
              )
              .join("")}
          </ul>`
-      : `<p class="muted">Välj 2–3 moment som känns osäkra — även om ni redan kört länge. Efter första bedömningen blir tipsen mer träffsäkra.</p>`;
+      : `<p class="muted">${escapeHtml(emptyFocusCopy(journey.practiceStage))}</p>`;
 
   const nextSection = `<section class="card">
     <h2>Nästa gång</h2>
@@ -163,11 +171,29 @@ export function renderJourneyHome(options: {
     ${
       hasSupervisor
         ? `<ul class="supervisor-list">${supervisorList}</ul>
-           ${isStudent ? `<p class="muted">Kör pappa, mamma eller ett syskon också? Bjud in dem så de ser samma historik.</p>` : ""}`
+           ${isStudent ? `<p class="muted">Kör pappa, mamma, partner eller ett syskon också? Bjud in dem så de ser samma historik.</p>` : ""}`
         : `<p class="muted">Ingen handledare ännu.</p>`
     }
     ${inviteForm}
   </section>`;
+
+  const practiceOptions = PRACTICE_STAGES.map((stage) => {
+    const selected = journey.practiceStage === stage ? " selected" : "";
+    return `<option value="${stage}"${selected}>${escapeHtml(practiceStageLabel(stage))}</option>`;
+  }).join("");
+
+  const practiceSection = isStudent
+    ? `<section class="card">
+         <h2>Var ni är</h2>
+         <p class="muted">Så vi föreslår rätt sorts nästa steg. Inte ett betyg inför uppkörning.</p>
+         <form method="post" action="/journey/${journeyId}/practice-stage" class="stack">
+           <select name="practice_stage" class="supervisor-select" aria-label="Övningsläge">
+             ${practiceOptions}
+           </select>
+           ${primaryButton("Spara")}
+         </form>
+       </section>`
+    : "";
 
   const transmissionSection = isStudent
     ? `<section class="card">
@@ -194,6 +220,7 @@ export function renderJourneyHome(options: {
     ${latestSection}
     ${developmentSection}
     ${supervisorsSection}
+    ${practiceSection}
     ${transmissionSection}`;
 }
 

@@ -196,6 +196,35 @@ a.journey-choice {
   font-weight: 600;
 }
 
+a.journey-choice strong {
+  display: block;
+}
+
+a.journey-choice .muted {
+  display: block;
+  margin: 0.35rem 0 0;
+  font-weight: 400;
+}
+
+.field-hint {
+  margin: -0.25rem 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+.btn-link {
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.plain-list {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+}
+
+.plain-list li {
+  margin-bottom: 0.5rem;
+}
+
 .banner {
   border-radius: 0.75rem;
   padding: 0.875rem 1rem;

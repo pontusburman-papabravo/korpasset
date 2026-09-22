@@ -4,12 +4,26 @@ import { getPool, withTransaction } from "../db/pool.js";
 import { createGuestUser, getReusableSessionUserId } from "./users.js";
 import { recordProductEventSafe } from "./product-events.js";
 
+export const PRACTICE_STAGES = [
+  "unknown",
+  "just_started",
+  "building",
+  "near_test",
+] as const;
+
+export type PracticeStage = (typeof PRACTICE_STAGES)[number];
+
+export function isPracticeStage(value: string): value is PracticeStage {
+  return (PRACTICE_STAGES as readonly string[]).includes(value);
+}
+
 export interface DrivingJourney {
   id: string;
   studentUserId: string;
   studentName: string | null;
   licenceType: string;
   transmissionScope: string;
+  practiceStage: PracticeStage;
   status: string;
 }
 
@@ -34,9 +48,14 @@ export function activeStudentJourneyExistsError(): ConflictError {
 export async function createJourneyForStudent(
   displayName: string,
   existingUserId?: string | null,
+  practiceStage: PracticeStage = "unknown",
 ): Promise<{ journey: DrivingJourney; userId: string }> {
   try {
-    return await createJourneyForStudentInTransaction(displayName, existingUserId);
+    return await createJourneyForStudentInTransaction(
+      displayName,
+      existingUserId,
+      practiceStage,
+    );
   } catch (error) {
     if (isUniqueViolation(error, ACTIVE_STUDENT_JOURNEY_UNIQUE)) {
       throw activeStudentJourneyExistsError();
@@ -48,6 +67,7 @@ export async function createJourneyForStudent(
 async function createJourneyForStudentInTransaction(
   displayName: string,
   existingUserId?: string | null,
+  practiceStage: PracticeStage = "unknown",
 ): Promise<{ journey: DrivingJourney; userId: string }> {
   return withTransaction(async (client) => {
     const reusableUserId = await getReusableSessionUserId(existingUserId, client);
@@ -77,10 +97,10 @@ async function createJourneyForStudentInTransaction(
     }
 
     const journeyResult = await client.query(
-      `INSERT INTO driving_journeys (student_user_id, licence_type, transmission_scope)
-       VALUES ($1, 'B', 'unknown')
-       RETURNING id, student_user_id, licence_type, transmission_scope, status`,
-      [userId],
+      `INSERT INTO driving_journeys (student_user_id, licence_type, transmission_scope, practice_stage)
+       VALUES ($1, 'B', 'unknown', $2)
+       RETURNING id, student_user_id, licence_type, transmission_scope, practice_stage, status`,
+      [userId, practiceStage],
     );
     const row = journeyResult.rows[0];
 
@@ -97,6 +117,7 @@ async function createJourneyForStudentInTransaction(
         studentName: userResult.rows[0].display_name,
         licenceType: row.licence_type,
         transmissionScope: row.transmission_scope,
+        practiceStage: row.practice_stage,
         status: row.status,
       },
     };
@@ -121,7 +142,7 @@ export async function getJourneyById(
 ): Promise<DrivingJourney | null> {
   const db = client ?? (await import("../db/pool.js")).getPool();
   const result = await db.query(
-    `SELECT j.id, j.student_user_id, j.licence_type, j.transmission_scope, j.status,
+    `SELECT j.id, j.student_user_id, j.licence_type, j.transmission_scope, j.practice_stage, j.status,
             u.display_name AS student_name
      FROM driving_journeys j
      JOIN users u ON u.id = j.student_user_id
@@ -136,18 +157,24 @@ export async function getJourneyById(
     studentName: row.student_name,
     licenceType: row.licence_type,
     transmissionScope: row.transmission_scope,
+    practiceStage: row.practice_stage,
     status: row.status,
   };
 }
 
 export interface AccessibleJourney {
   id: string;
+  studentUserId: string;
   studentName: string;
   lastDriveAt: Date | null;
 }
 
-export function formatAccessibleJourneyLabel(journey: AccessibleJourney): string {
-  const name = journey.studentName.trim() || "Eleven";
+export function formatAccessibleJourneyLabel(
+  journey: AccessibleJourney,
+  viewerUserId?: string,
+): string {
+  const owned = Boolean(viewerUserId && journey.studentUserId === viewerUserId);
+  const name = owned ? "Min körkortsresa" : journey.studentName.trim() || "Eleven";
   if (!journey.lastDriveAt) return name;
   const formatted = journey.lastDriveAt
     .toLocaleDateString("sv-SE", { day: "numeric", month: "short" })
@@ -162,6 +189,7 @@ export async function listAccessibleActiveJourneys(
   const db = client ?? getPool();
   const result = await db.query(
     `SELECT j.id,
+            j.student_user_id,
             COALESCE(u.display_name, 'Eleven') AS student_name,
             (
               SELECT MAX(COALESCE(d.ended_at, d.started_at))
@@ -190,6 +218,7 @@ export async function listAccessibleActiveJourneys(
 
   return result.rows.map((row) => ({
     id: row.id as string,
+    studentUserId: row.student_user_id as string,
     studentName: row.student_name as string,
     lastDriveAt: row.last_drive_at ? new Date(row.last_drive_at) : null,
   }));
@@ -243,8 +272,32 @@ export async function updateTransmissionScope(
   }
 }
 
+export async function updatePracticeStage(
+  journeyId: string,
+  studentUserId: string,
+  practiceStage: PracticeStage,
+): Promise<void> {
+  const result = await getPool().query(
+    `UPDATE driving_journeys
+     SET practice_stage = $3, updated_at = now()
+     WHERE id = $1 AND student_user_id = $2
+     RETURNING id`,
+    [journeyId, studentUserId, practiceStage],
+  );
+  if (result.rowCount === 0) {
+    throw new ForbiddenError("Bara eleven kan ändra var ni är i övningskörningen");
+  }
+}
+
 export function transmissionLabel(scope: string): string {
   if (scope === "manual") return "Manuell";
   if (scope === "automatic_only") return "Automat";
+  return "Inte angivet";
+}
+
+export function practiceStageLabel(stage: string): string {
+  if (stage === "just_started") return "Precis börjat";
+  if (stage === "building") return "Har kört ett tag";
+  if (stage === "near_test") return "Nära uppkörning";
   return "Inte angivet";
 }

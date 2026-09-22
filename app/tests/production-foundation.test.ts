@@ -201,6 +201,7 @@ describe("production foundation / fresh database migrate", () => {
       "0008_observation_completed_steps.sql",
       "0009_auth_identities_one_provider_per_user.sql",
       "0010_one_active_student_journey.sql",
+      "0011_practice_stage.sql",
     ]);
     assert.deepEqual(first.stamped, []);
 
@@ -274,6 +275,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
       "0008_observation_completed_steps.sql",
       "0009_auth_identities_one_provider_per_user.sql",
       "0010_one_active_student_journey.sql",
+      "0011_practice_stage.sql",
     ]);
     assert.deepEqual(first.skipped, []);
 
@@ -304,6 +306,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
         "0008_observation_completed_steps.sql",
         "0009_auth_identities_one_provider_per_user.sql",
         "0010_one_active_student_journey.sql",
+        "0011_practice_stage.sql",
       ],
     );
 

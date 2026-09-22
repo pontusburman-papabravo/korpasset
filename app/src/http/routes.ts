@@ -11,7 +11,9 @@ import { createInvitation, acceptInvitation, getInvitationByToken } from "../ser
 import {
   createJourneyForStudent,
   getJourneyById,
+  isPracticeStage,
   listActiveSupervisors,
+  updatePracticeStage,
   updateTransmissionScope,
 } from "../services/journeys.js";
 import {
@@ -40,13 +42,18 @@ import {
   saveDriveObservations,
   type AssessmentLevel,
 } from "../services/observations.js";
-import { recommendNextFocus } from "../services/recommendations.js";
+import { emptyFocusCopy, recommendNextFocus } from "../services/recommendations.js";
 import {
   listJourneyReadiness,
   listSkillProgress,
   skillProgressLabel,
   isSkillNotApplicable,
 } from "../services/progression.js";
+import {
+  onboardingChooser,
+  studentOnboardingForm,
+  supervisorOnboardingPage,
+} from "./onboarding-pages.js";
 import { recordProductEventSafe } from "../services/product-events.js";
 import { config } from "../config.js";
 import { getReusableSessionUserId, getUserById } from "../services/users.js";
@@ -226,17 +233,10 @@ function groupSkillsByArea(
   return groups;
 }
 
-function onboardingForm(errorMessage?: string, name = ""): string {
-  return `${errorMessage ? errorBanner(errorMessage) : ""}
-         <h1>Vad heter du?</h1>
-         <p class="muted">Du bjuder sedan in mamma, pappa eller den som kör med er. Flera handledare går bra.</p>
-         <form method="post" action="/start" class="stack">
-           <div>
-             <label for="name">Namn</label>
-             <input id="name" name="name" type="text" required autocomplete="name" placeholder="Ditt namn" value="${escapeHtml(name)}">
-           </div>
-           ${primaryButton("Starta min körkortsresa")}
-         </form>`;
+function onboardingPath(query: { som?: string }): "elev" | "handledare" | "val" {
+  if (query.som === "elev") return "elev";
+  if (query.som === "handledare") return "handledare";
+  return "val";
 }
 
 function appLoginPage(errorMessage?: string): string {
@@ -274,7 +274,9 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     if (home.kind === "onboarding") {
       return reply.redirect("/onboarding");
     }
-    return reply.type("text/html").send(renderJourneyPickerPage(home.journeys));
+    return reply.type("text/html").send(
+      renderJourneyPickerPage(home.journeys, sessionUserId),
+    );
   });
 
   app.get("/onboarding", async (request, reply) => {
@@ -285,25 +287,41 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         return reply.redirect("/app");
       }
     }
+    const path = onboardingPath(request.query as { som?: string });
     const sessionUserId = await getReusableSessionUserId(userId);
     const user = sessionUserId ? await getUserById(sessionUserId) : null;
+    if (path === "handledare") {
+      return reply.type("text/html").send(
+        layout("Anslut som handledare", supervisorOnboardingPage()),
+      );
+    }
     if (!canCreateStudentJourney(user?.accountState)) {
+      const intro =
+        path === "elev"
+          ? "Du skapar elevresan efter att du fortsatt med Apple eller Google."
+          : "Fortsätt med Apple eller Google. Elev skapar resan. Handledare öppnar inbjudan.";
+      return reply.type("text/html").send(
+        layout("Kom in i Körpasset", `<h1>Kom in i Körpasset</h1>
+           ${oauthContinuePanel(intro)}
+           <p><a class="btn-link" href="/onboarding?som=handledare">Jag är handledare eller förälder</a></p>`),
+      );
+    }
+    if (path === "elev") {
       return reply.type("text/html").send(
         layout(
           "Starta din körkortsresa",
-          `<h1>Skapa din körkortsresa</h1>
-           ${oauthContinuePanel("Du skapar elevresan efter att du fortsatt med Apple eller Google.")}`,
+          studentOnboardingForm(undefined, { name: user?.displayName ?? "" }),
         ),
       );
     }
-    reply.type("text/html").send(
-      layout("Starta din körkortsresa", onboardingForm(undefined, user?.displayName ?? "")),
-    );
+    reply.type("text/html").send(layout("Kom in i Körpasset", onboardingChooser()));
   });
 
   app.post("/start", async (request, reply) => {
-    const body = request.body as { name?: string };
+    const body = request.body as { name?: string; practice_stage?: string };
     const name = body.name?.trim();
+    const rawStage = body.practice_stage ?? "unknown";
+    const practiceStage = isPracticeStage(rawStage) ? rawStage : "unknown";
     const sessionUserId = await getReusableSessionUserId(getSessionUserId(request));
     const user = sessionUserId ? await getUserById(sessionUserId) : null;
 
@@ -324,13 +342,20 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         .send(
           layout(
             "Starta din körkortsresa",
-            onboardingForm("Ange ditt namn", user?.displayName ?? ""),
+            studentOnboardingForm("Ange ditt namn", {
+              name: user?.displayName ?? "",
+              practiceStage,
+            }),
           ),
         );
     }
 
     try {
-      const { journey, userId } = await createJourneyForStudent(name, sessionUserId);
+      const { journey, userId } = await createJourneyForStudent(
+        name,
+        sessionUserId,
+        practiceStage,
+      );
       setSessionCookie(reply, userId);
       return reply.redirect(`/journey/${journey.id}`);
     } catch (error) {
@@ -339,7 +364,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         layout(
           "Starta din körkortsresa",
           `${errorBanner(message)}
-           ${status === 409 ? `<p><a class="btn btn-secondary" href="/app">Till Körpasset</a></p>` : onboardingForm(undefined, name ?? "")}`,
+           ${status === 409 ? `<p><a class="btn btn-secondary" href="/app">Till Körpasset</a></p>` : studentOnboardingForm(undefined, { name, practiceStage })}`,
         ),
       );
     }
@@ -450,6 +475,27 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     }
     try {
       await updateTransmissionScope(journeyId, userId, scope);
+      return reply.redirect(`/journey/${journeyId}`);
+    } catch (error) {
+      const { status, message } = handleError(error);
+      return reply.status(status).type("text/html").send(
+        layout("Fel", errorBanner(message)),
+      );
+    }
+  });
+
+  app.post("/journey/:journeyId/practice-stage", async (request, reply) => {
+    const { journeyId } = request.params as { journeyId: string };
+    const userId = requireSessionUserId(request);
+    const body = request.body as { practice_stage?: string };
+    const stage = body.practice_stage ?? "";
+    if (!isPracticeStage(stage)) {
+      return reply.status(400).type("text/html").send(
+        layout("Fel", errorBanner("Ogiltigt val för övningsläge")),
+      );
+    }
+    try {
+      await updatePracticeStage(journeyId, userId, stage);
       return reply.redirect(`/journey/${journeyId}`);
     } catch (error) {
       const { status, message } = handleError(error);
@@ -696,6 +742,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
              </div>`
           : "";
 
+      const journey = await getJourneyById(journeyId);
       const skills = (await listSkillsForTaxonomy()).filter(
         (skill) => !isSkillNotApplicable(skill.skillKey, access.transmissionScope),
       );
@@ -734,6 +781,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
           "Välj fokus",
           `<h1>Vad tränar ni på idag?</h1>
            <p>Välj 2–3 moment.</p>
+           <p class="muted">${escapeHtml(emptyFocusCopy(journey?.practiceStage ?? "unknown"))}</p>
            <p class="focus-count" id="focus-count" aria-live="polite">${preselectedCount} av 3 valda</p>
            <form method="post" action="/journey/${escapeHtml(journeyId)}/drives" class="stack" id="focus-form">
              ${supervisorPicker}
