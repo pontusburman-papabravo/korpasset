@@ -121,7 +121,8 @@ export async function acceptInvitation(
               j.student_user_id
        FROM journey_invitations i
        JOIN driving_journeys j ON j.id = i.journey_id
-       WHERE i.token_hash = $1`,
+       WHERE i.token_hash = $1
+       FOR UPDATE OF i`,
       [tokenHash],
     );
 
