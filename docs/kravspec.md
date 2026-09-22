@@ -240,7 +240,7 @@ Kraven nedan beskriver det kanoniska v1-flödet. Där vertical slice redan finns
 | ID | FR-1 |
 | Aktör | Elev |
 | Status | Implementerat som namn+session i vertical slice; betakonto enligt ADR-008 |
-| Beskrivning | En inloggad elev (Apple eller Google i appen) anger visningsnamn och ungefär var ni är i övningskörningen (`just_started` / `building` / `near_test`) och får en `driving_journey` med `licence_type = B`. `/onboarding` frågar först om personen tar körkort eller är handledare/förälder, så en förälder inte skapar elevresan av misstag. |
+| Beskrivning | En inloggad elev (Apple eller Google i appen) anger visningsnamn och ungefär var ni är i övningskörningen (`just_started` / `building` / `near_test`) och får en `driving_journey` med `licence_type = B`. `/onboarding` frågar först om personen tar körkort eller är handledare/förälder. Föräldern får en startlänk att skicka till eleven. Föräldern skapar inte barnets resa. `just_started` och senare skeden är lika first-class. |
 | Session | Servern skapar eller återanvänder `user_id` från verifierad Apple/Google-identity. Identity skickas inte in som betrodd klientdata. |
 | Efter steg | Eleven landar på sin journey-sida och kan bjuda in handledare. |
 | Slice-fallback | `/onboarding` som skapar guest-elev utan OAuth är utvecklingsflaggan `ALLOW_GUEST_STUDENT_ONBOARDING` (av i produktion), inte betans kontomodell. |

@@ -44,6 +44,8 @@ describe("landing and interest waitlist", () => {
     assert.match(response.body, /oavsett om ni just börjat eller redan kört ett år/);
     assert.match(response.body, /Mamma, pappa, partner, syskon/);
     assert.match(response.body, /Vi har redan övningskört ett tag/);
+    assert.match(response.body, /En förälder kan skicka in eleven/);
+    assert.match(response.body, /Jag är förälder och hittade Körpasset/);
     assert.match(response.body, /Jag är vuxen och övningskör med min partner/);
     assert.match(response.body, /Kan jag följa två barn/);
     assert.match(response.body, /Vi kör för sällan/);
@@ -117,7 +119,7 @@ describe("landing and interest waitlist", () => {
     assert.match(onboarding.body, /Hur är du med i övningskörningen/);
     const student = await app.inject({ method: "GET", url: "/onboarding?som=elev" });
     assert.match(student.body, /Starta min körkortsresa/);
-    assert.match(student.body, /mamma, pappa, partner eller den som kör med er/);
+    assert.match(student.body, /Om du är förälder till den som tar körkort/);
     await app.close();
   });
 

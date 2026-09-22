@@ -86,6 +86,11 @@ const LANDING_FAQ: Array<FaqItem & { answerHtml?: string }> = [
       "Som handledare för körkort får du samma historik som eleven, plus en handledarguide i appen: vad du tittar efter, hur du coachar och en fråga att ta med eleven. Efter körpasset ser ni hur det gick och vad som är nästa fokus. Flera handledare kan turas om utan att tappa tråden.",
   },
   {
+    question: "Jag är förälder och hittade Körpasset — hur kommer vi igång?",
+    answer:
+      "Du kan sätta igång utan att bli eleven. I appen väljer du handledare eller förälder och skickar länken till den som tar körkort. Eleven skapar sin körkortsresa och bjuder in dig. Resan tillhör eleven.",
+  },
+  {
     question: "Jag är vuxen och övningskör med min partner — är Körpasset för oss?",
     answer:
       "Ja. Många som skriver upp sig är vuxna elever, inte bara 16-åringar. Partner, sambo eller förälder kan vara handledare. Eleven skapar resan och bjuder in.",
@@ -356,7 +361,7 @@ function howItWorks(): string {
           <span class="steps__num">1</span>
           <div>
             <h3>Koppla ihop körkortselev och handledare</h3>
-            <p>Eleven skapar resan och bjuder in via QR eller länk. Mamma, pappa, partner, syskon eller någon annan godkänd handledare — flera kan dela samma historik. En handledare kan följa flera elever.</p>
+            <p>Eleven skapar resan och bjuder in via QR eller länk. En förälder kan skicka in eleven — resan skapas ändå av den som tar körkort. Mamma, pappa, partner, syskon eller någon annan godkänd handledare — flera kan dela samma historik. En handledare kan följa flera elever.</p>
           </div>
         </li>
         <li>

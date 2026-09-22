@@ -502,7 +502,8 @@ describe("beta UX HTTP", () => {
       method: "GET",
       url: `/journey/${journey.id}`,
     });
-    assert.match(home.body, /Bjud in mamma, pappa, partner eller den som kör med er/);
+    assert.match(home.body, /Bjud in den som kör med dig/);
+    assert.match(home.body, /Körkortsresan tillhör dig/);
     await app.close();
   });
 

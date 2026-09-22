@@ -105,6 +105,7 @@ describe("app navigation (GET /app)", () => {
     assert.equal(response.statusCode, 200);
     assert.match(response.body, /<h1>Välj elev<\/h1>/);
     assert.match(response.body, /Du kan följa flera elever/);
+    assert.match(response.body, /Varje resa är separat/);
     assert.match(response.body, /Clara/);
     assert.match(response.body, /Ella/);
     assert.match(response.body, new RegExp(`/journey/${clara.journey.id}`));
@@ -130,6 +131,7 @@ describe("app navigation (GET /app)", () => {
     assert.equal(response.statusCode, 200);
     assert.match(response.body, /Vilken körkortsresa vill du öppna/);
     assert.match(response.body, /Min körkortsresa/);
+    assert.match(response.body, /mer än en körkortsresa/);
     assert.match(response.body, /Clara/);
     assert.doesNotMatch(response.body, /<h1>Välj elev<\/h1>/);
     await app.close();

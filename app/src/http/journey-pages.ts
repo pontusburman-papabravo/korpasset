@@ -65,21 +65,42 @@ export function renderJourneyHome(options: {
   const staleDays =
     latestEnded && !activeDriveId ? daysSince(latestEnded.endedAt) : 0;
   const staleDrive = staleDays >= STALE_DRIVE_DAYS;
+  const firstDrive = hasSupervisor && !activeDriveId && !latestEnded;
+  const beginnerStart =
+    journey.practiceStage === "just_started" || journey.practiceStage === "unknown";
+  let startEyebrow = isStudent ? "Planera" : "I bilen";
+  let startTitle = isStudent ? "Nästa körpass" : "Dagens fokus";
+  let startBody = "Välj 2–3 moment att träna på idag.";
+  if (staleDrive) {
+    startEyebrow = "Senaste körpasset";
+    startTitle = `Det är ${formatDaysSince(staleDays)} sedan ni körde`;
+    startBody = "En kort runda räcker. Välj 2–3 moment när ni har en lucka.";
+  } else if (firstDrive && beginnerStart) {
+    startEyebrow = isStudent ? "Första passet" : "I bilen";
+    startTitle = isStudent ? "Ett första kort pass" : "Dagens fokus";
+    startBody = "Ett kort pass i lugn trafik räcker. Välj 2–3 moment att börja med.";
+  }
   const startSection =
     hasSupervisor && !activeDriveId
       ? `<section class="card card--action">
-           <p class="eyebrow">${staleDrive ? "Dags att komma ut" : isStudent ? "Planera" : "I bilen"}</p>
-           <h2>${staleDrive ? `Det är ${escapeHtml(formatDaysSince(staleDays))} sedan senaste körpasset` : isStudent ? "Nästa körpass" : "Dagens fokus"}</h2>
-           <p>${staleDrive ? "Det svåra är ofta att komma ut och köra — även en kort runda räknas." : "Välj 2–3 moment att träna på idag."}</p>
+           <p class="eyebrow">${escapeHtml(startEyebrow)}</p>
+           <h2>${escapeHtml(startTitle)}</h2>
+           <p>${escapeHtml(startBody)}</p>
            <a class="btn btn-primary" href="/journey/${journeyId}/drive/new">Vad tränar ni på idag?</a>
          </section>`
       : "";
 
-  const noSupervisor = !hasSupervisor
-    ? `<section class="card">
-         <p class="muted">Bjud in mamma, pappa, partner eller den som kör med er. Flera handledare går bra.</p>
-       </section>`
-    : "";
+  const inviteHero =
+    isStudent && !hasSupervisor
+      ? `<section class="card card--action">
+           <p class="eyebrow">Nästa steg</p>
+           <h2>Bjud in den som kör med dig</h2>
+           <p>Föräldern eller handledaren som hittade Körpasset ansluter med länken. Körkortsresan tillhör dig.</p>
+           <form method="post" action="/journey/${journeyId}/invitations">
+             ${primaryButton("Skapa inbjudan")}
+           </form>
+         </section>`
+      : "";
 
   const recList =
     options.recommendations.length > 0
@@ -160,11 +181,12 @@ export function renderJourneyHome(options: {
     )
     .join("");
 
-  const inviteForm = isStudent
-    ? `<form method="post" action="/journey/${journeyId}/invitations">
-         ${primaryButton(hasSupervisor ? "Bjud in fler handledare" : "Skapa inbjudan")}
+  const inviteForm =
+    isStudent && hasSupervisor
+      ? `<form method="post" action="/journey/${journeyId}/invitations">
+         ${primaryButton("Bjud in fler handledare")}
        </form>`
-    : "";
+      : "";
 
   const supervisorsSection = `<section class="card">
     <h2>${isStudent ? "Mina handledare" : "Handledare"}</h2>
@@ -213,8 +235,8 @@ export function renderJourneyHome(options: {
   return `${heading}
     ${pendingSection}
     ${activeSection}
+    ${inviteHero}
     ${startSection}
-    ${noSupervisor}
     ${nextSection}
     ${guideSection}
     ${latestSection}

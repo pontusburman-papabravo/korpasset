@@ -41,7 +41,11 @@ export function renderJourneyPickerPage(
   return layout(
     heading,
     `<h1>${escapeHtml(heading)}</h1>
-     <p>Du kan följa flera elever — till exempel två barn, eller partner och barn.</p>
+     <p>${
+       hasOwnJourney
+         ? "Du har mer än en körkortsresa. Varje resa är separat — access, utveckling och betalning blandas inte."
+         : "Du kan följa flera elever — till exempel två barn, eller partner och barn. Varje resa är separat."
+     }</p>
      <div class="stack">${choices}</div>`,
   );
 }

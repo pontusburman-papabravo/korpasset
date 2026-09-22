@@ -128,7 +128,7 @@ Inget nytt körpass får startas.
 
 Paywall tillhör resan. Den visas när någon försöker en stängd handling, och som tydlig men inte blockerande CTA på resans hem i `expired`.
 
-Eleven, en förälder eller en handledare på resan får genomföra köpet. Gästens `user_id` avgör inte om resan är `trial`, `active` eller `expired`.
+Eleven, en förälder eller en handledare på resan får genomföra köpet. Vem som betalar spelar ingen roll. En förälder som upptäckte produkten och driver onboarding blir inte ägare av resan genom köpet. Gästens `user_id` avgör inte om resan är `trial`, `active` eller `expired`.
 
 En person kan samtidigt se en egen `active` resa, en `trial`-resa som handledare och en `expired`-resa som handledare. Tillstånden blandas inte.
 

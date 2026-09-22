@@ -19,19 +19,25 @@ const REASON_MESSAGES: Record<RecommendedSkill["reason"], string> = {
 
 const EMPTY_FOCUS_COPY: Record<PracticeStage, string> = {
   unknown:
-    "Välj 2–3 moment som känns osäkra — även om ni redan kört länge. Efter första bedömningen blir tipsen mer träffsäkra.",
+    "Välj 2–3 moment för nästa pass. Efter första bedömningen blir tipsen mer träffsäkra.",
   just_started:
-    "Börja med det som känns osäkert i lugn trafik. Efter första bedömningen blir tipsen mer träffsäkra.",
+    "Första passen: börja i lugn trafik. Ett kort pass räcker.",
   building:
     "Ni har redan kört ett tag. Välj det som fortfarande är osäkert — inte första lektionen.",
   near_test:
     "Inför uppkörningen: välj moment som fortfarande kräver påminnelse. Körpasset bedömer inte om ni är redo.",
 };
 
-/** Later-stage families should not get beginner car-control first. */
+const FIRST_PASS_AREAS = [
+  "car_control",
+  "observation_interaction",
+  "positioning_lanes",
+];
+
+/** Both first-pass and later-stage families are first-class. */
 const CORE_AREA_PREFERENCE: Record<PracticeStage, string[] | null> = {
-  unknown: null,
-  just_started: null,
+  unknown: FIRST_PASS_AREAS,
+  just_started: FIRST_PASS_AREAS,
   building: [
     "intersections_roundabouts",
     "urban_traffic",

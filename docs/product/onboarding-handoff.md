@@ -4,12 +4,20 @@ Design för hur en elev bjuder in handledare utan administration och utan att by
 
 ## Flöde
 
-`/onboarding` frågar först om personen tar körkort eller är handledare/förälder. Det sparar ingen roll på kontot. Handledare/föräldrar ska inte skapa elevresan — de öppnar inbjudan från eleven. En handledare kan följa flera elever.
+`/onboarding` frågar först om personen tar körkort eller är handledare/förälder. Det sparar ingen roll på kontot.
+
+**Förälder/handledare får initiera. Eleven äger resan.** Föräldern skickar `/onboarding?som=elev` till den som tar körkort. Eleven skapar `driving_journey`. Föräldern ansluts som handledare via inbjudan. Föräldern skapar inte barnets resa.
+
+Familjer som precis ska börja och familjer mitt i resan är lika first-class. `practice_stage` styr nästa-steg, inte ägarskap.
 
 ```text
+Förälder hittar Körpasset och väljer handledare
+    ↓
+Förälder skickar startlänk till eleven
+    ↓
 Elev fortsätter med Apple eller Google i appen
     ↓
-Elev skapar driving_journey (namn + ungefär var ni är i övningskörningen)
+Elev skapar driving_journey (namn + var ni är i övningskörningen)
     ↓
 Elev genererar invitation (QR eller länk)
     ↓
@@ -23,6 +31,35 @@ Handledare blir journey_collaborator (role: supervisor)
     ↓
 Handledare deltar i körpass utan att administrera resan
 ```
+
+Om eleven hittar Körpasset själv:
+
+```text
+Elev väljer “Jag tar körkort”
+    ↓
+Anger namn och var ni är (precis börjat / kört ett tag / nära uppkörning)
+    ↓
+Skapar driving_journey
+    ↓
+Bjuder in en eller flera handledare
+```
+
+Båda vägarna slutar i samma modell: eleven äger resan, handledare ansluts via inbjudan.
+
+## Observation efter deploy
+
+Ingen ny analytics byggs här. Efter att handoffen är i produktion ska vi kunna följa, via befintlig data eller senare instrumentering:
+
+| Mått | Finns redan? | Källa / lucka |
+| --- | --- | --- |
+| Val av roll i onboarding (`elev` / `handledare` / väljare) | Nej | Ingen event. Query-param `som` loggas inte. |
+| Föräldrar/handledare som använder elevstartlänken | Nej | Länken är `/onboarding?som=elev` — samma path som en elev som går dit direkt. |
+| Elevresor skapade från förälder→elev-flödet | Nej | `journey_created` finns, men utan hänvisning till handoff. |
+| Nya elevresor som får minst en handledare | Ja, ungefär | `supervisor_connected` + `journey_collaborators`. |
+| Fördelning av `practice_stage` | Ja | Kolumn på `driving_journeys`. |
+| Nytt körpass efter stale-drive-nudge | Nej | `drive_started` / `drive_completed` finns, men nudge är bara UI. Ingen event för att den visades. |
+
+Nästa produktsignal ska komma från användning, inte från fler waitlist-features.
 
 ## Guest actor
 

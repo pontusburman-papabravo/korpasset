@@ -225,6 +225,43 @@ a.journey-choice .muted {
   margin-bottom: 0.5rem;
 }
 
+.stage-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.stage-fieldset legend {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.stage-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+  margin-bottom: 0.5rem;
+  background: var(--surface);
+}
+
+.stage-choice input {
+  margin-top: 0.2rem;
+}
+
+.stage-choice strong {
+  display: block;
+}
+
+.stage-choice__hint {
+  display: block;
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .banner {
   border-radius: 0.75rem;
   padding: 0.875rem 1rem;
