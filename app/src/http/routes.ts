@@ -57,7 +57,14 @@ import {
   errorBanner,
   invitationAlreadyUsedPage,
 } from "./layout.js";
-import { renderDevelopmentPage, renderJourneyHome } from "./journey-pages.js";
+import {
+  renderDevelopmentPage,
+  renderJourneyHome,
+  renderSupervisorGuideCues,
+  renderSupervisorGuideIndex,
+  renderSupervisorGuideSkill,
+} from "./journey-pages.js";
+import { supervisorGuideForSkillKey } from "../domain/supervisor-guide.js";
 import { renderLandingPage } from "./landing.js";
 import {
   coachingStepsForSkillKey,
@@ -143,6 +150,7 @@ function renderSupervisorLiveFocusRow(
       <h2 class="live-observe__title">${escapeHtml(skill.title)}</h2>
       ${statusHtml}
     </div>
+    ${renderSupervisorGuideCues(skill.skillKey)}
     <form method="post" action="/journey/${escapeHtml(journeyId)}/drive/${escapeHtml(driveId)}/observe" class="live-observe__form">
       <input type="hidden" name="skill_id" value="${escapeHtml(skill.skillId)}">
       ${renderCoachingStepChecklist({
@@ -432,12 +440,76 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
             readiness,
             skills: progress.map((skill) => ({
               skillId: skill.skillId,
+              skillKey: skill.skillKey,
               title: skill.title,
               areaKey: skill.areaKey,
               areaTitle: skill.areaTitle,
               label: skillProgressLabel(skill),
             })),
           }),
+          { journeyId, role: access.role },
+        ),
+      );
+    } catch (error) {
+      const { status, message } = handleError(error);
+      return reply.status(status).type("text/html").send(
+        layout("Fel", errorBanner(message)),
+      );
+    }
+  });
+
+  app.get("/journey/:journeyId/guide", async (request, reply) => {
+    const { journeyId } = request.params as { journeyId: string };
+    const userId = requireSessionUserId(request);
+
+    try {
+      const access = await requireJourneyAccess(journeyId, userId);
+      const journey = await getJourneyById(journeyId);
+      if (!journey) {
+        return reply.status(404).send("Not found");
+      }
+      const skills = await listSkillsForTaxonomy();
+      reply.type("text/html").send(
+        layout(
+          "Handledarguiden",
+          renderSupervisorGuideIndex({
+            journeyId,
+            studentName: journey.studentName ?? "Körkortsresa",
+            skills,
+          }),
+          { journeyId, role: access.role },
+        ),
+      );
+    } catch (error) {
+      const { status, message } = handleError(error);
+      return reply.status(status).type("text/html").send(
+        layout("Fel", errorBanner(message)),
+      );
+    }
+  });
+
+  app.get("/journey/:journeyId/guide/:skillKey", async (request, reply) => {
+    const { journeyId, skillKey } = request.params as {
+      journeyId: string;
+      skillKey: string;
+    };
+    const userId = requireSessionUserId(request);
+
+    try {
+      const access = await requireJourneyAccess(journeyId, userId);
+      if (!supervisorGuideForSkillKey(skillKey)) {
+        throw new AppError("Momentet finns inte i handledarguiden", 404);
+      }
+      const skill = (await listSkillsForTaxonomy()).find(
+        (item) => item.skillKey === skillKey,
+      );
+      if (!skill) {
+        throw new AppError("Momentet finns inte i handledarguiden", 404);
+      }
+      reply.type("text/html").send(
+        layout(
+          skill.title,
+          renderSupervisorGuideSkill({ journeyId, skill }),
           { journeyId, role: access.role },
         ),
       );
@@ -591,10 +663,13 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
               ${group.skills
                 .map((skill) => {
                   const checked = recommendedIds.has(skill.skillId) ? " checked" : "";
-                  return `<label class="skill-option">
-                    <input type="checkbox" name="skill_ids" value="${escapeHtml(skill.skillId)}"${checked}>
-                    <span>${escapeHtml(skill.title)}</span>
-                  </label>`;
+                  return `<div class="skill-option-row">
+                    <label class="skill-option">
+                      <input type="checkbox" name="skill_ids" value="${escapeHtml(skill.skillId)}"${checked}>
+                      <span>${escapeHtml(skill.title)}</span>
+                    </label>
+                    <a class="skill-option__guide" href="/journey/${escapeHtml(journeyId)}/guide/${escapeHtml(skill.skillKey)}">Så tränar ni</a>
+                  </div>`;
                 })
                 .join("")}
             </div>
@@ -771,6 +846,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
           const latest = latestMap.get(skill.skillId);
           return `<li>
             <strong>${escapeHtml(skill.title)}</strong>
+            ${renderSupervisorGuideCues(skill.skillKey)}
             ${
               latest
                 ? `<span class="muted"> · ${escapeHtml(ASSESSMENT_DISPLAY[latest.assessment].label)}</span>

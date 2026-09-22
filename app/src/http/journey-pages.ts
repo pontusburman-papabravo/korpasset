@@ -6,7 +6,14 @@ import type { RecommendedSkill } from "../services/recommendations.js";
 import { actorDisplayName } from "../services/actor-display.js";
 import type { AreaProgress, JourneyReadiness } from "../services/progression.js";
 import { formatDay } from "../services/progression.js";
+import type { SkillWithDefinition } from "../services/skills.js";
+import {
+  SUPERVISOR_ROLE_CHAPTERS,
+  supervisorGuideForSkillKey,
+} from "../domain/supervisor-guide.js";
+import { coachingStepsForSkillKey } from "../domain/coaching-steps.js";
 import { escapeHtml, primaryButton } from "./layout.js";
+import { TRANSPORTSTYRELSEN_LINKS } from "./landing.js";
 
 export function renderJourneyHome(options: {
   journey: DrivingJourney;
@@ -117,6 +124,13 @@ export function renderJourneyHome(options: {
     })
     .join("");
 
+  const guideSection = `<section class="card">
+    <p class="eyebrow">I bilen</p>
+    <h2>Handledarguiden</h2>
+    <p>Tips, frågor och steg för varje moment — så ni vet vad ni tittar efter.</p>
+    <a class="btn btn-secondary" href="/journey/${journeyId}/guide">Öppna guiden</a>
+  </section>`;
+
   const developmentSection = `<section class="card">
     <h2>Så här ligger ni till</h2>
     <div class="readiness-total">
@@ -176,6 +190,7 @@ export function renderJourneyHome(options: {
     ${startSection}
     ${noSupervisor}
     ${nextSection}
+    ${guideSection}
     ${latestSection}
     ${developmentSection}
     ${supervisorsSection}
@@ -188,6 +203,7 @@ export function renderDevelopmentPage(options: {
   readiness: JourneyReadiness;
   skills: {
     skillId: string;
+    skillKey: string;
     title: string;
     areaKey: string;
     areaTitle: string;
@@ -216,7 +232,7 @@ export function renderDevelopmentPage(options: {
           ${group.skills
             .map(
               (skill) => `<li>
-                <span class="development-title">${escapeHtml(skill.title)}</span>
+                <a class="development-title" href="/journey/${escapeHtml(options.journeyId)}/guide/${escapeHtml(skill.skillKey)}">${escapeHtml(skill.title)}</a>
                 <span class="development-label">${escapeHtml(skill.label)}</span>
               </li>`,
             )
@@ -246,7 +262,128 @@ export const FEEDBACK_TOPICS = [
   { value: "drive", label: "Starta eller avsluta körpass" },
   { value: "rating", label: "Bedömning efter körpass" },
   { value: "recap", label: "Så gick det / nästa gång" },
+  { value: "guide", label: "Handledarguiden" },
   { value: "supervisors", label: "Flera handledare" },
   { value: "technical", label: "Tekniskt problem" },
   { value: "other", label: "Annat" },
 ] as const;
+
+export function renderSupervisorGuideCues(skillKey: string): string {
+  const guide = supervisorGuideForSkillKey(skillKey);
+  if (!guide) return "";
+  const tip = guide.coachTips[0];
+  return `<div class="guide-cues">
+    <p class="guide-cues__tip"><span>Tips.</span> ${escapeHtml(tip)}</p>
+    <p class="guide-cues__ask"><span>Fråga.</span> ${escapeHtml(guide.discuss)}</p>
+  </div>`;
+}
+
+export function renderSupervisorGuideIndex(options: {
+  journeyId: string;
+  studentName: string;
+  skills: SkillWithDefinition[];
+}): string {
+  const groups = new Map<string, { areaTitle: string; skills: SkillWithDefinition[] }>();
+  for (const skill of options.skills) {
+    const existing = groups.get(skill.areaKey);
+    if (existing) existing.skills.push(skill);
+    else groups.set(skill.areaKey, { areaTitle: skill.areaTitle, skills: [skill] });
+  }
+
+  const chapters = SUPERVISOR_ROLE_CHAPTERS.map(
+    (chapter) => `<section class="card guide-chapter">
+      <h2>${escapeHtml(chapter.title)}</h2>
+      <ul>
+        ${chapter.points.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}
+      </ul>
+    </section>`,
+  ).join("");
+
+  const areas = [...groups.values()]
+    .map(
+      (group) => `<section class="skill-area">
+        <h2>${escapeHtml(group.areaTitle)}</h2>
+        <ul class="guide-skill-list">
+          ${group.skills
+            .map(
+              (skill) => `<li>
+                <a href="/journey/${escapeHtml(options.journeyId)}/guide/${escapeHtml(skill.skillKey)}">${escapeHtml(skill.title)}</a>
+              </li>`,
+            )
+            .join("")}
+        </ul>
+      </section>`,
+    )
+    .join("");
+
+  return `<h1>Handledarguiden</h1>
+    <p class="muted">${escapeHtml(options.studentName)} — så tränar ni varje moment. Tips och frågor i bilen, inte teori och inte ett officiellt körkortsresultat.</p>
+    ${chapters}
+    <section class="card">
+      <h2>Alla moment</h2>
+      <p class="muted">Samma 38 moment som i körpassen. Öppna ett och läs vad du tittar efter.</p>
+      ${areas}
+    </section>
+    <p class="muted">Råden bygger på Transportstyrelsens vägledning för privat övningskörning. Körpasset är en fristående tjänst — inte en myndighetsbok och inte någon annans handledarbok. <a href="${escapeHtml(TRANSPORTSTYRELSEN_LINKS.planera)}" rel="noopener noreferrer" target="_blank">Planera övningskörningen</a></p>
+    <p><a class="btn btn-secondary" href="/journey/${escapeHtml(options.journeyId)}">Tillbaka till resan</a></p>`;
+}
+
+export function renderSupervisorGuideSkill(options: {
+  journeyId: string;
+  skill: SkillWithDefinition;
+}): string {
+  const guide = supervisorGuideForSkillKey(options.skill.skillKey);
+  const steps = coachingStepsForSkillKey(options.skill.skillKey);
+  const lookFor = (guide?.lookFor ?? [])
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+  const tips = (guide?.coachTips ?? [])
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+  const stepItems = steps
+    .map((step) => `<li>${escapeHtml(step.label)}</li>`)
+    .join("");
+
+  return `<p class="eyebrow">${escapeHtml(options.skill.areaTitle)}</p>
+    <h1>${escapeHtml(options.skill.title)}</h1>
+    <p>${escapeHtml(options.skill.description)}</p>
+    ${
+      lookFor
+        ? `<section class="card">
+             <h2>Titta efter</h2>
+             <ul>${lookFor}</ul>
+           </section>`
+        : ""
+    }
+    ${
+      tips
+        ? `<section class="card">
+             <h2>Så coachar du</h2>
+             <ul>${tips}</ul>
+           </section>`
+        : ""
+    }
+    ${
+      guide
+        ? `<section class="card">
+             <h2>Fråga eleven</h2>
+             <p>${escapeHtml(guide.discuss)}</p>
+           </section>
+           <section class="card">
+             <h2>När ni tar det</h2>
+             <p>${escapeHtml(guide.tryWhen)}</p>
+           </section>`
+        : ""
+    }
+    ${
+      stepItems
+        ? `<section class="card">
+             <h2>Steg att öva</h2>
+             <ol class="guide-steps">${stepItems}</ol>
+           </section>`
+        : ""
+    }
+    <p><a class="btn btn-primary" href="/journey/${escapeHtml(options.journeyId)}/drive/new">Ta med i nästa körpass</a></p>
+    <p><a class="btn btn-secondary" href="/journey/${escapeHtml(options.journeyId)}/guide">Alla moment</a></p>
+    <p class="muted">Träningsstöd från kursplan och körprov — inte ett officiellt resultat.</p>`;
+}

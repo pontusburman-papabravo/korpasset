@@ -153,6 +153,8 @@ describe("beta UX HTTP", () => {
     assert.match(studentHome.body, /Så gick det/);
     assert.match(studentHome.body, /app-tabbar/);
     assert.match(studentHome.body, /Så här ligger ni till/);
+    assert.match(studentHome.body, /Handledarguiden/);
+    assert.match(studentHome.body, /href="\/journey\/[^"]+\/guide"/);
     assert.match(studentHome.body, /Totalt läge/);
     assert.match(studentHome.body, /\d+%/);
     assert.doesNotMatch(studentHome.body, /uppkörningsklar|Godkänd/);
@@ -165,6 +167,7 @@ describe("beta UX HTTP", () => {
     assert.equal(supervisorHome.statusCode, 200);
     assert.match(supervisorHome.body, /Du är handledare/);
     assert.match(supervisorHome.body, /Dagens fokus/);
+    assert.match(supervisorHome.body, /Handledarguiden/);
     assert.doesNotMatch(supervisorHome.body, /Växellåda/);
     assert.match(supervisorHome.body, new RegExp(`/drive/${drive.id}/done`));
 
@@ -224,6 +227,8 @@ describe("beta UX HTTP", () => {
     assert.match(supervisorDrive.body, /Körpass pågår/);
     assert.match(supervisorDrive.body, /Notera hur det går när det är säkert/);
     assert.match(supervisorDrive.body, /Steg att öva/);
+    assert.match(supervisorDrive.body, /Tips\./);
+    assert.match(supervisorDrive.body, /Fråga\./);
     assert.match(supervisorDrive.body, /Spegel/);
     assert.match(supervisorDrive.body, /Blinkers/);
     assert.match(supervisorDrive.body, /type="checkbox"/);
@@ -282,6 +287,7 @@ describe("beta UX HTTP", () => {
     assert.match(page.body, /\d+%/);
     assert.match(page.body, /Behöver hjälp/);
     assert.match(page.body, /Inte tränat ännu/);
+    assert.match(page.body, /\/guide\//);
     assert.doesNotMatch(page.body, /uppkörningsklar|Godkänd/);
 
     const saved = await injectWithSession(app, session(studentId), {
@@ -318,6 +324,51 @@ describe("beta UX HTTP", () => {
     await app.close();
   });
 
+  it("renders the supervisor guide for journey members", async () => {
+    const { journey, studentId, supervisor } = await setupRatedJourney();
+    const outsider = await createJourneyForStudent("Kim");
+    const app = await createTestApp();
+
+    const index = await injectWithSession(app, session(studentId), {
+      method: "GET",
+      url: `/journey/${journey.id}/guide`,
+    });
+    assert.equal(index.statusCode, 200);
+    assert.match(index.body, /<h1>Handledarguiden<\/h1>/);
+    assert.match(index.body, /Före körpasset/);
+    assert.match(index.body, /Under körpasset/);
+    assert.match(index.body, /Efter körpasset/);
+    assert.match(index.body, /Säkerhetskontroll/);
+    assert.match(index.body, /Planera övningskörningen/);
+    assert.doesNotMatch(index.body, /Handledarboken|Körkortsboken/);
+    assert.doesNotMatch(index.body, /uppkörningsklar|Godkänd/);
+
+    const skill = await injectWithSession(app, session(supervisor.userId), {
+      method: "GET",
+      url: `/journey/${journey.id}/guide/roundabout_entry`,
+    });
+    assert.equal(skill.statusCode, 200);
+    assert.match(skill.body, /Infart i rondell/);
+    assert.match(skill.body, /Titta efter/);
+    assert.match(skill.body, /Så coachar du/);
+    assert.match(skill.body, /Fråga eleven/);
+    assert.match(skill.body, /Steg att öva/);
+    assert.match(skill.body, /Ta med i nästa körpass/);
+
+    const missing = await injectWithSession(app, session(studentId), {
+      method: "GET",
+      url: `/journey/${journey.id}/guide/not_a_skill`,
+    });
+    assert.equal(missing.statusCode, 404);
+
+    const forbidden = await injectWithSession(app, session(outsider.userId), {
+      method: "GET",
+      url: `/journey/${journey.id}/guide`,
+    });
+    assert.equal(forbidden.statusCode, 403);
+    await app.close();
+  });
+
   it("preselects recommended skills on drive focus", async () => {
     const { journey, studentId } = await setupRatedJourney();
     const recommendations = await recommendNextFocus(journey.id);
@@ -336,6 +387,8 @@ describe("beta UX HTTP", () => {
         new RegExp(`value="${rec.skillId}" checked`),
       );
     }
+    assert.match(page.body, /Så tränar ni/);
+    assert.match(page.body, /\/guide\//);
     await app.close();
   });
 
@@ -390,6 +443,7 @@ describe("beta UX HTTP", () => {
     const help = await app.inject({ method: "GET", url: "/hjalp" });
     assert.equal(help.statusCode, 200);
     assert.match(help.body, /<h1>Hjälp<\/h1>/);
+    assert.match(help.body, /handledarguiden/);
     assert.match(help.body, /\/api\/client-error/);
 
     const posted = await injectWithSession(app, session(userId), {
