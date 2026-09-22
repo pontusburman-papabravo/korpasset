@@ -73,5 +73,6 @@ Varje `driving_journey` anger om resan är `unknown`, `manual` eller `automatic_
 - [Vision](vision.md)
 - [Produktprinciper](product-principles.md)
 - [Data model](../domain/data-model.md)
+- [Användare, roller och delad progress](users-and-progress.md)
 - [ADR-008: App-only konton](../decisions/ADR-008-app-oauth-accounts.md)
 - [Skill Taxonomy v1](../domain/skill-taxonomy.md)

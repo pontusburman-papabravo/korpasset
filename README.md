@@ -25,6 +25,7 @@ v1 är strikt fokuserad på den praktiska privata övningskörningen.
 - [MVP v1](docs/product/mvp-v1.md)
 - [Produktprinciper](docs/product/product-principles.md)
 - [Onboarding & handoff](docs/product/onboarding-handoff.md)
+- [Användare, roller och delad progress](docs/product/users-and-progress.md)
 
 ### Domän
 

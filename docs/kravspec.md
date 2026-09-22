@@ -113,18 +113,21 @@ New Observations
 
 ## 3. Aktörer
 
-| Aktör | Äger resan | Får administrera | Får bedöma körpass | Autentisering i v1 |
-| --- | --- | --- | --- | --- |
-| **Elev (student)** | Ja | Ja — inbjudningar | Nej (handledaren bedömer i vertical slice) | Apple eller Google i appen |
-| **Handledare (supervisor)** | Nej | Nej | Ja, för körpass där hen är tilldelad handledare | Gäst via invitation i appen, sedan Apple/Google på samma `user_id` |
-| **Trafiklärare (`driving_instructor`)** | Nej | — | — | Finns i datamodellen, **ingen v1-feature** |
+| Aktör | Äger resan | Får administrera | Får bedöma körpass | Får följa progress | Autentisering i v1 |
+| --- | --- | --- | --- | --- | --- |
+| **Elev (student)** | Ja | Ja — inbjudningar | Nej (handledaren bedömer i v1) | Ja — samma journey-read model | Apple eller Google i appen |
+| **Handledare (supervisor)** | Nej | Nej | Ja, för körpass där hen är tilldelad handledare | Ja — även körpass hen inte själv körde | Gäst via invitation i appen, sedan Apple/Google på samma `user_id` |
+| **Trafiklärare (`driving_instructor`)** | Nej | — | — | — | Finns i datamodellen, **ingen v1-feature** |
 
 Regler:
 
+- En registrerad user är en person, inte en roll. Roll är per `driving_journey`. Se [användare och progress](product/users-and-progress.md).
 - `driving_journeys.student_user_id` är canonical student.
 - Studenten är **inte** duplicerad som `journey_collaborator`.
 - Flera handledare är first-class. Samma elev, flera supervisors — utan att duplicera data eller byta `user_id`.
+- En handledare kan vara aktiv på flera elevers resor. En person kan vara elev på sin egen resa och handledare på andras.
 - Handledaren ska nästan aldrig administrera. QR/länk ger lågfriktions-handoff.
+- Elev och aktiva handledare ser **samma** utveckling, recap och nästa-gång-förslag. Progression tillhör resan.
 
 ---
 
@@ -330,10 +333,12 @@ Kraven nedan beskriver det kanoniska v1-flödet. Där vertical slice redan finns
 
 **Designregler för kontextväljaren:**
 
-- För handledare identifieras varje resa primärt med elevens namn.
+- För handledarresor identifieras varje resa primärt med elevens namn.
+- Den inloggades egen elevresa, om den finns bland valen, ska heta **"Min körkortsresa"**, inte personens eget namn som om hen handledde sig själv.
 - Senaste körpassets datum får visas som sekundär information, exempelvis **"Clara — senast körd 14 sep"**.
 - Kontextväljaren väljer endast vilken `driving_journey` användaren arbetar i.
 - Den startar inte ett nytt körpass och ska inte använda copy som antyder att ett körpass måste börja.
+- Rubriken **"Välj elev"** används när alla val är handledarresor. Ingår den egna elevresan ska rubriken vara **"Vilken körkortsresa vill du öppna?"**.
 
 Tillgängliga resor:
 
@@ -372,12 +377,30 @@ utan dubbletter. `archived`/`completed` räknas inte. Collaborator-access i v1 �
 | ID | FR-11 |
 | Aktör | Elev eller handledare |
 | Status | Specificerat, inte byggt |
-| Beskrivning | Det finns ingen separat registrering. Första lyckade Sign in with Apple eller Sign in with Google i appen skapar `users` (`account_state = active`) och en rad i `auth_identities`. Samma knapp är återkommande inloggning. |
+| Beskrivning | Det finns ingen separat registrering och inget val av roll. Första lyckade Sign in with Apple eller Sign in with Google i appen skapar `users` (`account_state = active`) och en rad i `auth_identities`. Samma knapp är återkommande inloggning. Roll uppstår när personen skapar en resa (elev) eller accepterar en inbjudan (handledare). |
 | Identitet | `provider_subject` är Apple respektive Google `sub`. E-post är inte nyckel och används inte för auto-merge. |
 | Kanal | Bara iOS- och Android-appen. `korpasset.se` skapar inte produktkonton (intresseanmälan är waitlist, inte signup). |
 | Inte v1 | E-post + lösenord, magic link, OTP, passkey och publik webb-signup. |
 | App Store | Sign in with Apple krävs när Google erbjuds. Konto ska kunna raderas i appen. |
 | Undantag | Waitlist-admin är intern e-post+lösenord och inte ett användarkonto. |
+
+### FR-12 Delad progress på resan
+
+| Fält | Krav |
+| --- | --- |
+| ID | FR-12 |
+| Aktör | Elev och varje aktiv handledare på samma `driving_journey` |
+| Status | Specificerat; delvis synligt i utvecklingssidan |
+| Beskrivning | Alla med journey-access ska kunna följa samma progression-read model: utveckling per moment, senaste recap och nästa rekommendation. |
+
+Regler:
+
+- Progression beräknas per resa, inte per handledare och inte som ett personligt betyg.
+- En handledare som inte körde senaste passet ska ändå se hur det gick och vad som rekommenderas.
+- Eleven ser samma utveckling som handledarna.
+- Etiketter är evidens (Inte tränat ännu / Behöver hjälp / Med påminnelse / Utan hjälp), inte godkännande eller uppkörningsberedskap.
+- Gästhandledare får se progress på den resa de accepterat. Registrerat konto krävs för att behålla flera elever över enheter.
+- Canonical utläggning: [användare och progress](product/users-and-progress.md).
 
 ---
 
@@ -800,6 +823,7 @@ Databas: raw SQL-migration, inget ORM i foundation. Docker Compose för lokal ut
 - [MVP v1](product/mvp-v1.md)
 - [Produktprinciper](product/product-principles.md)
 - [Onboarding & handoff](product/onboarding-handoff.md)
+- [Användare, roller och delad progress](product/users-and-progress.md)
 - [Skill Taxonomy v1](domain/skill-taxonomy.md)
 - [Data model](domain/data-model.md)
 - [Progression model](domain/progression-model.md)
@@ -867,9 +891,13 @@ Kör
 Tap-to-rate
         ↓
 Klart
+        ↓
+Samma utveckling som eleven (även pass hen inte körde)
 ```
 
 Handledaren ska ha **minsta möjliga administration**.
+
+Handledaren ska kunna öppna utveckling och recap på resan utan att ha kört det senaste passet. Det är så nästa handledare fortsätter där den förra slutade.
 
 FR-6 gäller fortsatt:
 
