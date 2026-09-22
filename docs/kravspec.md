@@ -418,11 +418,29 @@ Regler:
 - Det finns inget Premium-konto som gör en person betalande på alla sina resor.
 - SKU = `driving_journey` + tidsperiod. Inte user, handledare, enhet eller antal körpass.
 - Vem som betalar och vem som är elev behöver inte vara samma person.
-- Gratisperiod: 3 bedömda körpass eller 30 dagar, det som kommer först — per ny resa, inte per konto. Nya handledare ger inte ny gratisperiod.
 - Entitlements på olika resor påverkar inte varandra.
 - Gästs eller handledares `user_id` får aldrig avgöra betalstatus.
-- Utgången period raderar inte historik, progression, bedömningar eller relationer.
-- Canonical utläggning: [användare och progress §8](product/users-and-progress.md#8-betalning-och-access-tillhör-körkortsresan).
+- Canonical domän: [användare och progress §8](product/users-and-progress.md#8-betalning-och-access-tillhör-körkortsresan).
+- Trial, priser och paywall: [FR-14](#fr-14-paywall-och-entitlement-livscykel).
+
+### FR-14 Paywall och entitlement-livscykel
+
+| Fält | Krav |
+| --- | --- |
+| ID | FR-14 |
+| Aktör | Alla med journey-access |
+| Status | Specificerat, inte byggt, inte aktivt under betan |
+| Beskrivning | Resan går `trial` → `expired` → `active` → `expired` → `active` vid förlängning/förnyelse. |
+
+Regler:
+
+- Trial: 3 bedömda körpass eller 30 dagar, det som kommer först. Tillhör resan. Nya handledare ger inte ny trial.
+- Betalda perioder: 6 / 12 / 24 månader till preliminärt 349 / 499 / 749 kr. Hypoteser. Inget autogiro.
+- I `trial` och `active` är kärnloopen öppen för eleven och alla aktiva handledare.
+- I `expired` är historik, utveckling, recap och handledare **läsbara**. Nya körpass, ny bedömning och nya inbjudningar är stängda.
+- Ett körpass som redan pågår när resan blir `expired` får avslutas och bedömas. Därefter full `expired`.
+- Utgången period raderar inte historik. Paywall får inte hota med radering.
+- Canonical: [paywall och entitlement-livscykel](product/entitlement-lifecycle.md).
 
 ---
 
@@ -846,6 +864,7 @@ Databas: raw SQL-migration, inget ORM i foundation. Docker Compose för lokal ut
 - [Produktprinciper](product/product-principles.md)
 - [Onboarding & handoff](product/onboarding-handoff.md)
 - [Användare, roller och delad progress](product/users-and-progress.md)
+- [Paywall och entitlement-livscykel](product/entitlement-lifecycle.md)
 - [Skill Taxonomy v1](domain/skill-taxonomy.md)
 - [Data model](domain/data-model.md)
 - [Progression model](domain/progression-model.md)
@@ -1225,9 +1244,11 @@ Introducera betalning för nya användare
 
 Betalning är **inte ett krav för Beta Ready eller första Beta Validation**.
 
-Kommersiell access, när den införs, tillhör `driving_journey` — inte `user`. Inget Premium-konto. **En körkortsresa, ett köp, alla handledare.** Priserna 349 / 499 / 749 kr för 6 / 12 / 24 månader är hypoteser. Se [FR-13](#fr-13-kommersiell-access-tillhör-resan) och [användare och progress §8](product/users-and-progress.md#8-betalning-och-access-tillhör-körkortsresan).
+Kommersiell access, när den införs, tillhör `driving_journey` — inte `user`. Inget Premium-konto. **En körkortsresa, ett köp, alla handledare.**
 
-Paywall efter utgången period specificeras separat. Historik raderas inte.
+Trial, priser och vad som är läsbart efter utgång: [FR-14](#fr-14-paywall-och-entitlement-livscykel) och [paywall och entitlement-livscykel](product/entitlement-lifecycle.md).
+
+Historik raderas inte. Paywall enforceras inte under betan.
 
 ### Prioriteringsregel under beta
 

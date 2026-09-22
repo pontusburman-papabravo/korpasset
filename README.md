@@ -26,6 +26,7 @@ v1 är strikt fokuserad på den praktiska privata övningskörningen.
 - [Produktprinciper](docs/product/product-principles.md)
 - [Onboarding & handoff](docs/product/onboarding-handoff.md)
 - [Användare, roller och delad progress](docs/product/users-and-progress.md)
+- [Paywall och entitlement-livscykel](docs/product/entitlement-lifecycle.md)
 
 ### Domän
 

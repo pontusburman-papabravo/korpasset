@@ -112,11 +112,7 @@ Registrering är alltså inte krav för att *se* progress på en resa man redan 
 
 Körpassets kommersiella access är kopplad till **`driving_journey`**, inte till `user`.
 
-Det finns därför inget generellt “Premium-konto” som gör en person betalande på alla sina resor.
-
-En betald period låser upp **en elevs körkortsresa inklusive alla aktiva handledare på den resan**.
-
-### Grundregel
+Det finns inget “Premium-konto” som gör en person betalande på alla sina resor.
 
 ```text
 person betalar
@@ -126,89 +122,13 @@ driving_journey får entitlement
 student + alla aktiva supervisors på resan får samma produktaccess
 ```
 
-Vem som genomför köpet och vem som är elev behöver inte vara samma person.
+Vem som betalar och vem som är elev behöver inte vara samma person. Flera handledare kräver inte flera köp. Gästens eller handledarens `user_id` avgör aldrig betalstatus.
 
-Exempel:
-
-- eleven kan köpa sin egen resa,
-- en förälder eller handledare kan betala för elevens resa,
-- flera handledare kräver inte flera köp.
-
-Det kommersiella SKU:t representerar alltså:
-
-**`driving_journey` + tidsperiod**
-
-inte:
-
-- användare,
-- handledare,
-- enhet,
-- antal körpass.
-
-### Perioder
-
-Planerad kommersiell modell:
-
-| Period | Preliminärt pris | Positionering |
-| --- | ---: | --- |
-| 6 månader | 349 kr | För den som redan är igång |
-| 12 månader | 499 kr | Rekommenderat |
-| 24 månader | 749 kr | Hela körkortsresan |
-
-Priserna är hypoteser tills betalexperimentet genomförts.
-
-Köpet är ett **förbetalt tidsbegränsat köp utan automatisk förnyelse**.
-
-När perioden tar slut kan ytterligare tid köpas till samma `driving_journey`.
-
-### Gratisperiod
-
-En ny `driving_journey` får använda kärnloopen gratis tills:
-
-- 3 bedömda körpass har genomförts, eller
-- 30 dagar har passerat,
-
-beroende på vilket som **inträffar först**.
-
-Gratisperioden tillhör resan, inte användarkontot.
-
-Att lägga till eller byta handledare skapar därför inte en ny gratisperiod.
-
-### Flera resor för samma användare
-
-Entitlements följer respektive resa separat.
-
-Exempel:
-
-En person kan samtidigt vara:
-
-- elev på sin egen betalda `driving_journey`,
-- handledare på en annan elevs betalda resa,
-- handledare på ytterligare en resa som fortfarande befinner sig i gratisperioden.
-
-Dessa accessnivåer påverkar inte varandra.
-
-### Gäster
-
-En gäst som fått giltig access till en `driving_journey` får använda de funktioner som rollen och resans entitlement medger.
-
-Gästen behöver inte själv ha genomfört något köp.
-
-Betalstatus får därför aldrig avgöras utifrån gästens eller handledarens `user_id`.
-
-### När en betald period löper ut
-
-Utgången kommersiell access får inte radera körhistorik, progression, bedömningar eller relationer.
-
-Historiken tillhör fortsatt `driving_journey`.
-
-Exakt vilka funktioner som är tillgängliga efter periodens slut definieras separat i paywall-/entitlement-specifikationen.
-
-### Produktprincip
+Entitlements följer respektive resa separat. En person kan samtidigt vara elev på en betald resa och handledare på en annan som är i trial eller utgången. Nivåerna påverkar inte varandra.
 
 > **En körkortsresa, ett köp, alla handledare.**
 
-Körpasset tar inte betalt per person som hjälper eleven att övningsköra. Flera handledare är en del av produktens kärnvärde och ska inte skapa ytterligare betalfriktion.
+Trial, priser, tillstånden `trial` / `active` / `expired` och vad som är läsbart efter utgång ligger i [paywall och entitlement-livscykel](entitlement-lifecycle.md) — inte här.
 
 ## Relaterade dokument
 
@@ -217,4 +137,5 @@ Körpasset tar inte betalt per person som hjälper eleven att övningsköra. Fle
 - [ADR-008: App-only konton](../decisions/ADR-008-app-oauth-accounts.md)
 - [Onboarding & handoff](onboarding-handoff.md)
 - [MVP v1](mvp-v1.md)
-- [Kravspec FR-8, FR-9, FR-12, FR-13](../kravspec.md#5-funktionella-krav)
+- [Paywall och entitlement-livscykel](entitlement-lifecycle.md)
+- [Kravspec FR-8, FR-9, FR-12, FR-13, FR-14](../kravspec.md#5-funktionella-krav)

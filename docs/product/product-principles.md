@@ -39,7 +39,7 @@ Canonical v1-principer för Körpasset. Dessa är låsta tills ett ADR explicit 
 21. **Officiella källor får beskrivas korrekt.**
 22. **Ingen falsk readiness-precision.**
 23. **Produktkonton skapas bara i appen via Apple eller Google.** Ingen e-post/lösenord, magic link eller passkey för elever och handledare. Se [ADR-008](../decisions/ADR-008-app-oauth-accounts.md).
-24. **En körkortsresa, ett köp, alla handledare.** Kommersiell access tillhör `driving_journey`, inte `user`. Inget Premium-konto. Se [användare och progress §8](users-and-progress.md#8-betalning-och-access-tillhör-körkortsresan).
+24. **En körkortsresa, ett köp, alla handledare.** Kommersiell access tillhör `driving_journey`, inte `user`. Inget Premium-konto. Se [användare och progress §8](users-and-progress.md#8-betalning-och-access-tillhör-körkortsresan) och [paywall](entitlement-lifecycle.md).
 
 Fullständig utläggning: [kravspec](../kravspec.md).
 
