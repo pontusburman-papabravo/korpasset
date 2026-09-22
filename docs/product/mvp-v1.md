@@ -74,4 +74,6 @@ Varje `driving_journey` anger om resan är `unknown`, `manual` eller `automatic_
 - [Produktprinciper](product-principles.md)
 - [Data model](../domain/data-model.md)
 - [ADR-008: App-only konton](../decisions/ADR-008-app-oauth-accounts.md)
+- [ADR-009: Resan är säljobjektet](../decisions/ADR-009-journey-priced.md)
+- [Betalmodell](pricing.md)
 - [Skill Taxonomy v1](../domain/skill-taxonomy.md)

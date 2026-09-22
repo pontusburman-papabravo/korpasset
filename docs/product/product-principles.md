@@ -39,6 +39,7 @@ Canonical v1-principer för Körpasset. Dessa är låsta tills ett ADR explicit 
 21. **Officiella källor får beskrivas korrekt.**
 22. **Ingen falsk readiness-precision.**
 23. **Produktkonton skapas bara i appen via Apple eller Google.** Ingen e-post/lösenord, magic link eller passkey för elever och handledare. Se [ADR-008](../decisions/ADR-008-app-oauth-accounts.md).
+24. **Körpasset säljs per elevs körkortsresa.** Ett köp omfattar eleven och alla handledare. Inget månadsabonnemang, ingen avgift per körpass. Se [ADR-009](../decisions/ADR-009-journey-priced.md) och [betalmodell](pricing.md).
 
 Fullständig utläggning: [kravspec](../kravspec.md).
 
@@ -52,3 +53,4 @@ Fullständig utläggning: [kravspec](../kravspec.md).
 - [ADR-006: B2C-first](../decisions/ADR-006-b2c-first.md)
 - [ADR-007: PostgreSQL 15](../decisions/ADR-007-postgresql-15.md)
 - [ADR-008: App-only konton via Apple och Google](../decisions/ADR-008-app-oauth-accounts.md)
+- [ADR-009: Resan är säljobjektet](../decisions/ADR-009-journey-priced.md)

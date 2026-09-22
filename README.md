@@ -25,6 +25,7 @@ v1 är strikt fokuserad på den praktiska privata övningskörningen.
 - [MVP v1](docs/product/mvp-v1.md)
 - [Produktprinciper](docs/product/product-principles.md)
 - [Onboarding & handoff](docs/product/onboarding-handoff.md)
+- [Betalmodell](docs/product/pricing.md) — resan är säljobjektet; priser är hypoteser
 
 ### Domän
 
@@ -49,6 +50,7 @@ v1 är strikt fokuserad på den praktiska privata övningskörningen.
 - [ADR-006: B2C-first](docs/decisions/ADR-006-b2c-first.md)
 - [ADR-007: PostgreSQL 15](docs/decisions/ADR-007-postgresql-15.md)
 - [ADR-008: App-only konton via Apple och Google](docs/decisions/ADR-008-app-oauth-accounts.md)
+- [ADR-009: Resan är säljobjektet](docs/decisions/ADR-009-journey-priced.md)
 
 ## Databas
 

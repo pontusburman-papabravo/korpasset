@@ -185,6 +185,8 @@ Canonical v1-principer. Dessa är låsta tills ett ADR explicit ändrar dem.
 
 23. **Produktkonton skapas bara i appen via Apple eller Google.**
     Ingen e-post/lösenord, magic link eller passkey för elever och handledare. Se [ADR-008](decisions/ADR-008-app-oauth-accounts.md).
+24. **Körpasset säljs per elevs körkortsresa.**
+    Ett köp omfattar eleven och alla handledare. Inget månadsabonnemang, ingen avgift per handledare, körpass eller moment. Se [ADR-009](decisions/ADR-009-journey-priced.md) och [betalmodell](product/pricing.md).
 
 ### Pass-metaforen
 
@@ -787,6 +789,7 @@ Fullständig kontoradering är **inte** ett produktflöde i vertical slice. Befi
 | [ADR-006](decisions/ADR-006-b2c-first.md) | B2C-first. Ingen trafikskola eller extern API i v1. | Accepted |
 | [ADR-007](decisions/ADR-007-postgresql-15.md) | PostgreSQL 15+ p.g.a. column-specific `ON DELETE SET NULL`. | Accepted |
 | [ADR-008](decisions/ADR-008-app-oauth-accounts.md) | Produktkonton bara i appen via Apple och Google. Ingen webb-signup. | Accepted |
+| [ADR-009](decisions/ADR-009-journey-priced.md) | Säljobjektet är elevens `driving_journey`, inte user/handledare/körpass. | Accepted |
 
 Databas: raw SQL-migration, inget ORM i foundation. Docker Compose för lokal utveckling.
 
@@ -800,6 +803,7 @@ Databas: raw SQL-migration, inget ORM i foundation. Docker Compose för lokal ut
 - [MVP v1](product/mvp-v1.md)
 - [Produktprinciper](product/product-principles.md)
 - [Onboarding & handoff](product/onboarding-handoff.md)
+- [Betalmodell](product/pricing.md)
 - [Skill Taxonomy v1](domain/skill-taxonomy.md)
 - [Data model](domain/data-model.md)
 - [Progression model](domain/progression-model.md)
@@ -1173,9 +1177,38 @@ Bredda mot cirka 50–100 elevresor
 Introducera betalning för nya användare
 ```
 
-Exakta priser, trial-perioder och eventuell beta/founder-förmån specificeras separat inför kommersiell launch.
-
 Betalning är **inte ett krav för Beta Ready eller första Beta Validation**.
+
+Betalning aktiveras inte enbart för att den tekniskt är färdig. Före betalexperimentet ska Körpasset ha tillräckligt många aktiva elevresor för att bedöma:
+
+> **First Drive → Second Drive → fortsatt användning**
+
+Den viktigaste signalen är att familjer återkommer till nästa körpass och får värde av den gemensamma historiken.
+
+Canonical säljmodell: [betalmodell](product/pricing.md) och [ADR-009](decisions/ADR-009-journey-priced.md).
+
+### Säljmodell (låst struktur, hypotetiska priser)
+
+Körpasset säljs **per elevs körkortsresa**, inte per användare, handledare eller körpass. Ett köp omfattar eleven och alla elevens handledare.
+
+**Gratis provperiod:** kärnloopen tills **3 bedömda körpass**, dock längst **30 dagar**.
+
+**Därefter engångsköp utan automatisk förnyelse:**
+
+| Period | Preliminärt pris | Positionering |
+| --- | ---: | --- |
+| 6 månader | 349 kr | Slutdelen av övningskörningen |
+| 12 månader | 499 kr | Rekommenderat – de flesta resor |
+| 24 månader | 749 kr | Hela resan för den som börjar tidigt |
+
+Priserna är hypoteser och inte butikspris före betalexperimentet. Eventuell founder/beta-förmån specificeras separat.
+
+Kommersiella principer:
+
+- Inget månadsabonnemang och ingen automatisk förnyelse.
+- Ingen avgift per handledare, körpass, moment eller färdighet.
+- Eleven behåller samma resa och historik under köpt period. Ytterligare tid köps som ny period.
+- Betalningskanal följer respektive plattform och marknad.
 
 ### Prioriteringsregel under beta
 
