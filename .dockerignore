@@ -3,6 +3,7 @@
 **/node_modules
 **/.pgdata-test
 app/dist
+native
 **/.env
 **/.env.*
 !**/.env.example

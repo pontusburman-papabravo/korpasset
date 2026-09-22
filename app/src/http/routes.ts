@@ -4,6 +4,7 @@ import { AppError } from "../errors.js";
 import {
   getSessionUserId,
   requireSessionUserId,
+  setNativeAppCookie,
   setSessionCookie,
 } from "../auth/session.js";
 import { createInvitation, acceptInvitation, getInvitationByToken } from "../services/invitations.js";
@@ -260,6 +261,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get("/app", async (request, reply) => {
+    setNativeAppCookie(reply);
     const sessionUserId = await getReusableSessionUserId(getSessionUserId(request));
     if (!sessionUserId) {
       return reply.type("text/html").send(appLoginPage());
@@ -560,6 +562,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get("/invite/:token", async (request, reply) => {
+    setNativeAppCookie(reply);
     const { token } = request.params as { token: string };
     const invitation = await getInvitationByToken(token);
 

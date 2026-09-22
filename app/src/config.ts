@@ -46,11 +46,30 @@ export const config = {
   get emailFrom() {
     return process.env.EMAIL_FROM ?? "Körpasset <support@korpasset.se>";
   },
+  nativeCookieName: "korpasset_native",
+  get appleBundleId() {
+    return env("APPLE_BUNDLE_ID", "se.korpasset.app");
+  },
+  get appleTeamId() {
+    return (process.env.APPLE_TEAM_ID ?? "").trim();
+  },
   get appleAudiences() {
     return uniqueCsv(process.env.APPLE_CLIENT_ID, process.env.APPLE_CLIENT_IDS);
   },
   get googleAudiences() {
     return uniqueCsv(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_IDS);
+  },
+  get googleWebClientId() {
+    return (process.env.GOOGLE_WEB_CLIENT_ID ?? config.googleAudiences[0] ?? "").trim();
+  },
+  get googleIosClientId() {
+    return (process.env.GOOGLE_IOS_CLIENT_ID ?? "").trim();
+  },
+  get androidPackageName() {
+    return env("ANDROID_PACKAGE_NAME", config.appleBundleId);
+  },
+  get androidSha256CertFingerprints() {
+    return uniqueCsv(process.env.ANDROID_SHA256_CERT_FINGERPRINTS);
   },
   isOAuthConfigured(provider: "apple" | "google"): boolean {
     return provider === "apple"

@@ -23,6 +23,18 @@ export function publicUrl(path: string): string {
   return `${base}${normalized}`;
 }
 
+function publicOAuthConfig(): {
+  appleClientId: string;
+  googleWebClientId: string;
+  googleIosClientId: string;
+} {
+  return {
+    appleClientId: config.appleAudiences[0] ?? config.appleBundleId,
+    googleWebClientId: config.googleWebClientId,
+    googleIosClientId: config.googleIosClientId,
+  };
+}
+
 function faviconLink(): string {
   return `<link rel="icon" href="${BRAND_ASSETS.favicon}" type="image/svg+xml">`;
 }
@@ -52,7 +64,7 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
 <html lang="sv">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>${escapeHtml(title)} · Körpasset</title>
   <meta name="robots" content="noindex, nofollow">
   ${faviconLink()}
@@ -101,6 +113,8 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
       } catch (ignore) {}
     });
   </script>
+  <script>window.KORPASSET_OAUTH = ${JSON.stringify(publicOAuthConfig())};</script>
+  <script src="/app-oauth.js" defer></script>
 </body>
 </html>`;
 }
@@ -186,10 +200,11 @@ export function siteLayout(
 </html>`;
 }
 
-export function oauthContinuePanel(intro?: string): string {
+export function oauthContinuePanel(intro?: string, returnTo = "/app"): string {
   return `${intro ? `<p>${intro}</p>` : ""}
-         <div class="stack oauth-continue">
+         <div class="stack oauth-continue" data-return-to="${escapeHtml(returnTo)}">
            <p>Fortsätt med Apple eller Google. Samma knapp är både första gången och när du kommer tillbaka.</p>
+           <p id="oauth-error" class="banner banner-error" hidden></p>
            <button type="button" class="btn btn-primary" id="continue-apple" data-oauth-provider="apple">Fortsätt med Apple</button>
            <button type="button" class="btn btn-secondary" id="continue-google" data-oauth-provider="google">Fortsätt med Google</button>
          </div>`;

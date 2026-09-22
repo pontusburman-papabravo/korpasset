@@ -41,6 +41,9 @@ v1 är strikt fokuserad på den praktiska privata övningskörningen.
 - [Database](docs/architecture/database.md)
 - [Production](docs/operations/production.md) — env, health, backup/restore
 - [VPS-access](docs/operations/vps-access.md) — korpasset.se host, Compose, redeploy
+- [Native apps](docs/operations/native-apps.md) — Capacitor, TestFlight, Play, Universal/App Links
+- [Apple Developer](docs/operations/apple-developer.md) — App ID `se.korpasset.app`
+- [Google Play](docs/operations/google-play.md) — package `se.korpasset.app`
 
 ### Beslut (ADR)
 
@@ -102,4 +105,4 @@ Health: `GET /health` → `{ "status": "ok" }`.
 
 ## Status
 
-Canonical produkt- och databasgrund. Första vertical slice: journey → invitation → körpass → observation → rekommendation. Publik landning med intresseanmälan på `https://korpasset.se`. Produktappen har nu elev- och handledarhem, utveckling utan procent, hjälp/feedback, session-fallback och beta-funnel-events. Nästa efter konto-grunden: elev-onboarding efter Apple/Google, därefter native TestFlight/Play.
+Canonical produkt- och databasgrund. Första vertical slice: journey → invitation → körpass → observation → rekommendation. Publik landning med intresseanmälan på `https://korpasset.se`. Produktappen har `/app` efter Apple/Google, en aktiv elevresa, invite/claim och konto-UI. Native Capacitor-skal (`se.korpasset.app`) plus Universal/App Links för `/invite/*`.

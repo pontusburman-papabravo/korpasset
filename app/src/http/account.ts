@@ -51,6 +51,7 @@ function accountPage(options: {
      <section class="card account-providers">
        <h2>Inloggning</h2>
        <p>Du loggar in med Apple eller Google. Identitetsnyckel är provider <code>sub</code>, inte e-post. Du kan koppla båda till samma konto, men bara en Apple och en Google.</p>
+       <p id="oauth-error" class="banner banner-error" hidden></p>
        <ul class="account-providers__list">
          ${providerRow("apple", hasApple)}
          ${providerRow("google", hasGoogle)}

@@ -67,6 +67,21 @@ export function clearSessionCookie(reply: FastifyReply): void {
   });
 }
 
+export function setNativeAppCookie(reply: FastifyReply): void {
+  reply.setCookie(config.nativeCookieName, "1", {
+    path: "/",
+    httpOnly: false,
+    sameSite: "lax",
+    secure: config.cookieSecure,
+    signed: false,
+    maxAge: 60 * 60 * 24 * 365,
+  });
+}
+
+export function isNativeAppRequest(request: FastifyRequest): boolean {
+  return request.cookies[config.nativeCookieName] === "1";
+}
+
 export function getSessionUserId(request: FastifyRequest): string | null {
   const token = request.cookies[config.sessionCookieName];
   const session = parseSessionToken(token);
