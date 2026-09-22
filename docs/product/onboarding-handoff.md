@@ -70,8 +70,11 @@ Exakt en caller får raden. `RETURNING` tom → invitation redan accepterad, exp
 - Samma user får **inte** förekomma två gånger i samma journey
 - Studenten är **inte** collaborator — `student_user_id` på journey är canonical
 
+En person kan senare vara handledare på flera resor och samtidigt ha en egen elevresa. Roll väljs inte vid registrering. Se [användare och progress](users-and-progress.md).
+
 ## Relaterade dokument
 
+- [Användare, roller och delad progress](users-and-progress.md)
 - [Data model](../domain/data-model.md) — `journey_invitations`, `journey_collaborators`
 - [ADR-002: Actor/auth separation](../decisions/ADR-002-actor-auth-separation.md)
 - [ADR-008: App-only konton via Apple och Google](../decisions/ADR-008-app-oauth-accounts.md)
