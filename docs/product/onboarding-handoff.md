@@ -64,9 +64,9 @@ RETURNING *;
 
 Exakt en caller får raden. `RETURNING` tom → invitation redan accepterad, expired eller revoked.
 
-## Constraints (ej i UI ännu)
+## Constraints
 
-- Eleven får **inte** bjudas in som sin egen handledare
+- Eleven får **inte** bjudas in som sin egen handledare (`GET`/`POST /invite/...` ger 403)
 - Samma user får **inte** förekomma två gånger i samma journey
 - Studenten är **inte** collaborator — `student_user_id` på journey är canonical
 

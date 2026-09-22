@@ -595,18 +595,28 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const sessionUserId = await getReusableSessionUserId(getSessionUserId(request));
+    if (sessionUserId && sessionUserId === invitation.studentUserId) {
+      return reply.status(403).type("text/html").send(
+        layout(
+          "Inbjudan",
+          errorBanner("Du kan inte ansluta som handledare på din egen körkortsresa."),
+        ),
+      );
+    }
     const sessionUser = sessionUserId ? await getUserById(sessionUserId) : null;
     const sessionName = sessionUser?.displayName?.trim() ?? "";
+    const isActive = sessionUser?.accountState === "active";
 
     reply.type("text/html").send(
       layout(
         "Anslut som handledare",
         `<h1>Du ska övningsköra med ${escapeHtml(invitation.studentName)}</h1>
+         <p>Länken är till Körpasset-appen. Den skapar inget webbkonto och ingen waitlist-anmälan.</p>
          ${
            sessionUser && sessionName
              ? `<form method="post" action="/invite/${escapeHtml(token)}/accept" class="stack">
                   <input type="hidden" name="name" value="${escapeHtml(sessionName)}">
-                  <p>Du ansluter som ${escapeHtml(sessionName)}.</p>
+                  <p>Du ansluter som ${escapeHtml(sessionName)}${isActive ? "." : " (gäst)."}</p>
                   ${primaryButton("Anslut")}
                 </form>`
              : `<form method="post" action="/invite/${escapeHtml(token)}/accept" class="stack">
@@ -614,7 +624,8 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
                     <label for="name">Vad heter du?</label>
                     <input id="name" name="name" type="text" required autocomplete="name" placeholder="Ditt namn" value="${escapeHtml(sessionName)}">
                   </div>
-                  ${primaryButton(sessionUser ? "Anslut" : "Anslut som gäst")}
+                  <p class="muted">Utan Apple eller Google ansluter du som gäst på den här resan. Det är inte registrering. Senare kan du fortsätta med Apple eller Google i appen — samma person, samma historik.</p>
+                  ${primaryButton("Anslut som gäst")}
                 </form>`
          }`,
       ),

@@ -13,7 +13,7 @@ Ett origin:
 | `https://korpasset.se` | Landning + intresseanmälan. Skapar **inte** produktkonto. |
 | `https://korpasset.se/app` | App-produktentré. Ingen session → Apple/Google. Inloggad → FR-8. Inte indexerad. |
 | `https://korpasset.se/onboarding` | Skapa elevresa. I produktion bara för `account_state = active`. Guest-fallback kräver `ALLOW_GUEST_STUDENT_ONBOARDING=true`. |
-| `https://korpasset.se/invite/<token>` | Canonical invitation-länk; i beta öppnas den i appen |
+| `https://korpasset.se/invite/<token>` | Canonical invitation-länk och Universal/App Link-mål. Öppnas i appen. Vanlig webb är inte produktregistrering. |
 | `https://korpasset.se/integritet` `/villkor` `/kontakt` `/radera-konto` | Legal. `/radera-konto` är Play Consoles länk för kontoradering |
 | `https://korpasset.se/admin` | Waitlist-admin (e-post + lösenord, skapas med `admin:create`) |
 | `https://korpasset.se/api/auth/apple` `.../google` | Verifierar identity token och sätter produkt-session. 503 tills `APPLE_CLIENT_ID` / `GOOGLE_CLIENT_ID` är satta. Skapar inte konto från landningen. |

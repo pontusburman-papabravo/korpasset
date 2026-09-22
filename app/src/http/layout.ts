@@ -123,7 +123,7 @@ export function invitationAlreadyUsedPage(studentName: string): string {
      <h1>Be om en ny länk</h1>
      <p>Inbjudan till ${escapeHtml(studentName)}s körkortsresa har redan accepterats.</p>
      <p>Om du redan anslutit: öppna Körpasset på samma telefon som förut. Om du bytt telefon, be eleven skapa en ny inbjudan.</p>
-     <a class="btn btn-secondary" href="/">Till startsidan</a>`,
+     <a class="btn btn-secondary" href="/app">Öppna Körpasset</a>`,
   );
 }
 
