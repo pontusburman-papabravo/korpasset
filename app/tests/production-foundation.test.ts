@@ -69,6 +69,7 @@ describe("production foundation", () => {
       assert.ok(cookie);
       assert.equal(cookie.secure, true);
       assert.equal(cookie.httpOnly, true);
+      assert.equal(String(cookie.sameSite).toLowerCase(), "lax");
       await app.close();
     } finally {
       restoreEnvValue("APP_BASE_URL", previous);

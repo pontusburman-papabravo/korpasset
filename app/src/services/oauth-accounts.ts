@@ -189,6 +189,35 @@ export async function listLinkedProviders(userId: string): Promise<OAuthProvider
   return result.rows.map((row) => row.provider as OAuthProvider);
 }
 
+export async function findUserIdByIdentity(
+  provider: OAuthProvider,
+  subject: string,
+): Promise<string | null> {
+  const result = await getPool().query(
+    `SELECT user_id FROM auth_identities
+     WHERE provider = $1 AND provider_subject = $2
+     LIMIT 1`,
+    [provider, subject.trim()],
+  );
+  return result.rowCount ? String(result.rows[0].user_id) : null;
+}
+
+export async function unlinkProviderIdentity(
+  userId: string,
+  provider: OAuthProvider,
+): Promise<number> {
+  await getPool().query(
+    `DELETE FROM auth_identities WHERE user_id = $1 AND provider = $2`,
+    [userId, provider],
+  );
+  const remaining = await getPool().query(
+    `SELECT count(*)::int AS n FROM auth_identities
+     WHERE user_id = $1 AND provider IN ('apple', 'google')`,
+    [userId],
+  );
+  return Number(remaining.rows[0]?.n ?? 0);
+}
+
 export function providerLabel(provider: OAuthProvider): string {
   return provider === "apple" ? "Apple" : "Google";
 }

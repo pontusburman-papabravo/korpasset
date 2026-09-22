@@ -1,5 +1,5 @@
 import { buildServer } from "./http/server.js";
-import { assertProductionConfig, config } from "./config.js";
+import { assertProductionConfig, config, isProduction } from "./config.js";
 import { applyMigrations } from "./db/migrate.js";
 import { seedTaxonomy } from "./db/seed-taxonomy.js";
 
@@ -24,6 +24,14 @@ async function main(): Promise<void> {
   await seedTaxonomy();
   const app = await buildServer();
   await app.listen({ port: config.port, host: "0.0.0.0" });
+  if (
+    isProduction() &&
+    (!config.isOAuthConfigured("apple") || !config.isOAuthConfigured("google"))
+  ) {
+    app.log.warn(
+      "APPLE_CLIENT_ID / GOOGLE_CLIENT_ID saknas — waitlist fungerar, produktinloggning svarar 503",
+    );
+  }
   app.log.info(
     {
       url: config.appBaseUrl,

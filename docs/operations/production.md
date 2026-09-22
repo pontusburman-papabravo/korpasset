@@ -2,6 +2,8 @@
 
 Minsta produktionsbara körning för Körpassets första beta. En Fastify-process + PostgreSQL 15. Ingen microservice-split.
 
+Konto/auth go-live (Apple/Google, AASA, TestFlight/Play): [`account-go-live.md`](account-go-live.md).
+
 Git: https://github.com/pontusburman-papabravo/korpasset
 
 ## Canonical routing
@@ -19,6 +21,7 @@ Ett origin:
 | `https://korpasset.se/integritet` `/villkor` `/kontakt` `/radera-konto` | Legal. `/radera-konto` är Play Consoles länk för kontoradering |
 | `https://korpasset.se/admin` | Waitlist-admin (e-post + lösenord, skapas med `admin:create`) |
 | `https://korpasset.se/api/auth/apple` `.../google` | Verifierar identity token och sätter produkt-session. 503 tills `APPLE_CLIENT_ID` / `GOOGLE_CLIENT_ID` är satta. Skapar inte konto från landningen. |
+| `https://korpasset.se/api/apple/notifications` | Apple Sign in with Apple server-to-server (revoke/delete). Ingen användarsession. |
 | `https://korpasset.se/api/resend/webhook` | Resend-händelser (Svix-signatur, ingen användar-auth) |
 
 Ingen `app.`-subdomän i första betan. Samma host förenklar cookies, QR, SMS och en Capacitor-shell som laddar produktionens origin. Produktkonton skapas i den shellen via Apple och Google, inte på landningen.
