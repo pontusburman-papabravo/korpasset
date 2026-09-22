@@ -327,9 +327,20 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         );
     }
 
-    const { journey, userId } = await createJourneyForStudent(name, sessionUserId);
-    setSessionCookie(reply, userId);
-    return reply.redirect(`/journey/${journey.id}`);
+    try {
+      const { journey, userId } = await createJourneyForStudent(name, sessionUserId);
+      setSessionCookie(reply, userId);
+      return reply.redirect(`/journey/${journey.id}`);
+    } catch (error) {
+      const { status, message } = handleError(error);
+      return reply.status(status).type("text/html").send(
+        layout(
+          "Starta din körkortsresa",
+          `${errorBanner(message)}
+           ${status === 409 ? `<p><a class="btn btn-secondary" href="/app">Till Körpasset</a></p>` : onboardingForm(undefined, name ?? "")}`,
+        ),
+      );
+    }
   });
 
   app.get("/journey/:journeyId", async (request, reply) => {
