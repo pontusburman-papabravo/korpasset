@@ -4,6 +4,10 @@ import {
   requireSessionUserId,
 } from "../auth/session.js";
 import { deleteProductAccount } from "../services/account-lifecycle.js";
+import {
+  listUserJourneyMemberships,
+  type JourneyMembership,
+} from "../services/journeys.js";
 import { getReusableSessionUserId, getUserById, updateDisplayName } from "../services/users.js";
 import {
   escapeHtml,
@@ -12,10 +16,30 @@ import {
   primaryButton,
 } from "./layout.js";
 
+function membershipLabel(membership: JourneyMembership): string {
+  if (membership.role === "student") {
+    return "Elev · din körkortsresa";
+  }
+  return `Handledare · ${membership.studentName}`;
+}
+
 function accountPage(options: {
   displayName: string;
+  memberships: JourneyMembership[];
   errorMessage?: string;
 }): string {
+  const membershipList =
+    options.memberships.length > 0
+      ? `<ul class="account-roles">
+           ${options.memberships
+             .map(
+               (membership) =>
+                 `<li><a href="/journey/${escapeHtml(membership.journeyId)}">${escapeHtml(membershipLabel(membership))}</a></li>`,
+             )
+             .join("")}
+         </ul>`
+      : `<p class="muted">Ingen körkortsresa ännu.</p>`;
+
   return layout(
     "Konto",
     `${options.errorMessage ? errorBanner(options.errorMessage) : ""}
@@ -27,6 +51,12 @@ function accountPage(options: {
        </div>
        ${primaryButton("Spara namn")}
      </form>
+     <section class="card">
+       <h2>Dina resor</h2>
+       <p>Du är en användare. Rollen är per resa: eleven äger körkortsresan, handledare deltar.</p>
+       ${membershipList}
+       <p><a href="/onboarding/handledare">Anslut till en elevresa</a></p>
+     </section>
      <form method="post" action="/logout">
        <button type="submit" class="btn btn-secondary">Logga ut</button>
      </form>
@@ -52,8 +82,9 @@ export async function registerAccountRoutes(app: FastifyInstance): Promise<void>
       return reply.redirect("/");
     }
     const user = await getUserById(reusable);
+    const memberships = await listUserJourneyMemberships(reusable);
     return reply.type("text/html").send(
-      accountPage({ displayName: user?.displayName ?? "" }),
+      accountPage({ displayName: user?.displayName ?? "", memberships }),
     );
   });
 
@@ -67,8 +98,9 @@ export async function registerAccountRoutes(app: FastifyInstance): Promise<void>
     const body = (request.body ?? {}) as { name?: string };
     const name = body.name?.trim() ?? "";
     if (!name) {
+      const memberships = await listUserJourneyMemberships(reusable);
       return reply.status(400).type("text/html").send(
-        accountPage({ displayName: "", errorMessage: "Ange ditt namn" }),
+        accountPage({ displayName: "", memberships, errorMessage: "Ange ditt namn" }),
       );
     }
     await updateDisplayName(reusable, name);
@@ -85,9 +117,11 @@ export async function registerAccountRoutes(app: FastifyInstance): Promise<void>
     const body = (request.body ?? {}) as { confirm?: string };
     if (body.confirm?.trim().toUpperCase() !== "RADERA") {
       const user = await getUserById(reusable);
+      const memberships = await listUserJourneyMemberships(reusable);
       return reply.status(400).type("text/html").send(
         accountPage({
           displayName: user?.displayName ?? "",
+          memberships,
           errorMessage: "Skriv RADERA för att bekräfta.",
         }),
       );

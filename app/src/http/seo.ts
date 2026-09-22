@@ -53,6 +53,7 @@ const ROBOTS_DISALLOW = [
   "/konto",
   "/konto/",
   "/onboarding",
+  "/onboarding/",
   "/start",
 ] as const;
 

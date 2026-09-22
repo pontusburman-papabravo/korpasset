@@ -157,6 +157,55 @@ export async function resolveHomeJourneyId(
   return null;
 }
 
+export interface JourneyMembership {
+  journeyId: string;
+  role: "student" | "supervisor";
+  studentName: string;
+  status: string;
+}
+
+export async function listUserJourneyMemberships(
+  userId: string,
+  client?: pg.PoolClient,
+): Promise<JourneyMembership[]> {
+  const db = client ?? getPool();
+  const result = await db.query(
+    `SELECT j.id,
+            j.status,
+            COALESCE(u.display_name, 'Eleven') AS student_name,
+            CASE
+              WHEN j.student_user_id = $1 THEN 'student'
+              ELSE 'supervisor'
+            END AS role
+     FROM driving_journeys j
+     JOIN users u ON u.id = j.student_user_id
+     WHERE j.status = 'active'
+       AND (
+         j.student_user_id = $1
+         OR EXISTS (
+           SELECT 1
+           FROM journey_collaborators jc
+           JOIN users cu ON cu.id = jc.user_id
+           WHERE jc.journey_id = j.id
+             AND jc.user_id = $1
+             AND jc.role = 'supervisor'
+             AND jc.status = 'active'
+             AND cu.account_state <> 'deleted'
+         )
+       )
+     ORDER BY CASE WHEN j.student_user_id = $1 THEN 0 ELSE 1 END,
+              student_name`,
+    [userId],
+  );
+
+  return result.rows.map((row) => ({
+    journeyId: row.id as string,
+    role: row.role as "student" | "supervisor",
+    studentName: row.student_name as string,
+    status: row.status as string,
+  }));
+}
+
 export async function listActiveSupervisors(
   journeyId: string,
   client?: pg.PoolClient,
