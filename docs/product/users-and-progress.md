@@ -73,7 +73,7 @@ Handledaren administrerar nästan aldrig. Eleven äger inbjudningar. Bedömning 
 
 ## 5. En app, flera resor
 
-Efter inloggning gäller FR-8:
+Efter inloggning via `/app` gäller FR-8:
 
 - 0 resor → skapa resa eller öppna inbjudan.
 - 1 resa → rakt in på den resan. Hemmet anpassar copy efter rollen (elev eller handledare).

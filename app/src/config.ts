@@ -57,6 +57,12 @@ export const config = {
       ? config.appleAudiences.length > 0
       : config.googleAudiences.length > 0;
   },
+  /** Guest-elev via /onboarding. Off in production unless explicitly enabled. */
+  get allowGuestStudentOnboarding() {
+    if (process.env.ALLOW_GUEST_STUDENT_ONBOARDING === "true") return true;
+    if (process.env.ALLOW_GUEST_STUDENT_ONBOARDING === "false") return false;
+    return !isProduction();
+  },
 };
 
 function uniqueCsv(...values: Array<string | undefined>): string[] {

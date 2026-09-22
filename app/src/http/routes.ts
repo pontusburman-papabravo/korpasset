@@ -9,9 +9,7 @@ import {
 import { createInvitation, acceptInvitation, getInvitationByToken } from "../services/invitations.js";
 import {
   createJourneyForStudent,
-  formatAccessibleJourneyLabel,
   getJourneyById,
-  listAccessibleActiveJourneys,
   listActiveSupervisors,
   updateTransmissionScope,
 } from "../services/journeys.js";
@@ -49,6 +47,7 @@ import {
   isSkillNotApplicable,
 } from "../services/progression.js";
 import { recordProductEventSafe } from "../services/product-events.js";
+import { config } from "../config.js";
 import { getReusableSessionUserId, getUserById } from "../services/users.js";
 import {
   escapeHtml,
@@ -56,7 +55,9 @@ import {
   primaryButton,
   errorBanner,
   invitationAlreadyUsedPage,
+  oauthContinuePanel,
 } from "./layout.js";
+import { renderJourneyPickerPage, signedInHome } from "./navigation.js";
 import {
   renderDevelopmentPage,
   renderJourneyHome,
@@ -237,48 +238,62 @@ function onboardingForm(errorMessage?: string, name = ""): string {
          </form>`;
 }
 
-export async function registerRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/", async (request, reply) => {
-    const userId = getSessionUserId(request);
-    if (userId) {
-      const journeys = await listAccessibleActiveJourneys(userId);
-      if (journeys.length === 1) {
-        return reply.redirect(`/journey/${journeys[0].id}`);
-      }
-      if (journeys.length > 1) {
-        const choices = journeys
-          .map((journey) => {
-            const label = formatAccessibleJourneyLabel(journey);
-            return `<a class="card journey-choice" href="/journey/${escapeHtml(journey.id)}">${escapeHtml(label)}</a>`;
-          })
-          .join("");
-        return reply.type("text/html").send(
-          layout(
-            "Välj elev",
-            `<h1>Välj elev</h1>
-             <p>Vilken körkortsresa vill du öppna?</p>
-             <div class="stack">${choices}</div>`,
-          ),
-        );
-      }
-      return reply.redirect("/onboarding");
-    }
+function appLoginPage(errorMessage?: string): string {
+  return layout(
+    "Körpasset",
+    `${errorMessage ? errorBanner(errorMessage) : ""}
+     <h1>Fortsätt in i Körpasset</h1>
+     ${oauthContinuePanel()}`,
+  );
+}
 
+function canCreateStudentJourney(accountState: string | null | undefined): boolean {
+  if (accountState === "active") return true;
+  return config.allowGuestStudentOnboarding;
+}
+
+export async function registerRoutes(app: FastifyInstance): Promise<void> {
+  app.get("/", async (_request, reply) => {
     return reply.type("text/html").send(
       renderLandingPage({ betaFilled: await countBetaWaitlist() }),
     );
   });
 
+  app.get("/app", async (request, reply) => {
+    const sessionUserId = await getReusableSessionUserId(getSessionUserId(request));
+    if (!sessionUserId) {
+      return reply.type("text/html").send(appLoginPage());
+    }
+
+    const home = await signedInHome(sessionUserId);
+    if (home.kind === "journey") {
+      return reply.redirect(`/journey/${home.journeyId}`);
+    }
+    if (home.kind === "onboarding") {
+      return reply.redirect("/onboarding");
+    }
+    return reply.type("text/html").send(renderJourneyPickerPage(home.journeys));
+  });
+
   app.get("/onboarding", async (request, reply) => {
     const userId = getSessionUserId(request);
     if (userId) {
-      const journeys = await listAccessibleActiveJourneys(userId);
-      if (journeys.length > 0) {
-        return reply.redirect("/");
+      const home = await signedInHome(userId);
+      if (home.kind !== "onboarding") {
+        return reply.redirect("/app");
       }
     }
     const sessionUserId = await getReusableSessionUserId(userId);
     const user = sessionUserId ? await getUserById(sessionUserId) : null;
+    if (!canCreateStudentJourney(user?.accountState)) {
+      return reply.type("text/html").send(
+        layout(
+          "Starta din körkortsresa",
+          `<h1>Skapa din körkortsresa</h1>
+           ${oauthContinuePanel("Du skapar elevresan efter att du fortsatt med Apple eller Google.")}`,
+        ),
+      );
+    }
     reply.type("text/html").send(
       layout("Starta din körkortsresa", onboardingForm(undefined, user?.displayName ?? "")),
     );
@@ -287,6 +302,19 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
   app.post("/start", async (request, reply) => {
     const body = request.body as { name?: string };
     const name = body.name?.trim();
+    const sessionUserId = await getReusableSessionUserId(getSessionUserId(request));
+    const user = sessionUserId ? await getUserById(sessionUserId) : null;
+
+    if (!canCreateStudentJourney(user?.accountState)) {
+      return reply.status(403).type("text/html").send(
+        layout(
+          "Starta din körkortsresa",
+          `${errorBanner("Elevresa skapas efter Apple- eller Google-inloggning.")}
+           ${oauthContinuePanel()}`,
+        ),
+      );
+    }
+
     if (!name) {
       return reply
         .type("text/html")
@@ -294,12 +322,11 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         .send(
           layout(
             "Starta din körkortsresa",
-            onboardingForm("Ange ditt namn"),
+            onboardingForm("Ange ditt namn", user?.displayName ?? ""),
           ),
         );
     }
 
-    const sessionUserId = getSessionUserId(request);
     const { journey, userId } = await createJourneyForStudent(name, sessionUserId);
     setSessionCookie(reply, userId);
     return reply.redirect(`/journey/${journey.id}`);

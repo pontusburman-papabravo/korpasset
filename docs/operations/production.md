@@ -11,7 +11,8 @@ Ett origin:
 | URL | Vad |
 | --- | --- |
 | `https://korpasset.se` | Landning + intresseanmälan. Skapar **inte** produktkonto. |
-| `https://korpasset.se/onboarding` | Slice-fallback för att skapa elevresa. Inte betans kontomodell. |
+| `https://korpasset.se/app` | App-produktentré. Ingen session → Apple/Google. Inloggad → FR-8. Inte indexerad. |
+| `https://korpasset.se/onboarding` | Skapa elevresa. I produktion bara för `account_state = active`. Guest-fallback kräver `ALLOW_GUEST_STUDENT_ONBOARDING=true`. |
 | `https://korpasset.se/invite/<token>` | Canonical invitation-länk; i beta öppnas den i appen |
 | `https://korpasset.se/integritet` `/villkor` `/kontakt` `/radera-konto` | Legal. `/radera-konto` är Play Consoles länk för kontoradering |
 | `https://korpasset.se/admin` | Waitlist-admin (e-post + lösenord, skapas med `admin:create`) |
@@ -36,6 +37,7 @@ Invitationer byggs från `APP_BASE_URL`. Den **måste** vara `https://korpasset.
 | `EMAIL_FROM` | Valfritt. Default `Körpasset <support@korpasset.se>` |
 | `APPLE_CLIENT_ID` / `APPLE_CLIENT_IDS` | Audience för Sign in with Apple. Utan dem svarar `POST /api/auth/apple` 503. |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_IDS` | Audience för Google-id-token. Utan dem svarar `POST /api/auth/google` 503. |
+| `ALLOW_GUEST_STUDENT_ONBOARDING` | Explicit utvecklingsflagga. I produktion default **av**. Sätt `true` bara för lokal slice-fallback där `/start` får skapa guest-elev. |
 
 Första waitlist-admin skapas **inte** via env och inte via publik signup:
 

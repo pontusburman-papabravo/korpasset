@@ -79,7 +79,7 @@ describe("session and spent-invite fallback", () => {
       { method: "GET", url: "/onboarding" },
     );
     assert.equal(response.statusCode, 302);
-    assert.equal(response.headers.location, "/");
+    assert.equal(response.headers.location, "/app");
     await app.close();
   });
 });

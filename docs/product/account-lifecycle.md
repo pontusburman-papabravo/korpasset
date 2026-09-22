@@ -118,8 +118,9 @@ Produktkonton skapas bara i iOS- och Android-appen.
 | Yta | Skapar produktkonto? |
 | --- | --- |
 | Native app, Sign in with Apple/Google | Ja |
+| `/app` | Produktentré. Visar Apple/Google utan session. Skapar konto via `POST /api/auth/apple\|google`, inte via landningen. |
 | `korpasset.se` landning / intresseanmälan | Nej |
-| `/onboarding` namnformulär | Nej i betans modell (dev-fallback) |
+| `/onboarding` namnformulär | Nej i betans modell (dev-fallback bakom `ALLOW_GUEST_STUDENT_ONBOARDING`, av i produktion) |
 | `/invite/<token>` i vanlig webbläsare | Nej. Ska peka mot appen (Universal Link / App Link), inte bli webb-signup |
 | Guest-accept av inbjudan | App/native-beteende. Guest är actor, inte registrering |
 
