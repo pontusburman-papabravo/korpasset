@@ -749,3 +749,20 @@ textarea {
 .account-delete {
   margin-top: 1.5rem;
 }
+
+.account-providers {
+  margin: 1.5rem 0;
+}
+
+.account-providers__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.account-providers__list li {
+  display: grid;
+  gap: 0.5rem;
+}
