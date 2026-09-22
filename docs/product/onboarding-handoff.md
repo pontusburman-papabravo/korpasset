@@ -7,20 +7,22 @@ Design för hur en elev bjuder in handledare utan administration och utan att by
 ```text
 Elev fortsätter med Apple eller Google i appen
     ↓
-Elev skapar driving_journey
+Elev skapar driving_journey (POST /start skapar users-rad + resa)
     ↓
 Elev genererar invitation (QR eller länk)
     ↓
-Handledare scannar / öppnar länk (Universal Link in i appen)
+Handledare öppnar länk, eller klistrar in den på /onboarding/handledare
     ↓
 Inloggad Apple/Google-user återanvänds, annars guest actor (stable user_id)
     ↓
-Handledare accepterar invitation
+Handledare accepterar invitation → ny eller återanvänd users-rad
     ↓
 Handledare blir journey_collaborator (role: supervisor)
     ↓
 Handledare deltar i körpass utan att administrera resan
 ```
+
+`users` är person/actor, inte roll. Både elev och handledare sparas där. Rollen är per `driving_journey`: `student_user_id` för eleven, `journey_collaborators` för handledare. Samma person kan vara elev på sin resa och handledare på en annan.
 
 ## Guest actor
 

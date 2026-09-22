@@ -121,10 +121,12 @@ New Observations
 
 Regler:
 
+- `users` är person/actor. **Både elev och handledare** sparas där. Det finns ingen `users.role`.
 - `driving_journeys.student_user_id` är canonical student.
 - Studenten är **inte** duplicerad som `journey_collaborator`.
 - Flera handledare är first-class. Samma elev, flera supervisors — utan att duplicera data eller byta `user_id`.
 - Handledaren ska nästan aldrig administrera. QR/länk ger lågfriktions-handoff.
+- Samma person kan vara elev på sin egen resa och handledare på en annan.
 
 ---
 
@@ -324,7 +326,7 @@ Kraven nedan beskriver det kanoniska v1-flödet. Där vertical slice redan finns
 **Routing-regler:**
 
 - **Ingen session:** Visa landningen på `/` med intresseanmälan till betan. Produktens onboarding finns kvar på `/onboarding`.
-- **0 tillgängliga resor (inloggad):** Omdirigera till onboarding (`/onboarding`) där användaren kan skapa en resa eller ansluta via inbjudan.
+- **0 tillgängliga resor (inloggad):** Omdirigera till onboarding (`/onboarding`) där användaren kan skapa en elevresa. Handledare ansluter via inbjudningslänk eller genom att klistra in den på `/onboarding/handledare`. Båda blir `users`; rollen sitter på resan.
 - **1 tillgänglig resa:** Omdirigera direkt till den aktiva resans översikt (`/journey/[id]`).
 - **>1 tillgängliga resor:** Visa kontextväljare på `/` med rubriken **"Välj elev"** och hjälptexten **"Vilken körkortsresa vill du öppna?"**.
 

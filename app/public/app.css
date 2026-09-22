@@ -188,6 +188,30 @@ a.journey-choice {
   font-weight: 600;
 }
 
+.role-alt {
+  margin-top: 1.75rem;
+}
+
+.role-alt h2 {
+  margin-top: 0;
+}
+
+.account-roles {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+
+.account-roles li {
+  margin: 0 0 0.5rem;
+}
+
+.account-roles a {
+  color: var(--navy);
+  font-weight: 600;
+  text-decoration: none;
+}
+
 .banner {
   border-radius: 0.75rem;
   padding: 0.875rem 1rem;

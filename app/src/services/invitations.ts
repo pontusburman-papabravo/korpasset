@@ -29,6 +29,35 @@ function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
+/** Accepts a full invite URL, `/invite/…` path, or the raw token. */
+export function parseInvitationInput(raw: string): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+
+  const fromPath = (pathname: string): string | null => {
+    const match = pathname.match(/\/invite\/([^/]+)\/?$/);
+    if (!match?.[1]) return null;
+    try {
+      return decodeURIComponent(match[1]);
+    } catch {
+      return match[1];
+    }
+  };
+
+  try {
+    const fromUrl = fromPath(new URL(value).pathname);
+    if (fromUrl) return fromUrl;
+  } catch {
+    // Not an absolute URL — try path or raw token.
+  }
+
+  const fromRelative = fromPath(value.startsWith("/") ? value : `/${value}`);
+  if (fromRelative) return fromRelative;
+
+  if (/^[A-Za-z0-9_-]{16,}$/.test(value)) return value;
+  return null;
+}
+
 export async function createInvitation(
   journeyId: string,
   invitedByUserId: string,

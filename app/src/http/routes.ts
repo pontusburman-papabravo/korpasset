@@ -6,7 +6,12 @@ import {
   requireSessionUserId,
   setSessionCookie,
 } from "../auth/session.js";
-import { createInvitation, acceptInvitation, getInvitationByToken } from "../services/invitations.js";
+import {
+  acceptInvitation,
+  createInvitation,
+  getInvitationByToken,
+  parseInvitationInput,
+} from "../services/invitations.js";
 import {
   createJourneyForStudent,
   formatAccessibleJourneyLabel,
@@ -219,14 +224,33 @@ function groupSkillsByArea(
 function onboardingForm(errorMessage?: string, name = ""): string {
   return `${errorMessage ? errorBanner(errorMessage) : ""}
          <h1>Vad heter du?</h1>
-         <p class="muted">Du bjuder sedan in mamma, pappa eller den som kör med er. Flera handledare går bra.</p>
+         <p class="muted">Du startar din körkortsresa. Sen bjuder du in mamma, pappa eller den som kör med er. Flera handledare går bra.</p>
          <form method="post" action="/start" class="stack">
            <div>
              <label for="name">Namn</label>
              <input id="name" name="name" type="text" required autocomplete="name" placeholder="Ditt namn" value="${escapeHtml(name)}">
            </div>
            ${primaryButton("Starta min körkortsresa")}
-         </form>`;
+         </form>
+         <section class="card role-alt">
+           <h2>Jag är handledare</h2>
+           <p>Du blir också en användare när du ansluter — men det är eleven som äger resan.</p>
+           <a class="btn btn-secondary" href="/onboarding/handledare">Anslut med inbjudan</a>
+         </section>`;
+}
+
+function supervisorOnboardingForm(errorMessage?: string, invite = ""): string {
+  return `${errorMessage ? errorBanner(errorMessage) : ""}
+         <h1>Anslut som handledare</h1>
+         <p>Eleven skickar en länk eller QR. När du ansluter får du ett eget konto, samma slags användare som eleven. Rollen handledare sitter på resan — du äger den inte.</p>
+         <form method="post" action="/onboarding/handledare" class="stack">
+           <div>
+             <label for="invite">Inbjudan</label>
+             <input id="invite" name="invite" type="text" required autocomplete="off" inputmode="url" placeholder="Klistra in länken från eleven" value="${escapeHtml(invite)}">
+           </div>
+           ${primaryButton("Öppna inbjudan")}
+         </form>
+         <p class="muted"><a href="/onboarding">Jag ska ta körkort</a></p>`;
 }
 
 export async function registerRoutes(app: FastifyInstance): Promise<void> {
@@ -274,6 +298,38 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     reply.type("text/html").send(
       layout("Starta din körkortsresa", onboardingForm(undefined, user?.displayName ?? "")),
     );
+  });
+
+  app.get("/onboarding/handledare", async (_request, reply) => {
+    reply.type("text/html").send(
+      layout("Anslut som handledare", supervisorOnboardingForm()),
+    );
+  });
+
+  app.post("/onboarding/handledare", async (request, reply) => {
+    const body = request.body as { invite?: string };
+    const raw = body.invite?.trim() ?? "";
+    const token = parseInvitationInput(raw);
+    if (!token) {
+      return reply.status(400).type("text/html").send(
+        layout(
+          "Anslut som handledare",
+          supervisorOnboardingForm("Klistra in länken från eleven, eller koden i länken.", raw),
+        ),
+      );
+    }
+
+    const invitation = await getInvitationByToken(token);
+    if (!invitation) {
+      return reply.status(404).type("text/html").send(
+        layout(
+          "Anslut som handledare",
+          supervisorOnboardingForm("Inbjudan hittades inte. Be eleven om en ny länk.", raw),
+        ),
+      );
+    }
+
+    return reply.redirect(`/invite/${encodeURIComponent(token)}`);
   });
 
   app.post("/start", async (request, reply) => {
