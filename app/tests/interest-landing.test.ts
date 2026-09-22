@@ -42,7 +42,7 @@ describe("landing and interest waitlist", () => {
     assert.match(response.body, /integritetspolicyn/);
     assert.match(response.body, /Vi söker just nu våra första 25/);
     assert.match(response.body, /oavsett om ni just börjat eller redan kört ett år/);
-    assert.match(response.body, /Mamma, pappa, syskon/);
+    assert.match(response.body, /Mamma, pappa, partner, syskon/);
     assert.match(response.body, /Vi har redan övningskört ett tag/);
     assert.match(response.body, /Jag är vuxen och övningskör med min partner/);
     assert.match(response.body, /Kan jag följa två barn/);
