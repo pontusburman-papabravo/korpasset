@@ -134,7 +134,7 @@ export async function listAccessibleActiveJourneys(
              AND jc.user_id = $1
              AND jc.role = 'supervisor'
              AND jc.status = 'active'
-             AND cu.account_state <> 'deleted'
+             AND cu.account_state IN ('guest', 'active')
          )
        )
      ORDER BY last_drive_at DESC NULLS LAST, j.created_at DESC`,
@@ -169,7 +169,7 @@ export async function listActiveSupervisors(
      WHERE jc.journey_id = $1
        AND jc.role = 'supervisor'
        AND jc.status = 'active'
-       AND u.account_state <> 'deleted'
+       AND u.account_state IN ('guest', 'active')
      ORDER BY jc.created_at`,
     [journeyId],
   );

@@ -864,6 +864,7 @@ Databas: raw SQL-migration, inget ORM i foundation. Docker Compose för lokal ut
 - [Produktprinciper](product/product-principles.md)
 - [Onboarding & handoff](product/onboarding-handoff.md)
 - [Användare, roller och delad progress](product/users-and-progress.md)
+- [Account lifecycle](product/account-lifecycle.md)
 - [Paywall och entitlement-livscykel](product/entitlement-lifecycle.md)
 - [Skill Taxonomy v1](domain/skill-taxonomy.md)
 - [Data model](domain/data-model.md)

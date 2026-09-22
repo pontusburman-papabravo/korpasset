@@ -46,7 +46,26 @@ export const config = {
   get emailFrom() {
     return process.env.EMAIL_FROM ?? "Körpasset <support@korpasset.se>";
   },
+  get appleAudiences() {
+    return uniqueCsv(process.env.APPLE_CLIENT_ID, process.env.APPLE_CLIENT_IDS);
+  },
+  get googleAudiences() {
+    return uniqueCsv(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_IDS);
+  },
+  isOAuthConfigured(provider: "apple" | "google"): boolean {
+    return provider === "apple"
+      ? config.appleAudiences.length > 0
+      : config.googleAudiences.length > 0;
+  },
 };
+
+function uniqueCsv(...values: Array<string | undefined>): string[] {
+  const items = values
+    .flatMap((value) => (value ?? "").split(","))
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return [...new Set(items)];
+}
 
 export function assertProductionConfig(): void {
   if (!isProduction()) return;

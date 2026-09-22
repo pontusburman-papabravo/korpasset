@@ -12,7 +12,7 @@ export function privacyPage(): string {
      <p>Vi använder inte uppgifterna till nyhetsbrev, säljmejl eller profilering.</p>
 
      <h2>När du använder produkten</h2>
-     <p>Om du senare får tillgång till Körpasset behandlar vi det som behövs för körkortsresan: visningsnamn, session, inbjudningar, körpass, observationer och rekommendationer. Inloggning sker med Sign in with Apple eller Sign in with Google. Då kan vi även få e-postadress och ett användar-id från Apple eller Google. Rättslig grund är att tillhandahålla tjänsten.</p>
+     <p>Om du senare får tillgång till Körpasset behandlar vi det som behövs för körkortsresan: visningsnamn, session, inbjudningar, körpass, observationer och rekommendationer. Inloggning sker med Sign in with Apple eller Sign in with Google. Då kan vi även få e-postadress och ett användar-id (<code>sub</code>) från Apple eller Google. Identitetsnyckeln är <code>sub</code>, inte e-postadressen. Rättslig grund är att tillhandahålla tjänsten.</p>
      <p>Vi samlar inte in personnummer, GPS-spår eller hälsodata.</p>
 
      <h2>Lagring</h2>

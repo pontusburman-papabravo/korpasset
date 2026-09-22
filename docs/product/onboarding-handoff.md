@@ -30,7 +30,7 @@ En handledare som inte har autentiserat sig än får:
 2. Möjlighet att **delta** i körpass och registrera observations
 3. Möjlighet att **claima** identiteten senare med Apple eller Google i appen
 
-Guest är **inte** ett produktkonto. Kontoregistrering sker bara via Sign in with Apple eller Sign in with Google — första lyckade inloggningen skapar `auth_identities` och sätter `account_state = active`. Se [ADR-008](../decisions/ADR-008-app-oauth-accounts.md).
+Guest är **inte** ett produktkonto. Kontoregistrering sker bara via Sign in with Apple eller Sign in with Google — första lyckade inloggningen skapar `auth_identities` och sätter `account_state = active`. Se [ADR-008](../decisions/ADR-008-app-oauth-accounts.md) och [account lifecycle](account-lifecycle.md).
 
 **Ingen normal guest→registered-process ska kräva merge av `users`.** Samma `user_id` behålls när auth läggs till via `auth_identities`.
 

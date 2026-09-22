@@ -63,7 +63,7 @@ Sätt att autentisera en `user`. En user kan ha flera identities.
 | `id` | `uuid` PK | |
 | `user_id` | `uuid` FK → `users` | |
 | `provider` | `auth_provider` | |
-| `provider_subject` | `text` | Unik per provider. Apple/Google `sub`, aldrig e-post som nyckel |
+| `provider_subject` | `text` | Unik per provider. Apple/Google `sub`, aldrig e-post som nyckel. Högst en `apple` och en `google` per user (Apple + Google på samma user är tillåtet) |
 | `created_at` | `timestamptz` | |
 | `verified_at` | `timestamptz` | Nullable |
 

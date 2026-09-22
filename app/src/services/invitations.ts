@@ -156,10 +156,17 @@ export async function acceptInvitation(
       const user = await createGuestUser(displayName, client);
       userId = user.id;
     } else {
-      await client.query(
-        `UPDATE users SET display_name = $2, updated_at = now() WHERE id = $1`,
-        [userId, displayName.trim()],
+      const current = await client.query(
+        `SELECT account_state FROM users WHERE id = $1`,
+        [userId],
       );
+      const accountState = String(current.rows[0]?.account_state ?? "");
+      if (accountState === "guest" && displayName.trim()) {
+        await client.query(
+          `UPDATE users SET display_name = $2, updated_at = now() WHERE id = $1`,
+          [userId, displayName.trim()],
+        );
+      }
     }
 
     if (invite.student_user_id === userId) {

@@ -44,14 +44,20 @@ export async function getUserById(
   };
 }
 
-/** Session cookies survive tombstoning; never reuse a deleted actor. */
+export function isProductActorUsable(
+  accountState: string | null | undefined,
+): boolean {
+  return accountState === "guest" || accountState === "active";
+}
+
+/** Session cookies survive tombstoning; never reuse a deleted or suspended actor. */
 export async function getReusableSessionUserId(
   userId: string | null | undefined,
   client?: pg.PoolClient,
 ): Promise<string | null> {
   if (!userId) return null;
   const user = await getUserById(userId, client);
-  if (!user || user.accountState === "deleted") return null;
+  if (!user || !isProductActorUsable(user.accountState)) return null;
   return user.id;
 }
 
