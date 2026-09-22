@@ -20,6 +20,7 @@ describe("public SEO files and metadata", () => {
     assert.match(response.body, /Disallow: \/journey\//);
     assert.match(response.body, /Disallow: \/invite\//);
     assert.match(response.body, /Disallow: \/onboarding/);
+    assert.match(response.body, /Disallow: \/app/);
     assert.match(response.body, /Disallow: \/konto/);
     assert.match(response.body, /Sitemap: http:\/\/localhost:3000\/sitemap\.xml/);
     assert.doesNotMatch(response.body, /Disallow: \/integritet/);
@@ -125,6 +126,9 @@ describe("public SEO files and metadata", () => {
     const onboarding = await app.inject({ method: "GET", url: "/onboarding" });
     assert.equal(onboarding.statusCode, 200);
     assert.match(onboarding.body, /<meta name="robots" content="noindex, nofollow">/);
+    const appEntry = await app.inject({ method: "GET", url: "/app" });
+    assert.equal(appEntry.statusCode, 200);
+    assert.match(appEntry.body, /<meta name="robots" content="noindex, nofollow">/);
     await app.close();
   });
 });

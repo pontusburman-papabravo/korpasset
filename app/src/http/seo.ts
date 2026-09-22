@@ -54,6 +54,8 @@ const ROBOTS_DISALLOW = [
   "/konto/",
   "/onboarding",
   "/start",
+  "/app",
+  "/app/",
 ] as const;
 
 export interface FaqItem {

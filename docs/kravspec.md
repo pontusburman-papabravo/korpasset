@@ -243,7 +243,7 @@ Kraven nedan beskriver det kanoniska v1-flödet. Där vertical slice redan finns
 | Beskrivning | En inloggad elev (Apple eller Google i appen) anger visningsnamn vid behov och får en `driving_journey` med `licence_type = B`. |
 | Session | Servern skapar eller återanvänder `user_id` från verifierad Apple/Google-identity. Identity skickas inte in som betrodd klientdata. |
 | Efter steg | Eleven landar på sin journey-sida och kan bjuda in handledare. |
-| Slice-fallback | `/onboarding` som skapar guest-elev utan OAuth är utvecklingsfallback, inte betans kontomodell. |
+| Slice-fallback | `/onboarding` som skapar guest-elev utan OAuth är utvecklingsflaggan `ALLOW_GUEST_STUDENT_ONBOARDING` (av i produktion), inte betans kontomodell. |
 
 ### FR-2 Inbjudan via länk och QR
 
@@ -317,21 +317,22 @@ Kraven nedan beskriver det kanoniska v1-flödet. Där vertical slice redan finns
 | Rekommendation | Högst 3 förslag. Prioritet: aktiv Training Focus → `needs_help` → `with_support` → core skills utan evidens. |
 | Transmission | Vid `automatic_only` ska `car_control_gear_shifting` inte rekommenderas. |
 
-### FR-8 Navigering och kontextväljare på root (`/`)
+### FR-8 Navigering och kontextväljare på `/app`
 
 | Fält | Krav |
 | --- | --- |
 | ID | FR-8 |
 | Aktör | Inloggad user (Elev / Handledare) |
 | Status | Implementerat |
-| Beskrivning | Root-rutten `/` utvärderar antalet aktiva, tillgängliga `driving_journeys` för den inloggade aktören och dirigerar användaren baserat på kontext. |
+| Beskrivning | Produktentrén `/app` utvärderar antalet aktiva, tillgängliga `driving_journeys` för den inloggade aktören och dirigerar användaren baserat på kontext. Publik landning `/` är waitlist och skapar inte produktkonto. |
 
 **Routing-regler:**
 
-- **Ingen session:** Visa landningen på `/` med intresseanmälan till betan. Produktens onboarding finns kvar på `/onboarding`.
-- **0 tillgängliga resor (inloggad):** Omdirigera till onboarding (`/onboarding`) där användaren kan skapa en resa eller ansluta via inbjudan.
+- **Ingen session på `/`:** Visa landningen med intresseanmälan till betan. Ingen Apple/Google-registrering.
+- **Ingen session på `/app`:** Visa Fortsätt med Apple / Fortsätt med Google.
+- **0 tillgängliga resor (inloggad på `/app`):** Omdirigera till onboarding (`/onboarding`) där en `active` user kan skapa en resa. Guest skapar inte elevresa i produktion.
 - **1 tillgänglig resa:** Omdirigera direkt till den aktiva resans översikt (`/journey/[id]`).
-- **>1 tillgängliga resor:** Visa kontextväljare på `/` med rubriken **"Välj elev"** och hjälptexten **"Vilken körkortsresa vill du öppna?"**.
+- **>1 tillgängliga resor:** Visa kontextväljare på `/app` med rubriken **"Välj elev"** och hjälptexten **"Vilken körkortsresa vill du öppna?"**.
 
 **Designregler för kontextväljaren:**
 
@@ -980,7 +981,7 @@ Betalning ingår inte som blockerare för första beta. Se [Beta Validation och 
 
 ## 15. korpasset.se
 
-Publik landning för intresseanmälan till betan. Intresseanmälan är **inte** kontoregistrering. Produktkonton skapas bara i appen via Apple eller Google. Invitation-URL:er på samma origin ska öppna appen (Universal Links / App Links). Slice-onboarding på `/onboarding` är utvecklingsfallback.
+Publik landning för intresseanmälan till betan. Intresseanmälan är **inte** kontoregistrering. Produktkonton skapas bara i appen via Apple eller Google (`/app`). Invitation-URL:er på samma origin ska öppna appen (Universal Links / App Links). Slice-onboarding på `/onboarding` som skapar guest-elev är utvecklingsfallback bakom `ALLOW_GUEST_STUDENT_ONBOARDING` (av i produktion).
 
 Informationshierarki:
 

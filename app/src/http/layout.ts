@@ -34,8 +34,8 @@ export interface AppLayoutOptions {
 
 function appNav(options: AppLayoutOptions = {}): string {
   const journeyId = options.journeyId ? escapeHtml(options.journeyId) : "";
-  const homeHref = journeyId ? `/journey/${journeyId}` : "/";
-  const nextHref = journeyId ? `/journey/${journeyId}/drive/new` : "/";
+  const homeHref = journeyId ? `/journey/${journeyId}` : "/app";
+  const nextHref = journeyId ? `/journey/${journeyId}/drive/new` : "/app";
   const progressHref = journeyId ? `/journey/${journeyId}/utveckling` : "/konto";
   const nextLabel = options.role === "supervisor" ? "Fokus" : "Nästa";
   return `<nav class="app-tabbar" aria-label="Huvudmeny">
@@ -60,7 +60,7 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
 </head>
 <body class="app">
   <header class="app-bar">
-    <a class="app-bar__brand" href="/">
+    <a class="app-bar__brand" href="/app">
       <img src="${BRAND_ASSETS.logo}" alt="Körpasset">
     </a>
     <nav class="app-bar__nav" aria-label="Konto">
@@ -111,7 +111,7 @@ export function missingSessionPage(): string {
     `${errorBanner("Vi känner inte igen den här enheten.")}
      <h1>Öppna Körpasset igen</h1>
      <p>Om du är elev kan du starta eller fortsätta din körkortsresa här. Om du är handledare: öppna inbjudningslänken från eleven, eller be om en ny.</p>
-     <a class="btn btn-primary" href="/onboarding">Starta som elev</a>
+     <a class="btn btn-primary" href="/app">Starta som elev</a>
      <p class="muted">Inbjudningslänken ser ut som korpasset.se/invite/…</p>`,
   );
 }
@@ -184,6 +184,15 @@ export function siteLayout(
   ${body}
 </body>
 </html>`;
+}
+
+export function oauthContinuePanel(intro?: string): string {
+  return `${intro ? `<p>${intro}</p>` : ""}
+         <div class="stack oauth-continue">
+           <p>Fortsätt med Apple eller Google. Samma knapp är både första gången och när du kommer tillbaka.</p>
+           <button type="button" class="btn btn-primary" id="continue-apple" data-oauth-provider="apple">Fortsätt med Apple</button>
+           <button type="button" class="btn btn-secondary" id="continue-google" data-oauth-provider="google">Fortsätt med Google</button>
+         </div>`;
 }
 
 export function primaryButton(label: string, attrs = ""): string {

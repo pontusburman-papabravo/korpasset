@@ -284,14 +284,14 @@ describe("HTTP happy path (two isolated sessions)", () => {
     // GET / returns to journey for each session
     const studentHome = await injectWithSession(app, studentCookies, {
       method: "GET",
-      url: "/",
+      url: "/app",
     });
     assert.equal(studentHome.statusCode, 302);
     assert.equal(studentHome.headers.location, `/journey/${journeyId}`);
 
     const supervisorHome = await injectWithSession(app, supervisorCookies, {
       method: "GET",
-      url: "/",
+      url: "/app",
     });
     assert.equal(supervisorHome.statusCode, 302);
     assert.equal(supervisorHome.headers.location, `/journey/${journeyId}`);

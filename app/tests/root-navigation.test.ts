@@ -27,7 +27,7 @@ async function addSupervisor(
   return acceptInvitation(invitation.token, supervisorName, sessionUserId);
 }
 
-describe("root navigation (GET /)", () => {
+describe("app navigation (GET /app)", () => {
   beforeEach(async () => {
     await resetDatabaseData();
   });
@@ -44,7 +44,7 @@ describe("root navigation (GET /)", () => {
       bilklar_session: createSessionToken(user.id),
     }, {
       method: "GET",
-      url: "/",
+      url: "/app",
     });
 
     assert.equal(response.statusCode, 302);
@@ -60,7 +60,7 @@ describe("root navigation (GET /)", () => {
       bilklar_session: createSessionToken(userId),
     }, {
       method: "GET",
-      url: "/",
+      url: "/app",
     });
 
     assert.equal(response.statusCode, 302);
@@ -77,7 +77,7 @@ describe("root navigation (GET /)", () => {
       bilklar_session: createSessionToken(accepted.userId),
     }, {
       method: "GET",
-      url: "/",
+      url: "/app",
     });
 
     assert.equal(response.statusCode, 302);
@@ -99,7 +99,7 @@ describe("root navigation (GET /)", () => {
       bilklar_session: createSessionToken(accepted.userId),
     }, {
       method: "GET",
-      url: "/",
+      url: "/app",
     });
 
     assert.equal(response.statusCode, 200);
@@ -124,7 +124,7 @@ describe("root navigation (GET /)", () => {
       bilklar_session: createSessionToken(owned.userId),
     }, {
       method: "GET",
-      url: "/",
+      url: "/app",
     });
 
     assert.equal(response.statusCode, 200);
@@ -153,7 +153,7 @@ describe("root navigation (GET /)", () => {
       bilklar_session: createSessionToken(supervisor.id),
     }, {
       method: "GET",
-      url: "/",
+      url: "/app",
     });
     assert.equal(response.statusCode, 302);
     assert.equal(response.headers.location, "/onboarding");
@@ -182,7 +182,7 @@ describe("root navigation (GET /)", () => {
       bilklar_session: createSessionToken(archived.userId),
     }, {
       method: "GET",
-      url: "/",
+      url: "/app",
     });
     assert.equal(response.statusCode, 302);
     assert.equal(response.headers.location, "/onboarding");
@@ -206,7 +206,7 @@ describe("root navigation (GET /)", () => {
       bilklar_session: createSessionToken(instructor.id),
     }, {
       method: "GET",
-      url: "/",
+      url: "/app",
     });
     assert.equal(response.statusCode, 302);
     assert.equal(response.headers.location, "/onboarding");
@@ -252,7 +252,7 @@ describe("root navigation (GET /)", () => {
       bilklar_session: createSessionToken(accepted.userId),
     }, {
       method: "GET",
-      url: "/",
+      url: "/app",
     });
     assert.equal(response.statusCode, 200);
     assert.match(response.body, /Clara — senast körd 14 sep/i);
