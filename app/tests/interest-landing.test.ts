@@ -42,8 +42,11 @@ describe("landing and interest waitlist", () => {
     assert.match(response.body, /integritetspolicyn/);
     assert.match(response.body, /Vi söker just nu våra första 25/);
     assert.match(response.body, /oavsett om ni just börjat eller redan kört ett år/);
-    assert.match(response.body, /Mamma, pappa, syskon/);
+    assert.match(response.body, /Mamma, pappa, partner, syskon/);
     assert.match(response.body, /Vi har redan övningskört ett tag/);
+    assert.match(response.body, /Jag är vuxen och övningskör med min partner/);
+    assert.match(response.body, /Kan jag följa två barn/);
+    assert.match(response.body, /Vi kör för sällan/);
     assert.match(response.body, /tips på nästa steg/);
     assert.match(response.body, /dotter 16, just börjat/);
     assert.doesNotMatch(response.body, /elev \+ mamma och pappa, kört i tre månader/);
@@ -111,8 +114,10 @@ describe("landing and interest waitlist", () => {
     const app = await createTestApp();
     const onboarding = await app.inject({ method: "GET", url: "/onboarding" });
     assert.equal(onboarding.statusCode, 200);
-    assert.match(onboarding.body, /Starta min körkortsresa/);
-    assert.match(onboarding.body, /mamma, pappa eller den som kör med er/);
+    assert.match(onboarding.body, /Hur är du med i övningskörningen/);
+    const student = await app.inject({ method: "GET", url: "/onboarding?som=elev" });
+    assert.match(student.body, /Starta min körkortsresa/);
+    assert.match(student.body, /mamma, pappa, partner eller den som kör med er/);
     await app.close();
   });
 

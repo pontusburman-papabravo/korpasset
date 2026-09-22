@@ -221,3 +221,15 @@ export function formatDay(date: Date | null): string | null {
     .toLocaleDateString("sv-SE", { day: "numeric", month: "short" })
     .replaceAll(".", "");
 }
+
+export const STALE_DRIVE_DAYS = 5;
+
+export function daysSince(date: Date, now = new Date()): number {
+  const start = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  const end = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.max(0, Math.floor((end - start) / 86_400_000));
+}
+
+export function formatDaysSince(days: number): string {
+  return days === 1 ? "1 dag" : `${days} dagar`;
+}

@@ -81,7 +81,14 @@ describe("app entry (GET /app) and production onboarding", () => {
       { method: "GET", url: "/onboarding" },
     );
     assert.equal(onboarding.statusCode, 200);
-    assert.match(onboarding.body, /Starta min körkortsresa/);
+    assert.match(onboarding.body, /Hur är du med i övningskörningen/);
+    assert.match(onboarding.body, /Jag är handledare eller förälder/);
+    const studentPath = await injectWithSession(
+      app,
+      { bilklar_session: createSessionToken(apple.userId) },
+      { method: "GET", url: "/onboarding?som=elev" },
+    );
+    assert.match(studentPath.body, /Starta min körkortsresa/);
     await app.close();
   });
 

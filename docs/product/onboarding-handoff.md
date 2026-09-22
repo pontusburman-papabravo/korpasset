@@ -4,10 +4,12 @@ Design för hur en elev bjuder in handledare utan administration och utan att by
 
 ## Flöde
 
+`/onboarding` frågar först om personen tar körkort eller är handledare/förälder. Det sparar ingen roll på kontot. Handledare/föräldrar ska inte skapa elevresan — de öppnar inbjudan från eleven. En handledare kan följa flera elever.
+
 ```text
 Elev fortsätter med Apple eller Google i appen
     ↓
-Elev skapar driving_journey
+Elev skapar driving_journey (namn + ungefär var ni är i övningskörningen)
     ↓
 Elev genererar invitation (QR eller länk)
     ↓

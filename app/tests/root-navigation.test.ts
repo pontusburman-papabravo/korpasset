@@ -104,7 +104,7 @@ describe("app navigation (GET /app)", () => {
 
     assert.equal(response.statusCode, 200);
     assert.match(response.body, /<h1>Välj elev<\/h1>/);
-    assert.match(response.body, /Vilken körkortsresa vill du öppna\?/);
+    assert.match(response.body, /Du kan följa flera elever/);
     assert.match(response.body, /Clara/);
     assert.match(response.body, /Ella/);
     assert.match(response.body, new RegExp(`/journey/${clara.journey.id}`));
@@ -128,9 +128,10 @@ describe("app navigation (GET /app)", () => {
     });
 
     assert.equal(response.statusCode, 200);
-    assert.match(response.body, /Välj elev/);
-    assert.match(response.body, /Ella/);
+    assert.match(response.body, /Vilken körkortsresa vill du öppna/);
+    assert.match(response.body, /Min körkortsresa/);
     assert.match(response.body, /Clara/);
+    assert.doesNotMatch(response.body, /<h1>Välj elev<\/h1>/);
     await app.close();
   });
 
@@ -222,8 +223,10 @@ describe("app navigation (GET /app)", () => {
 
     const onboarding = await app.inject({ method: "GET", url: "/onboarding" });
     assert.equal(onboarding.statusCode, 200);
-    assert.match(onboarding.body, /Vad heter du/);
-    assert.match(onboarding.body, /Starta min körkortsresa/);
+    assert.match(onboarding.body, /Hur är du med i övningskörningen/);
+    const student = await app.inject({ method: "GET", url: "/onboarding?som=elev" });
+    assert.match(student.body, /Vad heter du/);
+    assert.match(student.body, /Starta min körkortsresa/);
     await app.close();
   });
 

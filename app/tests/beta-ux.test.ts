@@ -147,7 +147,7 @@ describe("beta UX HTTP", () => {
     assert.match(studentHome.body, /Pappa/);
     assert.match(studentHome.body, /Utveckling/);
     assert.match(studentHome.body, /Mina handledare/);
-    assert.match(studentHome.body, /Kör pappa, mamma eller ett syskon också/);
+    assert.match(studentHome.body, /Kör pappa, mamma, partner eller ett syskon också/);
     assert.match(studentHome.body, /Växellåda/);
     assert.match(studentHome.body, /Nästa gång/);
     assert.match(studentHome.body, /Så gick det/);
@@ -502,7 +502,7 @@ describe("beta UX HTTP", () => {
       method: "GET",
       url: `/journey/${journey.id}`,
     });
-    assert.match(home.body, /Bjud in mamma, pappa eller den som kör med er/);
+    assert.match(home.body, /Bjud in mamma, pappa, partner eller den som kör med er/);
     await app.close();
   });
 

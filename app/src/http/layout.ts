@@ -124,8 +124,8 @@ export function missingSessionPage(): string {
     "Session saknas",
     `${errorBanner("Vi känner inte igen den här enheten.")}
      <h1>Öppna Körpasset igen</h1>
-     <p>Om du är elev kan du starta eller fortsätta din körkortsresa här. Om du är handledare: öppna inbjudningslänken från eleven, eller be om en ny.</p>
-     <a class="btn btn-primary" href="/app">Starta som elev</a>
+     <p>Om du tar körkort kan du starta eller fortsätta din körkortsresa här. Om du är handledare eller förälder: öppna inbjudningslänken från eleven, eller be om en ny.</p>
+     <a class="btn btn-primary" href="/app">Öppna Körpasset</a>
      <p class="muted">Inbjudningslänken ser ut som korpasset.se/invite/…</p>`,
   );
 }

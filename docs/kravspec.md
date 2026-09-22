@@ -240,7 +240,7 @@ Kraven nedan beskriver det kanoniska v1-flödet. Där vertical slice redan finns
 | ID | FR-1 |
 | Aktör | Elev |
 | Status | Implementerat som namn+session i vertical slice; betakonto enligt ADR-008 |
-| Beskrivning | En inloggad elev (Apple eller Google i appen) anger visningsnamn vid behov och får en `driving_journey` med `licence_type = B`. |
+| Beskrivning | En inloggad elev (Apple eller Google i appen) anger visningsnamn och ungefär var ni är i övningskörningen (`just_started` / `building` / `near_test`) och får en `driving_journey` med `licence_type = B`. `/onboarding` frågar först om personen tar körkort eller är handledare/förälder, så en förälder inte skapar elevresan av misstag. |
 | Session | Servern skapar eller återanvänder `user_id` från verifierad Apple/Google-identity. Identity skickas inte in som betrodd klientdata. |
 | Efter steg | Eleven landar på sin journey-sida och kan bjuda in handledare. |
 | Slice-fallback | `/onboarding` som skapar guest-elev utan OAuth är utvecklingsflaggan `ALLOW_GUEST_STUDENT_ONBOARDING` (av i produktion), inte betans kontomodell. |
@@ -330,7 +330,7 @@ Kraven nedan beskriver det kanoniska v1-flödet. Där vertical slice redan finns
 
 - **Ingen session på `/`:** Visa landningen med intresseanmälan till betan. Ingen Apple/Google-registrering.
 - **Ingen session på `/app`:** Visa Fortsätt med Apple / Fortsätt med Google.
-- **0 tillgängliga resor (inloggad på `/app`):** Omdirigera till onboarding (`/onboarding`) där en `active` user kan skapa en resa. Guest skapar inte elevresa i produktion.
+- **0 tillgängliga resor (inloggad på `/app`):** Omdirigera till onboarding (`/onboarding`) som skiljer elev (skapa resa) från handledare/förälder (öppna inbjudan). En `active` user kan skapa en resa. Guest skapar inte elevresa i produktion.
 - **1 tillgänglig resa:** Omdirigera direkt till den aktiva resans översikt (`/journey/[id]`).
 - **>1 tillgängliga resor:** Visa kontextväljare på `/app` med rubriken **"Välj elev"** och hjälptexten **"Vilken körkortsresa vill du öppna?"**.
 

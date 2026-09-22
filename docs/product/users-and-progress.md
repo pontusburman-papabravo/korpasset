@@ -75,7 +75,7 @@ Handledaren administrerar nästan aldrig. Eleven äger inbjudningar. Bedömning 
 
 Efter inloggning via `/app` gäller FR-8:
 
-- 0 resor → skapa resa eller öppna inbjudan.
+- 0 resor → onboarding som skiljer elev (“skapa resa”) från handledare/förälder (“öppna inbjudan”). Roll lagras inte på kontot.
 - 1 resa → rakt in på den resan. Hemmet anpassar copy efter rollen (elev eller handledare).
 - Flera resor → kontextväljare. Den väljer bara vilken resa som öppnas. Den startar inte ett körpass.
 
