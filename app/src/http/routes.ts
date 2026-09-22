@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply } from "fastify";
 import QRCode from "qrcode";
 import { AppError } from "../errors.js";
 import {
@@ -237,36 +237,56 @@ function onboardingForm(errorMessage?: string, name = ""): string {
          </form>`;
 }
 
+function renderJourneyChooser(
+  journeys: Awaited<ReturnType<typeof listAccessibleActiveJourneys>>,
+): string {
+  const choices = journeys
+    .map((journey) => {
+      const label = formatAccessibleJourneyLabel(journey);
+      return `<a class="card journey-choice" href="/journey/${escapeHtml(journey.id)}">${escapeHtml(label)}</a>`;
+    })
+    .join("");
+  return layout(
+    "Välj elev",
+    `<h1>Välj elev</h1>
+     <p>Vilken körkortsresa vill du öppna?</p>
+     <div class="stack">${choices}</div>`,
+  );
+}
+
+async function sendProductHome(userId: string | null, reply: FastifyReply) {
+  if (!userId) {
+    return reply.redirect("/onboarding");
+  }
+
+  const journeys = await listAccessibleActiveJourneys(userId);
+  if (journeys.length === 1) {
+    return reply.redirect(`/journey/${journeys[0].id}`);
+  }
+  if (journeys.length > 1) {
+    return reply.type("text/html").send(renderJourneyChooser(journeys));
+  }
+  return reply.redirect("/onboarding");
+}
+
 export async function registerRoutes(app: FastifyInstance): Promise<void> {
   app.get("/", async (request, reply) => {
     const userId = getSessionUserId(request);
     if (userId) {
-      const journeys = await listAccessibleActiveJourneys(userId);
-      if (journeys.length === 1) {
-        return reply.redirect(`/journey/${journeys[0].id}`);
-      }
-      if (journeys.length > 1) {
-        const choices = journeys
-          .map((journey) => {
-            const label = formatAccessibleJourneyLabel(journey);
-            return `<a class="card journey-choice" href="/journey/${escapeHtml(journey.id)}">${escapeHtml(label)}</a>`;
-          })
-          .join("");
-        return reply.type("text/html").send(
-          layout(
-            "Välj elev",
-            `<h1>Välj elev</h1>
-             <p>Vilken körkortsresa vill du öppna?</p>
-             <div class="stack">${choices}</div>`,
-          ),
-        );
-      }
-      return reply.redirect("/onboarding");
+      return sendProductHome(userId, reply);
     }
 
     return reply.type("text/html").send(
       renderLandingPage({ betaFilled: await countBetaWaitlist() }),
     );
+  });
+
+  app.get("/app", async (request, reply) => {
+    return sendProductHome(getSessionUserId(request), reply);
+  });
+
+  app.get("/app/", async (request, reply) => {
+    return sendProductHome(getSessionUserId(request), reply);
   });
 
   app.get("/onboarding", async (request, reply) => {

@@ -52,11 +52,11 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
 <html lang="sv">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>${escapeHtml(title)} · Körpasset</title>
   <meta name="robots" content="noindex, nofollow">
   ${faviconLink()}
-  <link rel="stylesheet" href="/app.css">
+  <link rel="stylesheet" href="/app.css?v=2">
 </head>
 <body class="app">
   <header class="app-bar">

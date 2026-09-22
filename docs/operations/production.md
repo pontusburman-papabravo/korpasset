@@ -11,6 +11,7 @@ Ett origin:
 | URL | Vad |
 | --- | --- |
 | `https://korpasset.se` | Landning + intresseanmälan. Skapar **inte** produktkonto. |
+| `https://korpasset.se/app` | Start-URL för Capacitor-shellen (iOS/Android). Inloggad användare hamnar på sin resa, annars på `/onboarding`. Ingen landningssida. |
 | `https://korpasset.se/onboarding` | Slice-fallback för att skapa elevresa. Inte betans kontomodell. |
 | `https://korpasset.se/invite/<token>` | Canonical invitation-länk; i beta öppnas den i appen |
 | `https://korpasset.se/integritet` `/villkor` `/kontakt` `/radera-konto` | Legal. `/radera-konto` är Play Consoles länk för kontoradering |
@@ -18,7 +19,7 @@ Ett origin:
 | `https://korpasset.se/health` | Health, ingen auth |
 | `https://korpasset.se/api/resend/webhook` | Resend-händelser (Svix-signatur, ingen användar-auth) |
 
-Ingen `app.`-subdomän i första betan. Samma host förenklar cookies, QR, SMS och en Capacitor-shell som laddar produktionens origin. Produktkonton skapas i den shellen via Apple och Google, inte på landningen.
+Ingen `app.`-subdomän i första betan. Samma host förenklar cookies, QR, SMS och en Capacitor-shell som laddar `https://korpasset.se/app`. Produktkonton skapas i den shellen via Apple och Google, inte på landningen.
 
 Invitationer byggs från `APP_BASE_URL`. Den **måste** vara `https://korpasset.se` i produktion — annars pekar QR mot localhost.
 
