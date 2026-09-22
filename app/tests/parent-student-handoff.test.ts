@@ -7,9 +7,16 @@ import {
   acceptInvitation,
   createInvitation,
 } from "../src/services/invitations.js";
+import { getJourneyAccess } from "../src/services/authorization.js";
+import { getPool } from "../src/db/pool.js";
 import { STUDENT_START_PATH, studentStartUrl } from "../src/http/onboarding-pages.js";
 import { createTestApp } from "./helpers.js";
-import { formBody, injectWithSession } from "./http-helpers.js";
+import {
+  extractInviteToken,
+  extractPathFromRedirect,
+  formBody,
+  injectWithSession,
+} from "./http-helpers.js";
 import { resetDatabaseData } from "./setup.js";
 
 function session(userId: string) {
@@ -19,6 +26,91 @@ function session(userId: string) {
 describe("parent initiates, student owns the journey", () => {
   beforeEach(async () => {
     await resetDatabaseData();
+  });
+
+  it("keeps the parent as supervisor when they start the handoff and the student creates the journey", async () => {
+    const parent = await continueWithOAuth({
+      provider: "apple",
+      subject: "apple-handoff-parent",
+      displayName: "Jonas",
+    });
+    const student = await continueWithOAuth({
+      provider: "google",
+      subject: "google-handoff-student",
+      displayName: "Ludvig",
+    });
+    const app = await createTestApp();
+
+    const supervisorPage = await injectWithSession(app, session(parent.userId), {
+      method: "GET",
+      url: "/onboarding?som=handledare",
+    });
+    assert.equal(supervisorPage.statusCode, 200);
+    assert.match(supervisorPage.body, new RegExp(STUDENT_START_PATH.replace("?", "\\?")));
+    assert.doesNotMatch(supervisorPage.body, /action="\/start"/);
+    assert.equal(studentStartUrl().includes(STUDENT_START_PATH), true);
+
+    const studentForm = await injectWithSession(app, session(student.userId), {
+      method: "GET",
+      url: STUDENT_START_PATH,
+    });
+    assert.equal(studentForm.statusCode, 200);
+    assert.match(studentForm.body, /din<\/strong> körkortsresa/);
+    assert.match(studentForm.body, /action="\/start"/);
+
+    const started = await injectWithSession(app, session(student.userId), {
+      method: "POST",
+      url: "/start",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({ name: "Ludvig", practice_stage: "just_started" }),
+    });
+    assert.equal(started.statusCode, 302);
+    const journeyId = extractPathFromRedirect(started, /^\/journey\/([^/]+)$/);
+    assert.ok(journeyId);
+
+    const journey = await getPool().query(
+      `SELECT student_user_id, practice_stage FROM driving_journeys WHERE id = $1`,
+      [journeyId],
+    );
+    assert.equal(journey.rows[0].student_user_id, student.userId);
+    assert.notEqual(journey.rows[0].student_user_id, parent.userId);
+    assert.equal(journey.rows[0].practice_stage, "just_started");
+
+    const parentOwned = await getPool().query(
+      `SELECT count(*)::int AS n FROM driving_journeys WHERE student_user_id = $1`,
+      [parent.userId],
+    );
+    assert.equal(parentOwned.rows[0].n, 0);
+
+    const invitePage = await injectWithSession(app, session(student.userId), {
+      method: "POST",
+      url: `/journey/${journeyId}/invitations`,
+    });
+    assert.equal(invitePage.statusCode, 200);
+    const token = extractInviteToken(invitePage.body);
+
+    const accepted = await injectWithSession(app, session(parent.userId), {
+      method: "POST",
+      url: `/invite/${token}/accept`,
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({ name: "Jonas" }),
+    });
+    assert.equal(accepted.statusCode, 302);
+    assert.equal(accepted.headers.location, `/journey/${journeyId}`);
+
+    const studentAccess = await getJourneyAccess(journeyId, student.userId);
+    const parentAccess = await getJourneyAccess(journeyId, parent.userId);
+    assert.equal(studentAccess?.role, "student");
+    assert.equal(studentAccess?.studentUserId, student.userId);
+    assert.equal(parentAccess?.role, "supervisor");
+    assert.equal(parentAccess?.studentUserId, student.userId);
+
+    const ownerAfter = await getPool().query(
+      `SELECT student_user_id FROM driving_journeys WHERE id = $1`,
+      [journeyId],
+    );
+    assert.equal(ownerAfter.rows[0].student_user_id, student.userId);
+    await app.close();
   });
 
   it("lets a parent send the student into the app without creating the journey", async () => {
