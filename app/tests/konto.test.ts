@@ -87,7 +87,7 @@ describe("konto UI", () => {
       url: "/konto",
     });
     assert.match(page.body, /data-provider="apple" data-linked="true"/);
-    assert.match(page.body, /Apple är kopplat/);
+    assert.match(page.body, /<strong>Apple<\/strong> är kopplat/);
     assert.match(page.body, /data-provider="google" data-linked="false"/);
     assert.match(page.body, /Koppla Google/);
     assert.doesNotMatch(page.body, /Koppla Apple/);
@@ -174,6 +174,7 @@ describe("konto UI", () => {
       name: "Ella",
       email: "ella@example.com",
       role: "student",
+      platformIos: true,
     });
     const apple = await continueWithOAuth({
       provider: "apple",
