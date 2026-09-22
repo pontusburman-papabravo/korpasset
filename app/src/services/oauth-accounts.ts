@@ -10,11 +10,29 @@ export interface ContinueWithOAuthResult {
 }
 
 const DISPLAY_NAME_MAX = 80;
+const IDENTITY_PROVIDER_SUBJECT_UNIQUE = "auth_identities_provider_subject_unique";
+const USER_PROVIDER_UNIQUE = "auth_identities_one_apple_or_google_per_user";
 
 export function sanitizeDisplayName(value: string | null | undefined): string | null {
   const trimmed = value?.replace(/\s+/g, " ").trim() ?? "";
   if (!trimmed) return null;
   return trimmed.slice(0, DISPLAY_NAME_MAX);
+}
+
+function isUniqueViolation(error: unknown, constraint: string): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: string }).code === "23505" &&
+    (error as { constraint?: string }).constraint === constraint
+  );
+}
+
+function providerAlreadyLinkedError(provider: OAuthProvider): ConflictError {
+  return new ConflictError(
+    `${providerLabel(provider)} är redan kopplat till det här kontot.`,
+    "provider_already_linked",
+  );
 }
 
 export async function continueWithOAuth(params: {
@@ -29,12 +47,50 @@ export async function continueWithOAuth(params: {
   }
   const displayName = sanitizeDisplayName(params.displayName);
 
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await continueWithOAuthInTransaction({
+        provider: params.provider,
+        subject,
+        displayName,
+        sessionUserId: params.sessionUserId,
+      });
+    } catch (error) {
+      if (isUniqueViolation(error, USER_PROVIDER_UNIQUE)) {
+        throw providerAlreadyLinkedError(params.provider);
+      }
+      if (
+        isUniqueViolation(error, IDENTITY_PROVIDER_SUBJECT_UNIQUE) &&
+        attempt === 0
+      ) {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw new AppError("Kunde inte slutföra inloggningen", 409, "identity_conflict");
+}
+
+async function continueWithOAuthInTransaction(params: {
+  provider: OAuthProvider;
+  subject: string;
+  displayName: string | null;
+  sessionUserId?: string | null;
+}): Promise<ContinueWithOAuthResult> {
   return withTransaction(async (client) => {
+    // SELECT FOR UPDATE on a missing identity row takes no lock.
+    // Serialize this provider+subject for the rest of the transaction.
+    await client.query(
+      `SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))`,
+      [`oauth-identity:${params.provider}`, params.subject],
+    );
+
     const existing = await client.query(
       `SELECT user_id FROM auth_identities
        WHERE provider = $1 AND provider_subject = $2
        FOR UPDATE`,
-      [params.provider, subject],
+      [params.provider, params.subject],
     );
 
     const sessionUserId = await getReusableSessionUserId(
@@ -58,18 +114,10 @@ export async function continueWithOAuth(params: {
     }
 
     if (sessionUserId) {
-      const sameProvider = await client.query(
-        `SELECT provider_subject FROM auth_identities
-         WHERE user_id = $1 AND provider = $2
-         FOR UPDATE`,
-        [sessionUserId, params.provider],
+      await client.query(
+        `SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))`,
+        [`oauth-user-provider:${sessionUserId}`, params.provider],
       );
-      if ((sameProvider.rowCount ?? 0) > 0) {
-        throw new ConflictError(
-          "Det här Apple- eller Google-kontot hör redan till en annan användare.",
-          "identity_on_other_user",
-        );
-      }
 
       const current = await client.query(
         `SELECT display_name, account_state FROM users WHERE id = $1 FOR UPDATE`,
@@ -82,13 +130,23 @@ export async function continueWithOAuth(params: {
         throw new AppError("Användaren hittades inte", 404, "not_found");
       }
 
+      const sameProvider = await client.query(
+        `SELECT provider_subject FROM auth_identities
+         WHERE user_id = $1 AND provider = $2
+         FOR UPDATE`,
+        [sessionUserId, params.provider],
+      );
+      if ((sameProvider.rowCount ?? 0) > 0) {
+        throw providerAlreadyLinkedError(params.provider);
+      }
+
       await client.query(
         `INSERT INTO auth_identities (user_id, provider, provider_subject, verified_at)
          VALUES ($1, $2, $3, now())`,
-        [sessionUserId, params.provider, subject],
+        [sessionUserId, params.provider, params.subject],
       );
 
-      const nextName = row.display_name?.trim() ? row.display_name : displayName;
+      const nextName = row.display_name?.trim() ? row.display_name : params.displayName;
       await client.query(
         `UPDATE users
          SET account_state = 'active',
@@ -109,13 +167,13 @@ export async function continueWithOAuth(params: {
       `INSERT INTO users (display_name, account_state)
        VALUES ($1, 'active')
        RETURNING id`,
-      [displayName],
+      [params.displayName],
     );
     const userId = String(created.rows[0].id);
     await client.query(
       `INSERT INTO auth_identities (user_id, provider, provider_subject, verified_at)
        VALUES ($1, $2, $3, now())`,
-      [userId, params.provider, subject],
+      [userId, params.provider, params.subject],
     );
     return { userId, created: true, claimedGuest: false };
   });

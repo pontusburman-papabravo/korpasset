@@ -181,4 +181,121 @@ describe("continueWithOAuth (FR-11, FR-10)", () => {
     assert.equal(collab.rows[0].user_id, guest.id);
     assert.equal(collab.rows[0].status, "active");
   });
+
+  it("serializes parallel first-login for the same provider+sub onto one user", async () => {
+    const [first, second] = await Promise.all([
+      continueWithOAuth({
+        provider: "google",
+        subject: "google-parallel-first",
+        displayName: "Ada",
+      }),
+      continueWithOAuth({
+        provider: "google",
+        subject: "google-parallel-first",
+        displayName: "Bertil",
+      }),
+    ]);
+    assert.equal(first.userId, second.userId);
+    assert.equal(
+      [first.created, second.created].filter(Boolean).length,
+      1,
+    );
+
+    const users = await getPool().query(
+      `SELECT count(*)::int AS n FROM users`,
+    );
+    assert.equal(users.rows[0].n, 1);
+    const identities = await getPool().query(
+      `SELECT user_id, provider FROM auth_identities
+       WHERE provider = 'google' AND provider_subject = 'google-parallel-first'`,
+    );
+    assert.equal(identities.rowCount, 1);
+    assert.equal(identities.rows[0].user_id, first.userId);
+  });
+
+  it("serializes parallel guest claims for the same guest and provider+sub", async () => {
+    const guest = await createGuestUser("Pappa");
+    const [first, second] = await Promise.all([
+      continueWithOAuth({
+        provider: "apple",
+        subject: "apple-parallel-guest",
+        displayName: "Pappa Apple",
+        sessionUserId: guest.id,
+      }),
+      continueWithOAuth({
+        provider: "apple",
+        subject: "apple-parallel-guest",
+        displayName: "Pappa Apple",
+        sessionUserId: guest.id,
+      }),
+    ]);
+    assert.equal(first.userId, guest.id);
+    assert.equal(second.userId, guest.id);
+
+    const identities = await getPool().query(
+      `SELECT provider, provider_subject FROM auth_identities WHERE user_id = $1`,
+      [guest.id],
+    );
+    assert.equal(identities.rowCount, 1);
+    assert.equal(identities.rows[0].provider, "apple");
+    assert.equal(identities.rows[0].provider_subject, "apple-parallel-guest");
+
+    const user = await getUserById(guest.id);
+    assert.equal(user?.accountState, "active");
+  });
+
+  it("rejects a parallel second Google identity on the same active user with 409", async () => {
+    const apple = await continueWithOAuth({
+      provider: "apple",
+      subject: "apple-parallel-link-base",
+      displayName: "Ella",
+    });
+    const results = await Promise.allSettled([
+      continueWithOAuth({
+        provider: "google",
+        subject: "google-parallel-link-a",
+        sessionUserId: apple.userId,
+      }),
+      continueWithOAuth({
+        provider: "google",
+        subject: "google-parallel-link-b",
+        sessionUserId: apple.userId,
+      }),
+    ]);
+    const fulfilled = results.filter(
+      (result): result is PromiseFulfilledResult<{ userId: string }> =>
+        result.status === "fulfilled",
+    );
+    const rejected = results.filter(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    assert.equal(fulfilled.length, 1);
+    assert.equal(rejected.length, 1);
+    const error = rejected[0].reason as Error & {
+      code?: string;
+      statusCode?: number;
+    };
+    assert.equal(error.statusCode, 409);
+    assert.equal(error.code, "provider_already_linked");
+    assert.equal(fulfilled[0].value.userId, apple.userId);
+
+    const identities = await getPool().query(
+      `SELECT provider, provider_subject FROM auth_identities
+       WHERE user_id = $1 ORDER BY provider, provider_subject`,
+      [apple.userId],
+    );
+    assert.equal(identities.rowCount, 2);
+    assert.deepEqual(
+      identities.rows.map((row) => row.provider),
+      ["apple", "google"],
+    );
+    const googleSubjects = identities.rows
+      .filter((row) => row.provider === "google")
+      .map((row) => row.provider_subject);
+    assert.equal(googleSubjects.length, 1);
+    assert.ok(
+      googleSubjects[0] === "google-parallel-link-a" ||
+        googleSubjects[0] === "google-parallel-link-b",
+    );
+  });
 });
