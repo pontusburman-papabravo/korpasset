@@ -18,7 +18,9 @@ import { registerResendWebhook } from "./resend-webhook.js";
 import { registerHelpRoutes } from "./help.js";
 import { registerAccountRoutes } from "./account.js";
 import { registerOAuthRoutes } from "./oauth.js";
+import { registerAppleNotificationRoutes } from "./apple-notifications.js";
 import { registerRoutes } from "./routes.js";
+import { applySecurityHeaders } from "./security-headers.js";
 
 function isStaticAssetPath(url: string | undefined): boolean {
   const path = (url ?? "").split("?")[0];
@@ -31,6 +33,7 @@ function skipProductSessionCheck(url: string | undefined): boolean {
     path === "/health" ||
     path.startsWith("/admin") ||
     path.startsWith("/api/resend") ||
+    path.startsWith("/api/apple") ||
     isStaticAssetPath(path)
   );
 }
@@ -55,6 +58,8 @@ function loggerOptions() {
         "req.headers.authorization",
         "req.headers.referer",
         "req.headers.referrer",
+        "req.body.identityToken",
+        "req.body.payload",
       ],
       censor: "[redacted]",
     },
@@ -101,6 +106,7 @@ export async function buildServer() {
 
   app.addHook("onSend", async (request, reply, payload) => {
     reply.header("x-request-id", request.id);
+    applySecurityHeaders(reply);
     return payload;
   });
 
@@ -146,6 +152,7 @@ export async function buildServer() {
 
   await registerResendWebhook(app);
   await registerOAuthRoutes(app);
+  await registerAppleNotificationRoutes(app);
   await registerHelpRoutes(app);
   await registerAccountRoutes(app);
   await registerMarketingRoutes(app);

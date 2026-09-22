@@ -33,6 +33,16 @@
     return combined || profile.name || profile.fullName || "";
   }
 
+  function randomNonce() {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    let hex = "";
+    for (let i = 0; i < bytes.length; i += 1) {
+      hex += bytes[i].toString(16).padStart(2, "0");
+    }
+    return hex;
+  }
+
   async function initialize(SocialLogin) {
     if (!SocialLogin || typeof SocialLogin.initialize !== "function") return;
     await SocialLogin.initialize({
@@ -61,9 +71,10 @@
 
     try {
       await initialize(SocialLogin);
+      const nonce = randomNonce();
       const result = await SocialLogin.login({
         provider,
-        options: { scopes: ["email", "name"] },
+        options: { scopes: ["email", "name"], nonce: nonce },
       });
       const identityToken = idTokenFrom(result);
       if (!identityToken) {
@@ -78,6 +89,7 @@
           identityToken,
           displayName: displayNameFrom(result),
           returnTo,
+          nonce: nonce,
         }),
       });
       const body = await response.json().catch(function () {

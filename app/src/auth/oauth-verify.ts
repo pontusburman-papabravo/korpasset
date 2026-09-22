@@ -33,11 +33,33 @@ const GOOGLE_JWKS = createRemoteJWKSet(
 );
 
 let verifierOverride: IdentityTokenVerifier | null = null;
+let appleNotificationVerifierOverride: AppleNotificationVerifier | null = null;
+
+export type AppleNotificationType =
+  | "consent-revoked"
+  | "account-delete"
+  | "email-enabled"
+  | "email-disabled";
+
+export interface AppleServerNotification {
+  type: AppleNotificationType | string;
+  sub: string;
+}
+
+export type AppleNotificationVerifier = (
+  payloadJwt: string,
+) => Promise<AppleServerNotification>;
 
 export function setIdentityTokenVerifierForTests(
   verifier: IdentityTokenVerifier | null,
 ): void {
   verifierOverride = verifier;
+}
+
+export function setAppleNotificationVerifierForTests(
+  verifier: AppleNotificationVerifier | null,
+): void {
+  appleNotificationVerifierOverride = verifier;
 }
 
 export async function verifyIdentityToken(
@@ -113,6 +135,51 @@ async function verifyGoogleIdentityToken(
   } catch (error) {
     throw asIdentityError(error, "Ogiltig Google-inloggning");
   }
+}
+
+export async function verifyAppleServerNotification(
+  payloadJwt: string,
+): Promise<AppleServerNotification> {
+  if (appleNotificationVerifierOverride) {
+    return appleNotificationVerifierOverride(payloadJwt);
+  }
+  if (config.appleAudiences.length === 0) {
+    throw new AppError(
+      "Apple-inloggning är inte konfigurerad",
+      503,
+      "oauth_not_configured",
+    );
+  }
+  try {
+    const { payload } = await jwtVerify(payloadJwt, APPLE_JWKS, {
+      issuer: APPLE_ISSUER,
+      audience: config.appleAudiences,
+      clockTolerance: 60,
+    });
+    return appleNotificationFromPayload(payload);
+  } catch (error) {
+    throw asIdentityError(error, "Ogiltig Apple-notis");
+  }
+}
+
+function appleNotificationFromPayload(payload: JWTPayload): AppleServerNotification {
+  const raw = payload.events;
+  let parsed: { type?: unknown; sub?: unknown } = {};
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw) as { type?: unknown; sub?: unknown };
+    } catch {
+      parsed = {};
+    }
+  } else if (raw && typeof raw === "object") {
+    parsed = raw as { type?: unknown; sub?: unknown };
+  }
+  const type = typeof parsed.type === "string" ? parsed.type : "";
+  const sub = typeof parsed.sub === "string" ? parsed.sub.trim() : "";
+  if (!type || !sub) {
+    throw new AppError("Ogiltig Apple-notis", 400, "invalid_apple_notification");
+  }
+  return { type, sub };
 }
 
 function identityFromPayload(

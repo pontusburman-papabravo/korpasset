@@ -80,4 +80,88 @@ describe("oauth identity token verification", () => {
       (error: Error & { code?: string }) => error.code === "invalid_nonce",
     );
   });
+
+  it("rejects an expired token, the wrong issuer, a missing sub and a bad signature", async () => {
+    const { privateKey, publicKey } = await generateKeyPair("ES256");
+    const other = await generateKeyPair("ES256");
+    const jwk = await exportJWK(publicKey);
+    jwk.kid = "test-apple";
+    const jwks = createLocalJWKSet({ keys: [jwk] });
+
+    const expired = await new SignJWT({ sub: "apple-user-1" })
+      .setProtectedHeader({ alg: "ES256", kid: "test-apple" })
+      .setIssuer("https://appleid.apple.com")
+      .setAudience("se.korpasset.app")
+      .setIssuedAt(Math.floor(Date.now() / 1000) - 3600)
+      .setExpirationTime(Math.floor(Date.now() / 1000) - 120)
+      .sign(privateKey);
+    await assert.rejects(
+      () =>
+        verifySignedIdentityToken({
+          provider: "apple",
+          token: expired,
+          jwks,
+          issuer: "https://appleid.apple.com",
+          audience: ["se.korpasset.app"],
+        }),
+      /exp|expired|Ogiltig/i,
+    );
+
+    const wrongIssuer = await new SignJWT({ sub: "apple-user-1" })
+      .setProtectedHeader({ alg: "ES256", kid: "test-apple" })
+      .setIssuer("https://evil.example")
+      .setAudience("se.korpasset.app")
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .sign(privateKey);
+    await assert.rejects(
+      () =>
+        verifySignedIdentityToken({
+          provider: "apple",
+          token: wrongIssuer,
+          jwks,
+          issuer: "https://appleid.apple.com",
+          audience: ["se.korpasset.app"],
+        }),
+      /iss|issuer|Ogiltig/i,
+    );
+
+    const missingSub = await new SignJWT({ email: "x@example.com" })
+      .setProtectedHeader({ alg: "ES256", kid: "test-apple" })
+      .setIssuer("https://appleid.apple.com")
+      .setAudience("se.korpasset.app")
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .sign(privateKey);
+    await assert.rejects(
+      () =>
+        verifySignedIdentityToken({
+          provider: "apple",
+          token: missingSub,
+          jwks,
+          issuer: "https://appleid.apple.com",
+          audience: ["se.korpasset.app"],
+        }),
+      (error: Error & { code?: string }) => error.code === "invalid_identity",
+    );
+
+    const forged = await new SignJWT({ sub: "apple-user-1" })
+      .setProtectedHeader({ alg: "ES256", kid: "test-apple" })
+      .setIssuer("https://appleid.apple.com")
+      .setAudience("se.korpasset.app")
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .sign(other.privateKey);
+    await assert.rejects(
+      () =>
+        verifySignedIdentityToken({
+          provider: "apple",
+          token: forged,
+          jwks,
+          issuer: "https://appleid.apple.com",
+          audience: ["se.korpasset.app"],
+        }),
+      /signature|key|Ogiltig/i,
+    );
+  });
 });

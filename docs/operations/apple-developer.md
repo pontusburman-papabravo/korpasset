@@ -107,7 +107,7 @@ Ordning efter App Store Connect-appen:
 4. **Associated Domains** — `applinks:korpasset.se` och `webcredentials:korpasset.se` i [`native/ios/App/App/App.entitlements`](../../native/ios/App/App/App.entitlements). Bekräfta capability i Xcode mot teamet.
 5. **`APPLE_CLIENT_ID` / `APPLE_TEAM_ID` i `deploy/.env`** så live AASA och token-verify stämmer.
 6. **TestFlight** när första iOS-bygget finns.
-7. **Apple-webhook** mot `https://korpasset.se/api/apple/notifications` (konto-radering / Apple-events) — bygg endpointen innan URL:en fylls i på App ID:n.
+7. **Apple-webhook** mot `https://korpasset.se/api/apple/notifications` — endpointen finns. Fyll i URL:en på App ID:n **efter** deploy. `consent-revoked` tar bort Apple-identity; `account-delete` tombstonar. Okänd `sub` svarar 200.
 
 Push och betalning ingår inte i första betan.
 
