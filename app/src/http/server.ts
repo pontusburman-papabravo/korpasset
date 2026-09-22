@@ -8,6 +8,8 @@ import { fileURLToPath } from "node:url";
 import { UnauthorizedError } from "../errors.js";
 import { config, isProduction } from "../config.js";
 import { getPool } from "../db/pool.js";
+import { clearSessionCookie, getSessionUserId } from "../auth/session.js";
+import { getReusableSessionUserId } from "../services/users.js";
 import { redactRequestPath } from "./log.js";
 import { missingSessionPage } from "./layout.js";
 import { registerAdminRoutes } from "./admin.js";
@@ -15,7 +17,23 @@ import { registerMarketingRoutes } from "./marketing.js";
 import { registerResendWebhook } from "./resend-webhook.js";
 import { registerHelpRoutes } from "./help.js";
 import { registerAccountRoutes } from "./account.js";
+import { registerOAuthRoutes } from "./oauth.js";
 import { registerRoutes } from "./routes.js";
+
+function isStaticAssetPath(url: string | undefined): boolean {
+  const path = (url ?? "").split("?")[0];
+  return /\.(css|js|png|svg|jpe?g|ico|webp|woff2?|map)$/i.test(path);
+}
+
+function skipProductSessionCheck(url: string | undefined): boolean {
+  const path = (url ?? "").split("?")[0];
+  return (
+    path === "/health" ||
+    path.startsWith("/admin") ||
+    path.startsWith("/api/resend") ||
+    isStaticAssetPath(path)
+  );
+}
 
 function wantsJson(request: { headers: { accept?: string } }): boolean {
   const accept = request.headers.accept ?? "";
@@ -71,6 +89,16 @@ export async function buildServer() {
     prefix: "/",
   });
 
+  app.addHook("preHandler", async (request, reply) => {
+    if (skipProductSessionCheck(request.url)) return;
+    const userId = getSessionUserId(request);
+    if (!userId) return;
+    const reusable = await getReusableSessionUserId(userId);
+    if (reusable) return;
+    delete request.cookies[config.sessionCookieName];
+    clearSessionCookie(reply);
+  });
+
   app.addHook("onSend", async (request, reply, payload) => {
     reply.header("x-request-id", request.id);
     return payload;
@@ -117,6 +145,7 @@ export async function buildServer() {
   });
 
   await registerResendWebhook(app);
+  await registerOAuthRoutes(app);
   await registerHelpRoutes(app);
   await registerAccountRoutes(app);
   await registerMarketingRoutes(app);

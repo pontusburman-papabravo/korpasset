@@ -26,6 +26,7 @@ v1 är strikt fokuserad på den praktiska privata övningskörningen.
 - [Produktprinciper](docs/product/product-principles.md)
 - [Onboarding & handoff](docs/product/onboarding-handoff.md)
 - [Användare, roller och delad progress](docs/product/users-and-progress.md)
+- [Account lifecycle](docs/product/account-lifecycle.md)
 - [Paywall och entitlement-livscykel](docs/product/entitlement-lifecycle.md)
 
 ### Domän
@@ -101,4 +102,4 @@ Health: `GET /health` → `{ "status": "ok" }`.
 
 ## Status
 
-Canonical produkt- och databasgrund. Första vertical slice: journey → invitation → körpass → observation → rekommendation. Publik landning med intresseanmälan på `https://korpasset.se`. Produktappen har nu elev- och handledarhem, utveckling utan procent, hjälp/feedback, session-fallback och beta-funnel-events. Nästa: **Apple/Google i appen** (PR #23) och native TestFlight/Play.
+Canonical produkt- och databasgrund. Första vertical slice: journey → invitation → körpass → observation → rekommendation. Publik landning med intresseanmälan på `https://korpasset.se`. Produktappen har nu elev- och handledarhem, utveckling utan procent, hjälp/feedback, session-fallback och beta-funnel-events. Nästa efter konto-grunden: elev-onboarding efter Apple/Google, därefter native TestFlight/Play.

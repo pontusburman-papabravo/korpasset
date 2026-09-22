@@ -135,6 +135,7 @@ Trial, priser, tillstånden `trial` / `active` / `expired` och vad som är läsb
 - [ADR-001: Student-owned journey](../decisions/ADR-001-student-owned-journey.md)
 - [ADR-002: Actor/auth separation](../decisions/ADR-002-actor-auth-separation.md)
 - [ADR-008: App-only konton](../decisions/ADR-008-app-oauth-accounts.md)
+- [Account lifecycle](account-lifecycle.md)
 - [Onboarding & handoff](onboarding-handoff.md)
 - [MVP v1](mvp-v1.md)
 - [Paywall och entitlement-livscykel](entitlement-lifecycle.md)

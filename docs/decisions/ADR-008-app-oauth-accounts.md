@@ -60,10 +60,12 @@ Inbjudan öppnas som Universal Link / App Link in i appen. Webbläsare som träf
 - En user får ha både Apple och Google kopplade; det är frivillig länk, inte auto-merge.
 - Display name får fyllas från Apple/Google vid första inloggning och redigeras i appen. E-post, om den kommer med, är metadata för support — inte login-id.
 - Nuvarande `/onboarding` som skapar guest-elev är slice-fallback tills OAuth i appen är live.
+- Tillstånd, session, claim, collision och radering: [account lifecycle](../product/account-lifecycle.md).
 
 ## Relaterade dokument
 
 - [ADR-002: Actor/auth separation](ADR-002-actor-auth-separation.md)
 - [Onboarding & handoff](../product/onboarding-handoff.md)
+- [Account lifecycle](../product/account-lifecycle.md)
 - [Data model](../domain/data-model.md)
 - [Kravspec FR-11](../kravspec.md)

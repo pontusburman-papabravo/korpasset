@@ -15,7 +15,7 @@ Ett origin:
 | `https://korpasset.se/invite/<token>` | Canonical invitation-länk; i beta öppnas den i appen |
 | `https://korpasset.se/integritet` `/villkor` `/kontakt` `/radera-konto` | Legal. `/radera-konto` är Play Consoles länk för kontoradering |
 | `https://korpasset.se/admin` | Waitlist-admin (e-post + lösenord, skapas med `admin:create`) |
-| `https://korpasset.se/health` | Health, ingen auth |
+| `https://korpasset.se/api/auth/apple` `.../google` | Verifierar identity token och sätter produkt-session. 503 tills `APPLE_CLIENT_ID` / `GOOGLE_CLIENT_ID` är satta. Skapar inte konto från landningen. |
 | `https://korpasset.se/api/resend/webhook` | Resend-händelser (Svix-signatur, ingen användar-auth) |
 
 Ingen `app.`-subdomän i första betan. Samma host förenklar cookies, QR, SMS och en Capacitor-shell som laddar produktionens origin. Produktkonton skapas i den shellen via Apple och Google, inte på landningen.
@@ -34,6 +34,8 @@ Invitationer byggs från `APP_BASE_URL`. Den **måste** vara `https://korpasset.
 | `RESEND_API_KEY` | Valfritt men krävs för att faktiskt skicka admin-resetmejl. Utan nyckel loggas felet och användaren får samma neutrala text. |
 | `RESEND_WEBHOOK_SECRET` | Valfritt. Svix-signing secret från Resend → Webhooks. Utan secret svarar `POST /api/resend/webhook` 503. |
 | `EMAIL_FROM` | Valfritt. Default `Körpasset <support@korpasset.se>` |
+| `APPLE_CLIENT_ID` / `APPLE_CLIENT_IDS` | Audience för Sign in with Apple. Utan dem svarar `POST /api/auth/apple` 503. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_IDS` | Audience för Google-id-token. Utan dem svarar `POST /api/auth/google` 503. |
 
 Första waitlist-admin skapas **inte** via env och inte via publik signup:
 

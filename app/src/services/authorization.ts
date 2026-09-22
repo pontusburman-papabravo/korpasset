@@ -1,6 +1,7 @@
 import type pg from "pg";
 import { ForbiddenError, NotFoundError } from "../errors.js";
 import { getPool } from "../db/pool.js";
+import { getUserById, isProductActorUsable } from "./users.js";
 
 export type JourneyRole = "student" | "supervisor";
 
@@ -17,6 +18,9 @@ export async function getJourneyAccess(
   client?: pg.PoolClient,
 ): Promise<JourneyAccess | null> {
   const db = client ?? getPool();
+  const actor = await getUserById(userId, client);
+  if (!actor || !isProductActorUsable(actor.accountState)) return null;
+
   const journeyResult = await db.query(
     `SELECT id, student_user_id, transmission_scope
      FROM driving_journeys
@@ -42,7 +46,7 @@ export async function getJourneyAccess(
        AND jc.user_id = $2
        AND jc.role = 'supervisor'
        AND jc.status = 'active'
-       AND u.account_state <> 'deleted'`,
+       AND u.account_state IN ('guest', 'active')`,
     [journeyId, userId],
   );
   if (collabResult.rowCount === 0) return null;
