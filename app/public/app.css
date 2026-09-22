@@ -33,7 +33,7 @@ body {
 }
 
 body.app {
-  padding-bottom: 5.5rem;
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 .container {
@@ -47,7 +47,11 @@ body.app {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.75rem 1rem;
+  padding:
+    calc(0.75rem + env(safe-area-inset-top, 0px))
+    max(1rem, env(safe-area-inset-right, 0px))
+    0.75rem
+    max(1rem, env(safe-area-inset-left, 0px));
   background: rgba(246, 243, 236, 0.94);
   border-bottom: 1px solid var(--border);
   position: sticky;
@@ -81,7 +85,11 @@ body.app {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.15rem;
-  padding: 0.55rem 0.4rem calc(0.55rem + env(safe-area-inset-bottom));
+  padding:
+    0.55rem
+    max(0.4rem, env(safe-area-inset-right, 0px))
+    calc(0.55rem + env(safe-area-inset-bottom, 0px))
+    max(0.4rem, env(safe-area-inset-left, 0px));
   background: #fff;
   border-top: 1px solid var(--border);
   z-index: 20;

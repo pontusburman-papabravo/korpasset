@@ -14,6 +14,8 @@ Ett origin:
 | `https://korpasset.se/app` | App-produktentré. Ingen session → Apple/Google. Inloggad → FR-8. Inte indexerad. |
 | `https://korpasset.se/onboarding` | Skapa elevresa. I produktion bara för `account_state = active`. Guest-fallback kräver `ALLOW_GUEST_STUDENT_ONBOARDING=true`. |
 | `https://korpasset.se/invite/<token>` | Canonical invitation-länk och Universal/App Link-mål. Öppnas i appen. Vanlig webb är inte produktregistrering. |
+| `https://korpasset.se/.well-known/apple-app-site-association` | iOS Universal Links. `appID` = `APPLE_TEAM_ID.APPLE_BUNDLE_ID`. |
+| `https://korpasset.se/.well-known/assetlinks.json` | Android App Links. Tom lista tills `ANDROID_SHA256_CERT_FINGERPRINTS` är satt. |
 | `https://korpasset.se/integritet` `/villkor` `/kontakt` `/radera-konto` | Legal. `/radera-konto` är Play Consoles länk för kontoradering |
 | `https://korpasset.se/admin` | Waitlist-admin (e-post + lösenord, skapas med `admin:create`) |
 | `https://korpasset.se/api/auth/apple` `.../google` | Verifierar identity token och sätter produkt-session. 503 tills `APPLE_CLIENT_ID` / `GOOGLE_CLIENT_ID` är satta. Skapar inte konto från landningen. |
@@ -36,7 +38,12 @@ Invitationer byggs från `APP_BASE_URL`. Den **måste** vara `https://korpasset.
 | `RESEND_WEBHOOK_SECRET` | Valfritt. Svix-signing secret från Resend → Webhooks. Utan secret svarar `POST /api/resend/webhook` 503. |
 | `EMAIL_FROM` | Valfritt. Default `Körpasset <support@korpasset.se>` |
 | `APPLE_CLIENT_ID` / `APPLE_CLIENT_IDS` | Audience för Sign in with Apple. Utan dem svarar `POST /api/auth/apple` 503. |
+| `APPLE_BUNDLE_ID` | Default `se.korpasset.app`. Används i AASA. |
+| `APPLE_TEAM_ID` | Apple Team ID (`PQ7M3B7VW5`). Krävs för giltig AASA `appID`. |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_IDS` | Audience för Google-id-token. Utan dem svarar `POST /api/auth/google` 503. |
+| `GOOGLE_WEB_CLIENT_ID` / `GOOGLE_IOS_CLIENT_ID` | Capacitor SocialLogin-init. Web-id är vanligen samma `aud` som servern verifierar. |
+| `ANDROID_PACKAGE_NAME` | Default `se.korpasset.app`. |
+| `ANDROID_SHA256_CERT_FINGERPRINTS` | Play App Signing SHA-256 (kolon-separerad hex). Utan den är `assetlinks.json` tom. |
 | `ALLOW_GUEST_STUDENT_ONBOARDING` | Explicit utvecklingsflagga. I produktion default **av**. Sätt `true` bara för lokal slice-fallback där `/start` får skapa guest-elev. |
 
 Första waitlist-admin skapas **inte** via env och inte via publik signup:
