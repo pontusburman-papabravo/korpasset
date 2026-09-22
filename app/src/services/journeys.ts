@@ -1,5 +1,5 @@
 import type pg from "pg";
-import { ForbiddenError } from "../errors.js";
+import { ConflictError, ForbiddenError } from "../errors.js";
 import { getPool, withTransaction } from "../db/pool.js";
 import { createGuestUser, getReusableSessionUserId } from "./users.js";
 import { recordProductEventSafe } from "./product-events.js";
@@ -13,7 +13,39 @@ export interface DrivingJourney {
   status: string;
 }
 
+const ACTIVE_STUDENT_JOURNEY_UNIQUE = "driving_journeys_one_active_student_b";
+
+function isUniqueViolation(error: unknown, constraint: string): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: string }).code === "23505" &&
+    (error as { constraint?: string }).constraint === constraint
+  );
+}
+
+export function activeStudentJourneyExistsError(): ConflictError {
+  return new ConflictError(
+    "Du har redan en aktiv körkortsresa.",
+    "active_student_journey_exists",
+  );
+}
+
 export async function createJourneyForStudent(
+  displayName: string,
+  existingUserId?: string | null,
+): Promise<{ journey: DrivingJourney; userId: string }> {
+  try {
+    return await createJourneyForStudentInTransaction(displayName, existingUserId);
+  } catch (error) {
+    if (isUniqueViolation(error, ACTIVE_STUDENT_JOURNEY_UNIQUE)) {
+      throw activeStudentJourneyExistsError();
+    }
+    throw error;
+  }
+}
+
+async function createJourneyForStudentInTransaction(
   displayName: string,
   existingUserId?: string | null,
 ): Promise<{ journey: DrivingJourney; userId: string }> {
@@ -21,6 +53,21 @@ export async function createJourneyForStudent(
     const reusableUserId = await getReusableSessionUserId(existingUserId, client);
     const userId =
       reusableUserId ?? (await createGuestUser(displayName, client)).id;
+
+    await client.query(
+      `SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))`,
+      [`student-journey:${userId}`, "B"],
+    );
+
+    const existing = await client.query(
+      `SELECT id FROM driving_journeys
+       WHERE student_user_id = $1 AND status = 'active' AND licence_type = 'B'
+       FOR UPDATE`,
+      [userId],
+    );
+    if ((existing.rowCount ?? 0) > 0) {
+      throw activeStudentJourneyExistsError();
+    }
 
     if (reusableUserId) {
       await client.query(

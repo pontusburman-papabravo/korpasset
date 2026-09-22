@@ -78,7 +78,7 @@ Elevägd resa. Studenten är **inte** collaborator.
 | `licence_type` | `text` | `B` i v1 |
 | `transmission_scope` | `transmission_scope` | `unknown` default |
 | `started_at` | `timestamptz` | |
-| `status` | `journey_status` | |
+| `status` | `journey_status` | Högst en `active` B-resa per `student_user_id`. `completed`/`archived` räknas inte |
 | `created_at` | `timestamptz` | |
 | `updated_at` | `timestamptz` | |
 
