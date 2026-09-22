@@ -188,6 +188,8 @@ Canonical v1-principer. Dessa är låsta tills ett ADR explicit ändrar dem.
 
 23. **Produktkonton skapas bara i appen via Apple eller Google.**
     Ingen e-post/lösenord, magic link eller passkey för elever och handledare. Se [ADR-008](decisions/ADR-008-app-oauth-accounts.md).
+24. **En körkortsresa, ett köp, alla handledare.**
+    Kommersiell access tillhör `driving_journey`, inte `user`. Inget Premium-konto. Se [FR-13](#fr-13-kommersiell-access-tillhör-resan).
 
 ### Pass-metaforen
 
@@ -401,6 +403,26 @@ Regler:
 - Etiketter är evidens (Inte tränat ännu / Behöver hjälp / Med påminnelse / Utan hjälp), inte godkännande eller uppkörningsberedskap.
 - Gästhandledare får se progress på den resa de accepterat. Registrerat konto krävs för att behålla flera elever över enheter.
 - Canonical utläggning: [användare och progress](product/users-and-progress.md).
+
+### FR-13 Kommersiell access tillhör resan
+
+| Fält | Krav |
+| --- | --- |
+| ID | FR-13 |
+| Aktör | Den som betalar (elev, förälder eller handledare) |
+| Status | Specificerat, inte byggt |
+| Beskrivning | Entitlement knyts till `driving_journey`, inte till `user`. Ett köp låser upp eleven och alla aktiva handledare på den resan. |
+
+Regler:
+
+- Det finns inget Premium-konto som gör en person betalande på alla sina resor.
+- SKU = `driving_journey` + tidsperiod. Inte user, handledare, enhet eller antal körpass.
+- Vem som betalar och vem som är elev behöver inte vara samma person.
+- Gratisperiod: 3 bedömda körpass eller 30 dagar, det som kommer först — per ny resa, inte per konto. Nya handledare ger inte ny gratisperiod.
+- Entitlements på olika resor påverkar inte varandra.
+- Gästs eller handledares `user_id` får aldrig avgöra betalstatus.
+- Utgången period raderar inte historik, progression, bedömningar eller relationer.
+- Canonical utläggning: [användare och progress §8](product/users-and-progress.md#8-betalning-och-access-tillhör-körkortsresan).
 
 ---
 
@@ -1201,9 +1223,11 @@ Bredda mot cirka 50–100 elevresor
 Introducera betalning för nya användare
 ```
 
-Exakta priser, trial-perioder och eventuell beta/founder-förmån specificeras separat inför kommersiell launch.
-
 Betalning är **inte ett krav för Beta Ready eller första Beta Validation**.
+
+Kommersiell access, när den införs, tillhör `driving_journey` — inte `user`. Inget Premium-konto. **En körkortsresa, ett köp, alla handledare.** Priserna 349 / 499 / 749 kr för 6 / 12 / 24 månader är hypoteser. Se [FR-13](#fr-13-kommersiell-access-tillhör-resan) och [användare och progress §8](product/users-and-progress.md#8-betalning-och-access-tillhör-körkortsresan).
+
+Paywall efter utgången period specificeras separat. Historik raderas inte.
 
 ### Prioriteringsregel under beta
 
