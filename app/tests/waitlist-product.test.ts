@@ -39,8 +39,9 @@ describe("waitlist-driven product updates", () => {
       method: "GET",
       url: "/onboarding?som=handledare",
     });
-    assert.match(supervisor.body, /Du kopplas på via eleven/);
+    assert.match(supervisor.body, /Få in den som tar körkort/);
     assert.match(supervisor.body, /två barn/);
+    assert.match(supervisor.body, /onboarding\?som=elev/);
     assert.doesNotMatch(supervisor.body, /action="\/start"/);
 
     const student = await app.inject({ method: "GET", url: "/onboarding?som=elev" });
@@ -83,6 +84,7 @@ describe("waitlist-driven product updates", () => {
     const nearRecs = await recommendNextFocus(near.journey.id);
 
     assert.ok(beginnerRecs.length >= 3);
+    assert.ok(beginnerRecs[0]?.skillKey.startsWith("car_control_"));
     assert.ok(midRecs[0]?.skillKey.startsWith("intersections_"));
     assert.ok(nearRecs[0]?.skillKey.startsWith("independent_"));
     assert.notEqual(beginnerRecs[0]?.skillKey, midRecs[0]?.skillKey);
@@ -106,9 +108,10 @@ describe("waitlist-driven product updates", () => {
       url: `/journey/${journey.id}`,
     });
     assert.equal(home.statusCode, 200);
-    assert.match(home.body, /Dags att komma ut/);
-    assert.match(home.body, /sedan senaste körpasset/);
-    assert.match(home.body, /komma ut och köra/);
+    assert.match(home.body, /Senaste körpasset/);
+    assert.match(home.body, /sedan ni körde/);
+    assert.match(home.body, /En kort runda räcker/);
+    assert.doesNotMatch(home.body, /Dags att komma ut/);
     await app.close();
   });
 

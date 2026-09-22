@@ -4,12 +4,20 @@ Design för hur en elev bjuder in handledare utan administration och utan att by
 
 ## Flöde
 
-`/onboarding` frågar först om personen tar körkort eller är handledare/förälder. Det sparar ingen roll på kontot. Handledare/föräldrar ska inte skapa elevresan — de öppnar inbjudan från eleven. En handledare kan följa flera elever.
+`/onboarding` frågar först om personen tar körkort eller är handledare/förälder. Det sparar ingen roll på kontot.
+
+**Förälder/handledare får initiera. Eleven äger resan.** Föräldern skickar `/onboarding?som=elev` till den som tar körkort. Eleven skapar `driving_journey`. Föräldern ansluts som handledare via inbjudan. Föräldern skapar inte barnets resa.
+
+Familjer som precis ska börja och familjer mitt i resan är lika first-class. `practice_stage` styr nästa-steg, inte ägarskap.
 
 ```text
+Förälder hittar Körpasset och väljer handledare
+    ↓
+Förälder skickar startlänk till eleven
+    ↓
 Elev fortsätter med Apple eller Google i appen
     ↓
-Elev skapar driving_journey (namn + ungefär var ni är i övningskörningen)
+Elev skapar driving_journey (namn + var ni är i övningskörningen)
     ↓
 Elev genererar invitation (QR eller länk)
     ↓
@@ -23,6 +31,20 @@ Handledare blir journey_collaborator (role: supervisor)
     ↓
 Handledare deltar i körpass utan att administrera resan
 ```
+
+Om eleven hittar Körpasset själv:
+
+```text
+Elev väljer “Jag tar körkort”
+    ↓
+Anger namn och var ni är (precis börjat / kört ett tag / nära uppkörning)
+    ↓
+Skapar driving_journey
+    ↓
+Bjuder in en eller flera handledare
+```
+
+Båda vägarna slutar i samma modell: eleven äger resan, handledare ansluts via inbjudan.
 
 ## Guest actor
 

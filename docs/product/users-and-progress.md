@@ -9,7 +9,9 @@ En elev kan ha flera handledare. En handledare kan ha flera elever. **Både elev
 
 ## 1. Registrering skapar ingen roll
 
-Det finns ingen separat registrering och inget val “jag är elev” / “jag är handledare”.
+Det finns ingen separat registrering och ingen roll på kontot. `/onboarding` får fråga hur personen kommer in (tar körkort eller är handledare/förälder) utan att spara det som konto-roll.
+
+**Förälder/handledare får initiera processen och driva på. Eleven äger fortfarande körkortsresan.** En förälder som hittar Körpasset först skapar inte barnets `driving_journey`. Hen skickar eleven in i appen och ansluts som handledare. Samma person kan senare betala för resan — det ändrar inte `student_user_id`.
 
 ```text
 Fortsätt med Apple eller Google i appen
