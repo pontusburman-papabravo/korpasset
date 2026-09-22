@@ -24,6 +24,7 @@ function helpForm(errorMessage?: string, values: { topic?: string; message?: str
   ).join("");
   return `${errorMessage ? errorBanner(errorMessage) : ""}
     <h1>Hjälp</h1>
+    <p>I resan finns handledarguiden: tips, frågor och steg för varje moment.</p>
     <p>Berätta vad som strular. Vi läser under betan.</p>
     <form method="post" action="/hjalp" class="stack">
       <div>

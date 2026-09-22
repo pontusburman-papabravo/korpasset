@@ -635,6 +635,64 @@ a.journey-choice {
   color: var(--muted);
 }
 
+.skill-option-row {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.skill-option__guide {
+  justify-self: start;
+  margin: 0 0 0.15rem 0.15rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--teal-pressed);
+}
+
+.guide-cues {
+  margin: 0.45rem 0 0.15rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.guide-cues p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--navy);
+}
+
+.guide-cues span {
+  font-weight: 700;
+  color: var(--teal-pressed);
+}
+
+.guide-skill-list,
+.guide-chapter ul,
+.guide-steps {
+  margin: 0.35rem 0 0;
+  padding-left: 1.15rem;
+}
+
+.guide-skill-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.guide-skill-list li {
+  border-bottom: 1px solid var(--border);
+}
+
+.guide-skill-list a {
+  display: block;
+  padding: 0.7rem 0;
+  color: var(--navy);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.guide-chapter ul {
+  color: var(--navy);
+}
+
 .rating-item--observed h3 {
   margin: 0 0 0.35rem;
   font-size: 1rem;
@@ -669,6 +727,8 @@ a.journey-choice {
 .development-title {
   display: block;
   font-weight: 700;
+  color: inherit;
+  text-decoration: none;
 }
 
 .development-label {

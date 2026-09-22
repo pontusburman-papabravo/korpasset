@@ -32,6 +32,8 @@ describe("landing and interest waitlist", () => {
     assert.match(response.body, /Bli betatestare/);
     assert.match(response.body, /0 av 25 platser fyllda/);
     assert.match(response.body, /Ska du övningsköra privat/);
+    assert.match(response.body, /En handledarguide som kommer ihåg/);
+    assert.match(response.body, /bok i handskfacket/);
     assert.match(response.body, /action="\/interest"/);
     assert.match(response.body, /name="platform_ios"/);
     assert.match(response.body, /name="platform_android"/);

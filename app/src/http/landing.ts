@@ -83,7 +83,7 @@ const LANDING_FAQ: Array<FaqItem & { answerHtml?: string }> = [
   {
     question: "Hur hjälper Körpasset handledare under övningskörningen?",
     answer:
-      "Som handledare för körkort får du samma historik som eleven: vad ni tränat på, hur körpasset gick och ett förslag på nästa fokus. Flera handledare kan turas om utan att tappa tråden.",
+      "Som handledare för körkort får du samma historik som eleven, plus en handledarguide i appen: vad du tittar efter, hur du coachar och en fråga att ta med eleven. Efter körpasset ser ni hur det gick och vad som är nästa fokus. Flera handledare kan turas om utan att tappa tråden.",
   },
   {
     question: "Var hittar jag de officiella reglerna för privat övningskörning?",
@@ -118,6 +118,7 @@ export function renderLandingPage(options: {
        ${trafficPhotos()}
        ${betaProgress(betaFilled)}
        ${howItWorks()}
+       ${supervisorGuide()}
        ${whoItsFor()}
        ${whyItExists()}
        ${officialRules()}
@@ -358,6 +359,23 @@ function howItWorks(): string {
           </div>
         </li>
       </ol>
+    </div>
+  </section>`;
+}
+
+function supervisorGuide(): string {
+  return `<section class="site-section site-section--white" id="handledarguiden" aria-labelledby="guide-heading">
+    <div class="site-inner site-inner--narrow">
+      <p class="eyebrow">I bilen</p>
+      <h2 id="guide-heading">En handledarguide som kommer ihåg</h2>
+      <p class="lede">Många har en bok i handskfacket. Körpasset är den levande planen: samma sorts moment, men med era körpass, era bedömningar och nästa steg.</p>
+      <ul class="rule-list">
+        <li>Vad du tittar efter i varje moment.</li>
+        <li>Hur du coachar utan att ta över ratten.</li>
+        <li>En fråga att ta med eleven efteråt.</li>
+        <li>Steg ni kan bocka av under körpasset.</li>
+      </ul>
+      <p>Det är träningsstöd, inte en teoriapp och inte ett officiellt körkortsresultat. Körpasset ersätter inte Transportstyrelsens regler och är inte någon annans handledarbok.</p>
     </div>
   </section>`;
 }
