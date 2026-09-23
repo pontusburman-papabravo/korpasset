@@ -44,7 +44,7 @@ Invitationer byggs från `APP_BASE_URL`. Den **måste** vara `https://korpasset.
 | `APPLE_BUNDLE_ID` | Default `se.korpasset.app`. Används i AASA. |
 | `APPLE_TEAM_ID` | Apple Team ID (`PQ7M3B7VW5`). Krävs för giltig AASA `appID`. |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_IDS` | Audience för Google-id-token. Utan dem svarar `POST /api/auth/google` 503. |
-| `GOOGLE_WEB_CLIENT_ID` / `GOOGLE_IOS_CLIENT_ID` | Capacitor SocialLogin-init. Web-id är vanligen samma `aud` som servern verifierar. |
+| `GOOGLE_WEB_CLIENT_ID` / `GOOGLE_IOS_CLIENT_ID` | Capacitor SocialLogin-init. Web-id är vanligen samma `aud` som servern verifierar. Placeholders med `<>` räknas som tomma (annars kraschar iPhone). |
 | `ANDROID_PACKAGE_NAME` | Default `se.korpasset.app`. |
 | `ANDROID_SHA256_CERT_FINGERPRINTS` | Play App Signing SHA-256 (kolon-separerad hex). Utan den är `assetlinks.json` tom. |
 | `ALLOW_GUEST_STUDENT_ONBOARDING` | Explicit utvecklingsflagga. I produktion default **av**. Sätt `true` bara för lokal slice-fallback där `/start` får skapa guest-elev. |

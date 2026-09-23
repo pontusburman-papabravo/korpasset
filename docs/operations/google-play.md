@@ -106,8 +106,12 @@ OAuth-klienter för Körpasset (kopiera inte My Stardays client id):
 3. Android — package `se.korpasset.app` + SHA-1 från **Körpassets** Play
    App signing, inte My Starday.
 
-Sätt client-id:n i VPS-env (`GOOGLE_WEB_CLIENT_ID` / `GOOGLE_CLIENT_IDS`)
-när native-appen deployas. Utan dem svarar `POST /api/auth/google` 503.
+Sätt client-id:n i VPS-env (`GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`,
+`GOOGLE_CLIENT_IDS`) när native-appen deployas. Utan giltiga id:n svarar
+`POST /api/auth/google` 503. Vinkelparentes-placeholders kraschar Google
+Sign-In på iPhone — använd bara riktiga `*.apps.googleusercontent.com`.
+iOS kräver också `GIDClientID` + reversed URL-scheme i Info.plist och ett
+nytt TestFlight-bygge. Se [native-apps.md](native-apps.md).
 
 Servern serverar `/.well-known/assetlinks.json`. Den är tom tills
 `ANDROID_SHA256_CERT_FINGERPRINTS` sätts.

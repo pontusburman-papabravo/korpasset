@@ -43,18 +43,36 @@
     return hex;
   }
 
+  function platform() {
+    const cap = window.Capacitor;
+    if (!cap || typeof cap.getPlatform !== "function") return "";
+    return cap.getPlatform();
+  }
+
+  function googleReady() {
+    if (platform() === "ios") return Boolean(oauth.googleIosClientId);
+    return Boolean(oauth.googleWebClientId);
+  }
+
   async function initialize(SocialLogin) {
     if (!SocialLogin || typeof SocialLogin.initialize !== "function") return;
-    await SocialLogin.initialize({
+    const payload = {
       apple: {
         clientId: oauth.appleClientId || "se.korpasset.app",
       },
-      google: {
-        webClientId: oauth.googleWebClientId || undefined,
-        iOSClientId: oauth.googleIosClientId || undefined,
-        mode: "online",
-      },
-    });
+    };
+    if (googleReady()) {
+      const google = { mode: "online" };
+      if (oauth.googleWebClientId) {
+        google.webClientId = oauth.googleWebClientId;
+        google.iOSServerClientId = oauth.googleWebClientId;
+      }
+      if (oauth.googleIosClientId) {
+        google.iOSClientId = oauth.googleIosClientId;
+      }
+      payload.google = google;
+    }
+    await SocialLogin.initialize(payload);
   }
 
   async function continueWith(provider) {
@@ -66,6 +84,15 @@
 
     if (!SocialLogin || typeof SocialLogin.login !== "function") {
       showError("Öppna Körpasset-appen för att fortsätta med Apple eller Google.");
+      return;
+    }
+
+    if (provider === "google" && !googleReady()) {
+      showError(
+        platform() === "ios"
+          ? "Google-inloggning på iPhone är inte redo i den här versionen. Fortsätt med Apple."
+          : "Google-inloggning är inte redo ännu. Fortsätt med Apple.",
+      );
       return;
     }
 

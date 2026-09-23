@@ -14,7 +14,7 @@ Sätt utan att rotera `POSTGRES_PASSWORD` eller `SESSION_SECRET`.
 | `APPLE_TEAM_ID=PQ7M3B7VW5` | AASA `appID` är `PQ7M3B7VW5.se.korpasset.app` |
 | `APPLE_CLIENT_ID` / `APPLE_CLIENT_IDS` | `POST /api/auth/apple` inte 503 |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_IDS` | `POST /api/auth/google` inte 503 |
-| `GOOGLE_WEB_CLIENT_ID` / `GOOGLE_IOS_CLIENT_ID` | Capacitor SocialLogin init |
+| `GOOGLE_WEB_CLIENT_ID` / `GOOGLE_IOS_CLIENT_ID` | Capacitor SocialLogin init. Riktiga `*.apps.googleusercontent.com` — inte `<…>`-placeholders. iOS kräver också Info.plist `GIDClientID` + reversed URL-scheme och TestFlight-ombyggnad. |
 | `ANDROID_PACKAGE_NAME=se.korpasset.app` | App Links package |
 | `ANDROID_SHA256_CERT_FINGERPRINTS` | Play App Signing SHA-256, kolon-hex. `assetlinks.json` inte `[]` |
 | `ALLOW_GUEST_STUDENT_ONBOARDING` | **Inte** `true` i produktion |
