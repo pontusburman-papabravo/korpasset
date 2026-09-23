@@ -81,6 +81,60 @@ describe("oauth identity token verification", () => {
     );
   });
 
+  it("accepts a Google token that omits nonce, which iOS GIDSignIn often does", async () => {
+    const { privateKey, publicKey } = await generateKeyPair("ES256");
+    const jwk = await exportJWK(publicKey);
+    jwk.kid = "test-google";
+    const jwks = createLocalJWKSet({ keys: [jwk] });
+    const token = await new SignJWT({ sub: "google-user-1" })
+      .setProtectedHeader({ alg: "ES256", kid: "test-google" })
+      .setIssuer("https://accounts.google.com")
+      .setAudience("ios.apps.googleusercontent.com")
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .sign(privateKey);
+
+    const identity = await verifySignedIdentityToken({
+      provider: "google",
+      token,
+      jwks,
+      issuer: ["https://accounts.google.com", "accounts.google.com"],
+      audience: [
+        "web.apps.googleusercontent.com",
+        "ios.apps.googleusercontent.com",
+      ],
+      nonce: "client-nonce",
+    });
+    assert.equal(identity.subject, "google-user-1");
+  });
+
+  it("still requires Apple tokens to echo the nonce when one was sent", async () => {
+    const { privateKey, publicKey } = await generateKeyPair("ES256");
+    const jwk = await exportJWK(publicKey);
+    jwk.kid = "test-apple";
+    const jwks = createLocalJWKSet({ keys: [jwk] });
+    const token = await new SignJWT({ sub: "apple-user-1" })
+      .setProtectedHeader({ alg: "ES256", kid: "test-apple" })
+      .setIssuer("https://appleid.apple.com")
+      .setAudience("se.korpasset.app")
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .sign(privateKey);
+
+    await assert.rejects(
+      () =>
+        verifySignedIdentityToken({
+          provider: "apple",
+          token,
+          jwks,
+          issuer: "https://appleid.apple.com",
+          audience: ["se.korpasset.app"],
+          nonce: "client-nonce",
+        }),
+      (error: Error & { code?: string }) => error.code === "invalid_nonce",
+    );
+  });
+
   it("rejects an expired token, the wrong issuer, a missing sub and a bad signature", async () => {
     const { privateKey, publicKey } = await generateKeyPair("ES256");
     const other = await generateKeyPair("ES256");

@@ -97,7 +97,7 @@ export async function verifySignedIdentityToken(options: {
     audience: options.audience,
     clockTolerance: 60,
   });
-  assertNonce(payload, options.nonce);
+  assertNonce(payload, options.nonce, options.provider);
   return identityFromPayload(options.provider, payload);
 }
 
@@ -200,16 +200,24 @@ function identityFromPayload(
   };
 }
 
-function assertNonce(payload: JWTPayload, nonce?: string): void {
+function assertNonce(
+  payload: JWTPayload,
+  nonce?: string,
+  provider?: OAuthProvider,
+): void {
   const expected = nonce?.trim();
   if (!expected) return;
   const claimed = typeof payload.nonce === "string" ? payload.nonce : "";
   if (!claimed) {
+    // GIDSignIn on iOS often signs an ID token without echoing nonce.
+    if (provider === "google") return;
     throw new AppError("Ogiltig inloggning", 401, "invalid_nonce");
   }
   if (safeEqual(claimed, expected)) return;
-  const hashed = createHash("sha256").update(expected).digest("hex");
-  if (safeEqual(claimed, hashed)) return;
+  const hashedHex = createHash("sha256").update(expected).digest("hex");
+  if (safeEqual(claimed, hashedHex)) return;
+  const hashedB64 = createHash("sha256").update(expected).digest("base64url");
+  if (safeEqual(claimed, hashedB64)) return;
   throw new AppError("Ogiltig inloggning", 401, "invalid_nonce");
 }
 
