@@ -8,6 +8,10 @@ import { createContext, runInContext } from "node:vm";
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const script = readFileSync(join(root, "app/public/app-oauth.js"), "utf8");
 const plist = readFileSync(join(root, "native/ios/App/App/Info.plist"), "utf8");
+const sceneDelegate = readFileSync(
+  join(root, "native/ios/App/App/SceneDelegate.swift"),
+  "utf8",
+);
 
 function element(attrs: Record<string, string> = {}) {
   return {
@@ -31,6 +35,8 @@ function load(pathname: string, native: boolean) {
     ["invite-open-app-link", link],
   ]);
   const sandbox: Record<string, unknown> = {
+    URL,
+    console,
     document: {
       getElementById(id: string) {
         return nodes.get(id) ?? null;
@@ -39,10 +45,27 @@ function load(pathname: string, native: boolean) {
         if (selector === 'form[action^="/invite/"]') return form;
         return null;
       },
+      createElement() {
+        return {
+          className: "",
+          hidden: false,
+          textContent: "",
+          setAttribute() {},
+          appendChild() {},
+        };
+      },
       addEventListener() {},
+      body: null,
     },
     window: {
-      location: { pathname, search: "" },
+      location: { pathname, search: "", href: `https://korpasset.se${pathname}`, assign() {} },
+      sessionStorage: {
+        getItem() {
+          return null;
+        },
+        setItem() {},
+        removeItem() {},
+      },
       Capacitor: native
         ? { getPlatform: () => "ios", isNativePlatform: () => true }
         : undefined,
@@ -70,6 +93,20 @@ describe("invitation link opens the app", () => {
     const page = load("/app", false);
     assert.equal(page.panel.hidden, true);
     assert.equal(page.form.hidden, false);
+  });
+
+  it("listens for Capacitor appUrlOpen and getLaunchUrl", () => {
+    assert.match(script, /App\.addListener\("appUrlOpen"/);
+    assert.match(script, /App\.getLaunchUrl/);
+    assert.match(script, /korpasset\.pendingInvite/);
+  });
+
+  it("retries native handoff when the WebView is not ready and /app loads first", () => {
+    assert.match(sceneDelegate, /korpasset-deeplink/);
+    assert.match(sceneDelegate, /webView-nil/);
+    assert.match(sceneDelegate, /pendingInviteURL/);
+    assert.match(sceneDelegate, /evaluateJavaScript/);
+    assert.match(sceneDelegate, /korpasset\.pendingInvite/);
   });
 
   it("registers one URL type list with Google and the app scheme", () => {

@@ -30,6 +30,8 @@ function installClient(profile: Record<string, string | null>) {
   }) => void = () => {};
 
   const sandbox: Record<string, unknown> = {
+    URL,
+    console,
     document: {
       getElementById() {
         return null;
@@ -86,7 +88,15 @@ function installClient(profile: Record<string, string | null>) {
       location: {
         pathname: "/app",
         search: "",
+        href: "https://korpasset.se/app",
         assign() {},
+      },
+      sessionStorage: {
+        getItem() {
+          return null;
+        },
+        setItem() {},
+        removeItem() {},
       },
     },
   };

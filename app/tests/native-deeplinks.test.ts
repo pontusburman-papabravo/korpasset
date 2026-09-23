@@ -122,6 +122,8 @@ describe("native shell and deep links", () => {
     assert.equal(script.statusCode, 200);
     assert.match(script.body, /data-oauth-provider/);
     assert.match(script.body, /\/api\/auth\//);
+    assert.match(script.body, /appUrlOpen/);
+    assert.match(script.body, /getLaunchUrl/);
 
     const page = await injectWithSession(
       app,
