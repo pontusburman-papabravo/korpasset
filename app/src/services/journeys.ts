@@ -2,7 +2,10 @@ import type pg from "pg";
 import { ConflictError, ForbiddenError } from "../errors.js";
 import { getPool, withTransaction } from "../db/pool.js";
 import { createGuestUser, getReusableSessionUserId } from "./users.js";
-import { recordProductEventSafe } from "./product-events.js";
+import {
+  type JourneyCreatedSource,
+  recordProductEventSafe,
+} from "./product-events.js";
 
 export const PRACTICE_STAGES = [
   "unknown",
@@ -49,12 +52,14 @@ export async function createJourneyForStudent(
   displayName: string,
   existingUserId?: string | null,
   practiceStage: PracticeStage = "unknown",
+  createdSource: JourneyCreatedSource = "direct",
 ): Promise<{ journey: DrivingJourney; userId: string }> {
   try {
     return await createJourneyForStudentInTransaction(
       displayName,
       existingUserId,
       practiceStage,
+      createdSource,
     );
   } catch (error) {
     if (isUniqueViolation(error, ACTIVE_STUDENT_JOURNEY_UNIQUE)) {
@@ -68,6 +73,7 @@ async function createJourneyForStudentInTransaction(
   displayName: string,
   existingUserId?: string | null,
   practiceStage: PracticeStage = "unknown",
+  createdSource: JourneyCreatedSource = "direct",
 ): Promise<{ journey: DrivingJourney; userId: string }> {
   return withTransaction(async (client) => {
     const reusableUserId = await getReusableSessionUserId(existingUserId, client);
@@ -128,6 +134,8 @@ async function createJourneyForStudentInTransaction(
         userId,
         actorRole: "student",
         supervisorCount: 0,
+        eventSource: createdSource,
+        practiceStage,
       },
       undefined,
       client,

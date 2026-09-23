@@ -23,7 +23,7 @@ export function privacyPage(): string {
      <p>Så raderar du ditt Körpasset-konto: <a href="/radera-konto">Radera konto</a>.</p>
 
      <h2>Cookies</h2>
-     <p>På landningssidan sätter vi inga analys- eller reklamcookies och gör inga tredjepartsanrop för typsnitt. Om du loggar in i produkten används en nödvändig sessionscookie. Waitlist-admin använder en separat HttpOnly-cookie på <code>/admin</code>.</p>`,
+     <p>På landningssidan sätter vi inga analys- eller reklamcookies och gör inga tredjepartsanrop för typsnitt. Om du loggar in i produkten används en nödvändig sessionscookie. Om eleven öppnar handledarens startlänk sätts en kortlivad HttpOnly-cookie så att resan kan räknas som parent-handoff — utan namn eller annan personuppgift. Waitlist-admin använder en separat HttpOnly-cookie på <code>/admin</code>.</p>`,
     "/integritet",
     "Hur Körpasset och Papa Bravo AB behandlar personuppgifter i betan och i produkten. Vi säljer inte dina uppgifter.",
   );

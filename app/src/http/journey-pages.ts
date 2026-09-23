@@ -20,6 +20,14 @@ import { coachingStepsForSkillKey } from "../domain/coaching-steps.js";
 import { escapeHtml, primaryButton } from "./layout.js";
 import { TRANSPORTSTYRELSEN_LINKS } from "./landing.js";
 
+export function staleDriveNudge(
+  latestEnded: EndedDriveSummary | null,
+  activeDriveId: string | null,
+): { days: number; shown: boolean } {
+  const days = latestEnded && !activeDriveId ? daysSince(latestEnded.endedAt) : 0;
+  return { days, shown: days >= STALE_DRIVE_DAYS };
+}
+
 export function renderJourneyHome(options: {
   journey: DrivingJourney;
   access: JourneyAccess;
@@ -62,9 +70,10 @@ export function renderJourneyHome(options: {
        </section>`
     : "";
 
-  const staleDays =
-    latestEnded && !activeDriveId ? daysSince(latestEnded.endedAt) : 0;
-  const staleDrive = staleDays >= STALE_DRIVE_DAYS;
+  const { days: staleDays, shown: staleDrive } = staleDriveNudge(
+    latestEnded,
+    activeDriveId,
+  );
   const firstDrive = hasSupervisor && !activeDriveId && !latestEnded;
   const beginnerStart =
     journey.practiceStage === "just_started" || journey.practiceStage === "unknown";

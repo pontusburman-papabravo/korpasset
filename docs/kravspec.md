@@ -1164,6 +1164,8 @@ Beta-feedback som visar att handledaren behöver navigera, söka eller administr
 Följande produkt-events ska kunna mätas per `driving_journey`:
 
 ```text
+onboarding_role_selected
+student_handoff_started
 journey_created
 supervisor_connected
 drive_focus_saved
@@ -1172,6 +1174,7 @@ drive_completed
 rating_completed
 recap_viewed
 second_drive_completed
+stale_drive_nudge_shown
 ```
 
 Där det är relevant ska eventet även innehålla:
@@ -1180,9 +1183,12 @@ Där det är relevant ska eventet även innehålla:
 - timestamp,
 - antal Drive Focus skills,
 - actor role,
-- om journeyn har en eller flera aktiva supervisors.
+- om journeyn har en eller flera aktiva supervisors,
+- `event_source` (`direct` / `parent_handoff`) på journey-skapande och handoff,
+- `practice_stage` vid journey-skapande,
+- bucklad tid sedan senaste körpass på stale-nudge.
 
-Analytics ska inte lagra onödiga direkta personidentifierare.
+Analytics ska inte lagra onödiga direkta personidentifierare. Funneldefinition: [produkt-events](product/product-events.md).
 
 ### Canonical beta funnel
 

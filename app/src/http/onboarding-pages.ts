@@ -1,7 +1,8 @@
 import { PRACTICE_STAGES, practiceStageLabel } from "../services/journeys.js";
+import { STUDENT_HANDOFF_VIA } from "./handoff-context.js";
 import { escapeHtml, errorBanner, primaryButton, publicUrl } from "./layout.js";
 
-export const STUDENT_START_PATH = "/onboarding?som=elev";
+export const STUDENT_START_PATH = `/onboarding?som=elev&via=${STUDENT_HANDOFF_VIA}`;
 
 export function studentStartUrl(): string {
   return publicUrl(STUDENT_START_PATH);
