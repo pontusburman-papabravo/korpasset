@@ -66,9 +66,16 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<!-- Google Sign-In on iPhone: after creating a real iOS OAuth client
-	     (bundle se.korpasset.app), add GIDClientID and a CFBundleURLTypes
-	     entry for the reversed client ID (com.googleusercontent.apps.…).
-	     Do not commit documentation placeholders. See docs/operations/native-apps.md. -->
+	<key>GIDClientID</key>
+	<string>996223016705-br4rn62e3gd3ban81vulomh8r52i4bhr.apps.googleusercontent.com</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.996223016705-br4rn62e3gd3ban81vulomh8r52i4bhr</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
