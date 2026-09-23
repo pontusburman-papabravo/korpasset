@@ -1,6 +1,6 @@
 # Produkt-events
 
-Server-side observation i tabellen `product_events`. Inga namn, e-post, fritext eller invite-copy.
+Server-side observation i tabellen `product_events`. Inga namn, e-post, fritext, telefon, invite-token, invite-copy, rå querystring eller cookie-värde.
 
 ## Modell
 
@@ -19,60 +19,85 @@ Server-side observation i tabellen `product_events`. Inga namn, e-post, fritext 
 
 Admin-statistik räknar fortfarande från **domäntabeller**, inte härifrån.
 
-## Events före #51/#52-observationen
+## Events före den här observationen
 
 `journey_created`, `supervisor_connected`, `drive_focus_saved`, `drive_started`, `drive_completed`, `rating_completed`, `recap_viewed`, `second_drive_completed`.
 
-Skrivs från journeys, invitations, drives och recap. Ingen `event_source`, ingen `practice_stage` på eventet.
+Historiska rader **skrivs inte om**. Nya kolumner är NULL på gamla events. Analys av `event_source` och `practice_stage` gäller alltså bara events efter migration `0012`.
 
 ## Events tillagda för handoff-observation
 
-| Event | När | Metadata |
+| Event | Semantik | Metadata |
 | --- | --- | --- |
-| `onboarding_role_selected` | GET `/onboarding?som=elev` (utan handoff) eller `?som=handledare` | `actor_role`, `event_source=direct` för elevval, `user_id` om session |
-| `student_handoff_started` | GET `/onboarding?som=elev&via=handledare` | `event_source=parent_handoff`, `actor_role=student` |
-| `stale_drive_nudge_shown` | Journey-hem visar stale-nudge | `journey_id`, `days_since_drive_bucket`, `practice_stage`, `actor_role` |
+| `onboarding_role_selected` | **Sidinträde** på valt onboarding-spår. GET `/onboarding?som=elev` (utan `via`) eller `?som=handledare`. Inte ett unikt val per person. Refresh/back räknas om. | `actor_role`; `event_source=direct` för elevspår; `user_id` om session |
+| `student_handoff_started` | **Eleven öppnade** handledarens startlänk (`GET /onboarding?som=elev&via=handledare`). Inte att föräldern kopierade eller skickade länken. Sidinträde: refresh räknas om. | `event_source=parent_handoff`, `actor_role=student`, ofta utan `journey_id` |
+| `stale_drive_nudge_shown` | Journey-hemmet **visade** stale-nudge vid den requesten. Varje GET medan nudgen syns kan skapa en ny rad. | `journey_id`, `days_since_drive_bucket`, `practice_stage`, `actor_role` |
 
-`journey_created` utökas — inte dupliceras — med `event_source` och `practice_stage`.
+`journey_created` utökas — inte dupliceras — med `event_source` och `practice_stage`. Nya resor efter 0012 har alltid `event_source` = `direct` eller `parent_handoff`, aldrig NULL. `practice_stage` är samma värde som sparades på `driving_journeys` vid INSERT.
 
 Återanvänds oförändrade: `supervisor_connected`, `drive_started`, `drive_completed`.
 
-Parent-handoff markeras med query `via=handledare` på handledarens startlänk och en kortlivad HttpOnly-cookie `korpasset_handoff=parent` som läses vid `POST /start`. Ingen unik tracking-token.
+## Handoff-cookie
 
-## Parent handoff funnel
+Handledarens länk är `/onboarding?som=elev&via=handledare`.
+
+`via=handledare` sätter HttpOnly-cookien `korpasset_handoff=parent` (Max-Age 7 dygn, path `/`). Den finns så att OAuth däremellan inte tappar källan.
+
+`POST /start` läser **bara cookien**, inte queryn. `via` ensam klassificerar inte en framtida resa.
+
+Cookien rensas efter lyckad `POST /start`. En senare resa på samma enhet utan cookie blir `direct`. Öppnad länk utan efterföljande start lämnar cookien tills den går ut — det är attributionsfönstret, inte en permanent token.
+
+## Vad som går att säga (och inte)
+
+Tre nivåer, blanda inte:
+
+| Nivå | Vad det är | Vad det inte är |
+| --- | --- | --- |
+| Eventvolym | Antal sidinträden / events | Unika personer eller unika val |
+| Journey-level | Samma `journey_id` mellan events | Att två personer är samma hushåll |
+| Cross-device/person | Finns **inte** | Ingen join mellan förälderns och elevens enhet |
+
+### Parent handoff — observerbara steg
 
 ```text
-1. onboarding_role_selected(role=supervisor)
-2. student_handoff_started
-3. journey_created(source=parent_handoff)
-4. supervisor_connected
-5. drive_started  (första körpasset)
+1. onboarding_role_selected(actor_role=supervisor)   # sidinträde, ofta förälderns enhet
+2. student_handoff_started                           # eleven öppnade länken, ofta annan enhet
+3. journey_created(event_source=parent_handoff)
+4. supervisor_connected                              # samma journey_id
+5. drive_started                                     # samma journey_id, första passet
 ```
 
-Senare beräkningar (SQL mot events + domän, ingen funnelmotor här):
+Steg 1 → 2 är **aggregerad volymrelation**, inte individkonvertering. Föräldern som valde handledare och eleven som öppnade länken kan inte kopplas.
 
-- supervisor-role → handoff rate = `student_handoff_started` / `onboarding_role_selected` där `actor_role=supervisor`
-- handoff → journey-created = `journey_created` där `event_source=parent_handoff` / `student_handoff_started`
-- journey-created → supervisor-connected = journeys med `supervisor_connected` / `journey_created` (per `journey_id`)
-- journey-created → first-drive = journeys med `drive_started` / `journey_created` (per `journey_id`)
-- median tid journey-created → first-drive = `min(drive_started.created_at) - journey_created.created_at` per journey
+Tillåtna kvoter:
 
-`onboarding_role_selected` och `student_handoff_started` är ofta olika enheter. Rate är volymkvot, inte user-join.
+- Volym: `student_handoff_started` / `onboarding_role_selected` där `actor_role=supervisor`
+- Volym: `journey_created` med `event_source=parent_handoff` / `student_handoff_started`
+- Journey-level: andel `journey_created` som har `supervisor_connected` på samma `journey_id`
+- Journey-level: andel `journey_created` som har `drive_started` på samma `journey_id`
+- Journey-level: median `min(drive_started.created_at) - journey_created.created_at`
 
-## Practice stage
+Kalla inte steg 1→2 eller 2→3 för conversion. De länkar inte samma person.
 
-Fördelning vid skapande: `journey_created.practice_stage`.
+### Practice stage
 
-Aktuell fördelning (kan ha ändrats efter start): `driving_journeys.practice_stage`.
+Vid skapande: `journey_created.practice_stage` (`unknown` / `just_started` / `building` / `near_test`).
+
+Aktuell fördelning (kan ha ändrats): `driving_journeys.practice_stage`.
 
 Ingen ranking.
 
-## Stale drive
+### Stale drive — deskriptiv observation
+
+Nudgen kan emittera flera `stale_drive_nudge_shown` per journey (refresh). Ingen runtime-deduplicering.
+
+Analysregel:
 
 ```text
-stale_drive_nudge_shown
-→ drive_started på samma journey_id
-  inom 48 timmar efter första shown efter senaste avslutade pass
+första stale_drive_nudge_shown efter senaste drive_completed
+  (saknas completed: första shown på journeyn)
+→ första drive_started på samma journey_id
+  inom 48 timmar efter den shown-raden
 ```
 
-Impressioner kan upprepas vid varje besök på hemmet medan nudgen syns. Analys ska använda första `stale_drive_nudge_shown` efter senaste `drive_completed`. Conversion är ett analysmått, inte runtime-logik.
+Det är inte bevisad kausal effekt av nudgen. Inget `stale_drive_nudge_converted` i runtime.

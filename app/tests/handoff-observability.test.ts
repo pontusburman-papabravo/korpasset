@@ -16,7 +16,10 @@ import {
   daysSinceDriveBucket,
   type ProductEventName,
 } from "../src/services/product-events.js";
-import { HANDOFF_COOKIE_NAME } from "../src/http/handoff-context.js";
+import {
+  HANDOFF_COOKIE_MAX_AGE_SECONDS,
+  HANDOFF_COOKIE_NAME,
+} from "../src/http/handoff-context.js";
 import { STUDENT_START_PATH } from "../src/http/onboarding-pages.js";
 import { createTestApp } from "./helpers.js";
 import {
@@ -127,6 +130,36 @@ describe("handoff and stale-drive observation", () => {
     assert.equal(journeys[0].user_id, student.userId);
     assert.ok(journeys[0].journey_id);
     assert.equal(JSON.stringify(journeys).includes("Emma"), false);
+    assert.equal(created.cookies.some((cookie) => cookie.name === HANDOFF_COOKIE_NAME), true);
+    assert.equal(HANDOFF_COOKIE_MAX_AGE_SECONDS, 60 * 60 * 24 * 7);
+  });
+
+  it("does not classify a later start from via=handledare without the handoff cookie", async () => {
+    const student = await continueWithOAuth({
+      provider: "apple",
+      subject: "obs-via-without-cookie",
+      displayName: "Eva",
+    });
+    const app = await createTestApp();
+    const opened = await injectWithSession(app, session(student.userId), {
+      method: "GET",
+      url: STUDENT_START_PATH,
+    });
+    assert.equal(opened.statusCode, 200);
+    assert.equal((await eventsNamed("student_handoff_started")).length, 1);
+
+    const created = await injectWithSession(app, session(student.userId), {
+      method: "POST",
+      url: "/start",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({ name: "Eva", practice_stage: "just_started" }),
+    });
+    assert.equal(created.statusCode, 302);
+    await app.close();
+
+    const journeys = await eventsNamed("journey_created");
+    assert.equal(journeys.length, 1);
+    assert.equal(journeys[0].event_source, "direct");
   });
 
   it("marks a direct student journey as direct with practice_stage", async () => {
@@ -191,6 +224,50 @@ describe("handoff and stale-drive observation", () => {
     assert.equal(shown[0].actor_role, "student");
     assert.equal(daysSinceDriveBucket(8), "8-14");
     assert.equal(JSON.stringify(shown).includes("Sabina"), false);
+
+    const again = await createTestApp();
+    const refresh = await injectWithSession(again, session(userId), {
+      method: "GET",
+      url: `/journey/${journey.id}`,
+    });
+    assert.equal(refresh.statusCode, 200);
+    await again.close();
+    assert.equal((await eventsNamed("stale_drive_nudge_shown")).length, 2);
+  });
+
+  it("buckets stale-drive days at the documented boundaries", () => {
+    assert.equal(daysSinceDriveBucket(5), "5-7");
+    assert.equal(daysSinceDriveBucket(7), "5-7");
+    assert.equal(daysSinceDriveBucket(8), "8-14");
+    assert.equal(daysSinceDriveBucket(14), "8-14");
+    assert.equal(daysSinceDriveBucket(15), "15-30");
+    assert.equal(daysSinceDriveBucket(30), "15-30");
+    assert.equal(daysSinceDriveBucket(31), "31+");
+  });
+
+  it("keeps pre-migration journey_created rows valid with NULL source", async () => {
+    const { journey, userId } = await createJourneyForStudent("Ella");
+    await getPool().query(
+      `INSERT INTO product_events (event_name, journey_id, user_id, actor_role)
+       VALUES ('journey_created', $1, $2, 'student')`,
+      [journey.id, userId],
+    );
+    const legacy = await getPool().query(
+      `SELECT event_source, practice_stage, days_since_drive_bucket
+       FROM product_events
+       WHERE journey_id = $1 AND event_source IS NULL`,
+      [journey.id],
+    );
+    assert.equal(legacy.rows.length, 1);
+    assert.equal(legacy.rows[0].event_source, null);
+    assert.equal(legacy.rows[0].practice_stage, null);
+    assert.equal(legacy.rows[0].days_since_drive_bucket, null);
+
+    const created = await eventsNamed("journey_created");
+    const withSource = created.filter((row) => row.event_source !== null);
+    assert.equal(withSource.length, 1);
+    assert.equal(withSource[0].event_source, "direct");
+    assert.equal(withSource[0].practice_stage, "unknown");
   });
 
   it("keeps drive_started on a normal new drive", async () => {

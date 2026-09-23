@@ -254,6 +254,7 @@ async function recordOnboardingObservation(
   userId: string | null,
 ): Promise<void> {
   if (isParentHandoffQuery(query)) {
+    // Student opened the supervisor-sent start URL. Not "parent copied the link".
     await recordProductEventSafe({
       name: "student_handoff_started",
       userId,

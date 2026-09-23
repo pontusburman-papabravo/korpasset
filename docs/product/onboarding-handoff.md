@@ -53,7 +53,7 @@ Se [produkt-events](product-events.md) för funneldefinition och metadata.
 | Mått | Signal |
 | --- | --- |
 | Val av roll i onboarding | `onboarding_role_selected` (`student` / `supervisor`) |
-| Elevstartlänk från förälder | `student_handoff_started` (`/onboarding?som=elev&via=handledare`) |
+| Eleven öppnade handledarens startlänk | `student_handoff_started` (sidinträde, inte att föräldern kopierade) |
 | Elevresa från parent-handoff | `journey_created.event_source = parent_handoff` |
 | Direkt elevresa | `journey_created.event_source = direct` |
 | Nya resor med handledare | `supervisor_connected` per `journey_id` |
