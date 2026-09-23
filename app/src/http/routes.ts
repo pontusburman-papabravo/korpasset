@@ -723,6 +723,10 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         "Anslut som handledare",
         `<h1>Du ska övningsköra med ${escapeHtml(invitation.studentName)}</h1>
          <p>Länken är till Körpasset-appen. Den skapar inget webbkonto och ingen waitlist-anmälan.</p>
+         <div id="invite-open-app" class="stack" hidden>
+           <p>Öppna inbjudan i Körpasset och logga in där med Apple eller Google.</p>
+           <a class="btn btn-primary" id="invite-open-app-link" href="korpasset://invite/${escapeHtml(token)}">Öppna i Körpasset</a>
+         </div>
          ${
            sessionUser && sessionName
              ? `<form method="post" action="/invite/${escapeHtml(token)}/accept" class="stack">

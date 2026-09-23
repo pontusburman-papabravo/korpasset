@@ -133,10 +133,34 @@
     }
   }
 
+  function nativeApp() {
+    const cap = window.Capacitor;
+    if (!cap) return false;
+    if (typeof cap.isNativePlatform === "function") return cap.isNativePlatform();
+    if (typeof cap.getPlatform !== "function") return false;
+    const name = cap.getPlatform();
+    return name === "ios" || name === "android";
+  }
+
+  function prepareInviteHandoff() {
+    if (nativeApp()) return;
+    const match = window.location.pathname.match(/^\/invite\/([A-Za-z0-9_-]+)$/);
+    if (!match) return;
+    const panel = document.getElementById("invite-open-app");
+    if (!panel) return;
+    panel.hidden = false;
+    const link = document.getElementById("invite-open-app-link");
+    if (link) link.setAttribute("href", "korpasset://invite/" + match[1]);
+    const form = document.querySelector('form[action^="/invite/"]');
+    if (form) form.hidden = true;
+  }
+
   document.addEventListener("click", function (event) {
     const button = event.target.closest("[data-oauth-provider]");
     if (!button) return;
     event.preventDefault();
     continueWith(button.getAttribute("data-oauth-provider"));
   });
+
+  prepareInviteHandoff();
 })();
