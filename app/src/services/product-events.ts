@@ -10,9 +10,26 @@ export const PRODUCT_EVENTS = [
   "rating_completed",
   "recap_viewed",
   "second_drive_completed",
+  "onboarding_role_selected",
+  "student_handoff_started",
+  "stale_drive_nudge_shown",
 ] as const;
 
 export type ProductEventName = (typeof PRODUCT_EVENTS)[number];
+
+export const JOURNEY_CREATED_SOURCES = ["direct", "parent_handoff"] as const;
+export type JourneyCreatedSource = (typeof JOURNEY_CREATED_SOURCES)[number];
+
+export const EVENT_PRACTICE_STAGES = [
+  "unknown",
+  "just_started",
+  "building",
+  "near_test",
+] as const;
+export type EventPracticeStage = (typeof EVENT_PRACTICE_STAGES)[number];
+
+export const DAYS_SINCE_DRIVE_BUCKETS = ["5-7", "8-14", "15-30", "31+"] as const;
+export type DaysSinceDriveBucket = (typeof DAYS_SINCE_DRIVE_BUCKETS)[number];
 
 export interface ProductEventInput {
   name: ProductEventName;
@@ -21,6 +38,16 @@ export interface ProductEventInput {
   actorRole?: "student" | "supervisor" | null;
   supervisorCount?: number | null;
   focusSkillCount?: number | null;
+  eventSource?: JourneyCreatedSource | null;
+  practiceStage?: EventPracticeStage | null;
+  daysSinceDriveBucket?: DaysSinceDriveBucket | null;
+}
+
+export function daysSinceDriveBucket(days: number): DaysSinceDriveBucket {
+  if (days <= 7) return "5-7";
+  if (days <= 14) return "8-14";
+  if (days <= 30) return "15-30";
+  return "31+";
 }
 
 export async function recordProductEvent(
@@ -30,9 +57,10 @@ export async function recordProductEvent(
   const db = client ?? getPool();
   await db.query(
     `INSERT INTO product_events (
-       event_name, journey_id, user_id, actor_role, supervisor_count, focus_skill_count
+       event_name, journey_id, user_id, actor_role, supervisor_count, focus_skill_count,
+       event_source, practice_stage, days_since_drive_bucket
      )
-     VALUES ($1, $2, $3, $4, $5, $6)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
     [
       input.name,
       input.journeyId ?? null,
@@ -40,6 +68,9 @@ export async function recordProductEvent(
       input.actorRole ?? null,
       input.supervisorCount ?? null,
       input.focusSkillCount ?? null,
+      input.eventSource ?? null,
+      input.practiceStage ?? null,
+      input.daysSinceDriveBucket ?? null,
     ],
   );
 }

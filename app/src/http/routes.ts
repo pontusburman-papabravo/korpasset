@@ -54,7 +54,10 @@ import {
   studentOnboardingForm,
   supervisorOnboardingPage,
 } from "./onboarding-pages.js";
-import { recordProductEventSafe } from "../services/product-events.js";
+import {
+  daysSinceDriveBucket,
+  recordProductEventSafe,
+} from "../services/product-events.js";
 import { config } from "../config.js";
 import { getReusableSessionUserId, getUserById } from "../services/users.js";
 import {
@@ -72,7 +75,14 @@ import {
   renderSupervisorGuideCues,
   renderSupervisorGuideIndex,
   renderSupervisorGuideSkill,
+  staleDriveNudge,
 } from "./journey-pages.js";
+import {
+  clearHandoffCookie,
+  isParentHandoffQuery,
+  readJourneyCreatedSource,
+  setHandoffCookie,
+} from "./handoff-context.js";
 import { supervisorGuideForSkillKey } from "../domain/supervisor-guide.js";
 import { renderLandingPage } from "./landing.js";
 import {
@@ -239,6 +249,39 @@ function onboardingPath(query: { som?: string }): "elev" | "handledare" | "val" 
   return "val";
 }
 
+async function recordOnboardingObservation(
+  query: { som?: string; via?: string },
+  userId: string | null,
+): Promise<void> {
+  if (isParentHandoffQuery(query)) {
+    // Student opened the supervisor-sent start URL. Not "parent copied the link".
+    await recordProductEventSafe({
+      name: "student_handoff_started",
+      userId,
+      actorRole: "student",
+      eventSource: "parent_handoff",
+    });
+    return;
+  }
+  const path = onboardingPath(query);
+  if (path === "handledare") {
+    await recordProductEventSafe({
+      name: "onboarding_role_selected",
+      userId,
+      actorRole: "supervisor",
+    });
+    return;
+  }
+  if (path === "elev") {
+    await recordProductEventSafe({
+      name: "onboarding_role_selected",
+      userId,
+      actorRole: "student",
+      eventSource: "direct",
+    });
+  }
+}
+
 function appLoginPage(errorMessage?: string): string {
   return layout(
     "Körpasset",
@@ -287,9 +330,14 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         return reply.redirect("/app");
       }
     }
-    const path = onboardingPath(request.query as { som?: string });
+    const query = request.query as { som?: string; via?: string };
+    const path = onboardingPath(query);
     const sessionUserId = await getReusableSessionUserId(userId);
     const user = sessionUserId ? await getUserById(sessionUserId) : null;
+    await recordOnboardingObservation(query, sessionUserId);
+    if (isParentHandoffQuery(query)) {
+      setHandoffCookie(reply);
+    }
     if (path === "handledare") {
       return reply.type("text/html").send(
         layout("Anslut som handledare", supervisorOnboardingPage()),
@@ -351,12 +399,15 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     }
 
     try {
+      const createdSource = readJourneyCreatedSource(request);
       const { journey, userId } = await createJourneyForStudent(
         name,
         sessionUserId,
         practiceStage,
+        createdSource,
       );
       setSessionCookie(reply, userId);
+      clearHandoffCookie(reply);
       return reply.redirect(`/journey/${journey.id}`);
     } catch (error) {
       const { status, message } = handleError(error);
@@ -392,6 +443,17 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       );
       const recommendations = await recommendNextFocus(journeyId);
       const readiness = await listJourneyReadiness(journeyId);
+      const nudge = staleDriveNudge(latestEnded, activeDrive?.id ?? null);
+      if (nudge.shown) {
+        await recordProductEventSafe({
+          name: "stale_drive_nudge_shown",
+          journeyId,
+          userId,
+          actorRole: access.role,
+          practiceStage: journey.practiceStage,
+          daysSinceDriveBucket: daysSinceDriveBucket(nudge.days),
+        });
+      }
 
       reply.type("text/html").send(
         layout(

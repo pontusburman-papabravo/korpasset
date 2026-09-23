@@ -23,6 +23,10 @@ function session(userId: string) {
   return { bilklar_session: createSessionToken(userId) };
 }
 
+function startPathInHtml(): RegExp {
+  return new RegExp(STUDENT_START_PATH.replace("?", "\\?").replaceAll("&", "&amp;"));
+}
+
 describe("parent initiates, student owns the journey", () => {
   beforeEach(async () => {
     await resetDatabaseData();
@@ -46,7 +50,8 @@ describe("parent initiates, student owns the journey", () => {
       url: "/onboarding?som=handledare",
     });
     assert.equal(supervisorPage.statusCode, 200);
-    assert.match(supervisorPage.body, new RegExp(STUDENT_START_PATH.replace("?", "\\?")));
+    assert.match(supervisorPage.body, startPathInHtml());
+    assert.match(supervisorPage.body, /via=handledare/);
     assert.doesNotMatch(supervisorPage.body, /action="\/start"/);
     assert.equal(studentStartUrl().includes(STUDENT_START_PATH), true);
 
@@ -123,7 +128,8 @@ describe("parent initiates, student owns the journey", () => {
     assert.match(page.body, /Få in den som tar körkort/);
     assert.match(page.body, /ägs av eleven/);
     assert.match(page.body, /id="student-start-url"/);
-    assert.match(page.body, new RegExp(STUDENT_START_PATH.replace("?", "\\?")));
+    assert.match(page.body, startPathInHtml());
+    assert.match(page.body, /via=handledare/);
     assert.match(page.body, /Kopiera länk/);
     assert.doesNotMatch(page.body, /action="\/start"/);
     assert.doesNotMatch(page.body, /Starta min körkortsresa/);

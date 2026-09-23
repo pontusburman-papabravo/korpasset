@@ -48,18 +48,17 @@ Båda vägarna slutar i samma modell: eleven äger resan, handledare ansluts via
 
 ## Observation efter deploy
 
-Ingen ny analytics byggs här. Efter att handoffen är i produktion ska vi kunna följa, via befintlig data eller senare instrumentering:
+Se [produkt-events](product-events.md) för funneldefinition och metadata.
 
-| Mått | Finns redan? | Källa / lucka |
-| --- | --- | --- |
-| Val av roll i onboarding (`elev` / `handledare` / väljare) | Nej | Ingen event. Query-param `som` loggas inte. |
-| Föräldrar/handledare som använder elevstartlänken | Nej | Länken är `/onboarding?som=elev` — samma path som en elev som går dit direkt. |
-| Elevresor skapade från förälder→elev-flödet | Nej | `journey_created` finns, men utan hänvisning till handoff. |
-| Nya elevresor som får minst en handledare | Ja, ungefär | `supervisor_connected` + `journey_collaborators`. |
-| Fördelning av `practice_stage` | Ja | Kolumn på `driving_journeys`. |
-| Nytt körpass efter stale-drive-nudge | Nej | `drive_started` / `drive_completed` finns, men nudge är bara UI. Ingen event för att den visades. |
-
-Nästa produktsignal ska komma från användning, inte från fler waitlist-features.
+| Mått | Signal |
+| --- | --- |
+| Val av roll i onboarding | `onboarding_role_selected` (`student` / `supervisor`) |
+| Eleven öppnade handledarens startlänk | `student_handoff_started` (sidinträde, inte att föräldern kopierade) |
+| Elevresa från parent-handoff | `journey_created.event_source = parent_handoff` |
+| Direkt elevresa | `journey_created.event_source = direct` |
+| Nya resor med handledare | `supervisor_connected` per `journey_id` |
+| Practice stage vid skapande | `journey_created.practice_stage` |
+| Stale-nudge → körpass | `stale_drive_nudge_shown` sedan `drive_started` inom 48 h |
 
 ## Guest actor
 
@@ -118,3 +117,4 @@ En person kan senare vara handledare på flera resor och samtidigt ha en egen el
 - [ADR-002: Actor/auth separation](../decisions/ADR-002-actor-auth-separation.md)
 - [ADR-008: App-only konton via Apple och Google](../decisions/ADR-008-app-oauth-accounts.md)
 - [ADR-001: Student-owned journey](../decisions/ADR-001-student-owned-journey.md)
+- [Produkt-events](product-events.md)

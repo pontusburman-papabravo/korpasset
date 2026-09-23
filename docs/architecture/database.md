@@ -21,6 +21,7 @@ Motivering: kolumnspecifik `ON DELETE SET NULL` på composite foreign keys, som 
 | [`db/migrations/0009_auth_identities_one_provider_per_user.sql`](../../db/migrations/0009_auth_identities_one_provider_per_user.sql) | Högst en Apple- och en Google-identity per user |
 | [`db/migrations/0010_one_active_student_journey.sql`](../../db/migrations/0010_one_active_student_journey.sql) | Högst en aktiv elevägd B-resa per person |
 | [`db/migrations/0011_practice_stage.sql`](../../db/migrations/0011_practice_stage.sql) | Var familjen är i övningskörningen (`practice_stage`) |
+| [`db/migrations/0012_product_event_observation.sql`](../../db/migrations/0012_product_event_observation.sql) | Handoff/stale-dimensioner på `product_events` |
 
 Runtime-applikationen tillämpar samma filer via [`app/src/db/migrate.ts`](../../app/src/db/migrate.ts) och tabellen `schema_migrations`. Redan migrerade databaser stämplas, SQL körs inte om. Deploy: [Production](../operations/production.md).
 
