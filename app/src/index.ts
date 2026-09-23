@@ -24,13 +24,17 @@ async function main(): Promise<void> {
   await seedTaxonomy();
   const app = await buildServer();
   await app.listen({ port: config.port, host: "0.0.0.0" });
-  if (
-    isProduction() &&
-    (!config.isOAuthConfigured("apple") || !config.isOAuthConfigured("google"))
-  ) {
-    app.log.warn(
-      "APPLE_CLIENT_ID / GOOGLE_CLIENT_ID saknas — waitlist fungerar, produktinloggning svarar 503",
-    );
+  if (isProduction()) {
+    if (!config.isOAuthConfigured("apple") || !config.isOAuthConfigured("google")) {
+      app.log.warn(
+        "APPLE_CLIENT_ID / GOOGLE_CLIENT_ID saknas — waitlist fungerar, produktinloggning svarar 503",
+      );
+    }
+    if (!config.googleIosClientId) {
+      app.log.warn(
+        "GOOGLE_IOS_CLIENT_ID saknas eller är ogiltig — Google-inloggning på iPhone är avstängd",
+      );
+    }
   }
   app.log.info(
     {

@@ -23,7 +23,7 @@ export function publicUrl(path: string): string {
   return `${base}${normalized}`;
 }
 
-function publicOAuthConfig(): {
+export function publicOAuthConfig(): {
   appleClientId: string;
   googleWebClientId: string;
   googleIosClientId: string;

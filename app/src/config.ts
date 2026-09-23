@@ -57,13 +57,19 @@ export const config = {
     return uniqueCsv(process.env.APPLE_CLIENT_ID, process.env.APPLE_CLIENT_IDS);
   },
   get googleAudiences() {
-    return uniqueCsv(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_IDS);
+    return uniqueCsv(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_IDS)
+      .map((item) => sanitizePublicGoogleClientId(item))
+      .filter(Boolean);
   },
   get googleWebClientId() {
-    return (process.env.GOOGLE_WEB_CLIENT_ID ?? config.googleAudiences[0] ?? "").trim();
+    return (
+      sanitizePublicGoogleClientId(process.env.GOOGLE_WEB_CLIENT_ID) ||
+      config.googleAudiences[0] ||
+      ""
+    );
   },
   get googleIosClientId() {
-    return (process.env.GOOGLE_IOS_CLIENT_ID ?? "").trim();
+    return sanitizePublicGoogleClientId(process.env.GOOGLE_IOS_CLIENT_ID);
   },
   get androidPackageName() {
     return env("ANDROID_PACKAGE_NAME", config.appleBundleId);
@@ -90,6 +96,15 @@ function uniqueCsv(...values: Array<string | undefined>): string[] {
     .map((item) => item.trim())
     .filter(Boolean);
   return [...new Set(items)];
+}
+
+/** Public Google client IDs only. Drops docs placeholders that crash GIDSignIn on iOS. */
+export function sanitizePublicGoogleClientId(value: string | undefined): string {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) return "";
+  if (trimmed.includes("<") || trimmed.includes(">")) return "";
+  if (!trimmed.endsWith(".apps.googleusercontent.com")) return "";
+  return trimmed;
 }
 
 export function assertProductionConfig(): void {

@@ -44,13 +44,15 @@ APPLE_BUNDLE_ID=se.korpasset.app
 APPLE_TEAM_ID=PQ7M3B7VW5
 APPLE_CLIENT_ID=se.korpasset.app
 APPLE_CLIENT_IDS=se.korpasset.app,se.korpasset.app.android
-GOOGLE_CLIENT_ID=<web-client-id>.apps.googleusercontent.com
-GOOGLE_CLIENT_IDS=<web>,<ios>,<android>
-GOOGLE_WEB_CLIENT_ID=<web-client-id>.apps.googleusercontent.com
-GOOGLE_IOS_CLIENT_ID=<ios-client-id>.apps.googleusercontent.com
+GOOGLE_CLIENT_ID=web-client.apps.googleusercontent.com
+GOOGLE_CLIENT_IDS=web-client.apps.googleusercontent.com,ios-client.apps.googleusercontent.com,android-client.apps.googleusercontent.com
+GOOGLE_WEB_CLIENT_ID=web-client.apps.googleusercontent.com
+GOOGLE_IOS_CLIENT_ID=ios-client.apps.googleusercontent.com
 ANDROID_PACKAGE_NAME=se.korpasset.app
-ANDROID_SHA256_CERT_FINGERPRINTS=<Play App signing SHA-256>
+ANDROID_SHA256_CERT_FINGERPRINTS=AA:BB:CC
 ```
+
+Klistra in **riktiga** client-id från Google Cloud. Vinkelparenteser från dokumentation (`<web-client-id>…`) är inte giltiga — GIDSignIn på iPhone kraschar om de skickas in. Servern släpper inte igenom sådana värden till appen; utan giltigt `GOOGLE_IOS_CLIENT_ID` visar iPhone ett fel i stället för att krascha.
 
 Utan client-id svarar inloggningen 503. Waitlist fortsätter att fungera. `APPLE_TEAM_ID` behövs för att AASA ska innehålla `PQ7M3B7VW5.se.korpasset.app`.
 
@@ -92,9 +94,26 @@ Byt ikon: ersätt `native/assets/icon.png` (1024 RGB, ingen alfa), kör `npm run
 1. Play Console → skapa appen **Körpasset** (package `se.korpasset.app`). Ingen ny 25-dollarsavgift. Granskning: [google-play.md](google-play.md).
 2. Butiksuppgifter → **Webbadress till integritetspolicy:** `https://korpasset.se/integritet` (samma sida som App Store).
 3. I Google Cloud: tre OAuth-klienter för Körpasset — Web, iOS (`se.korpasset.app`) och Android (`se.korpasset.app` + SHA-1 från Play App signing för Körpasset, inte My Stjärndag).
-4. Web-client-id är `aud` på id-token som servern verifierar. Sätt den i `GOOGLE_WEB_CLIENT_ID` och i Capacitor-init. Kopiera inte My Stardays `GOOGLE_WEB_CLIENT_ID`.
-5. SHA-256 från **Körpassets** Play App signing in i `ANDROID_SHA256_CERT_FINGERPRINTS` (kolon-separerad hex). Redeploy så `assetlinks.json` stämmer.
-6. Bygg (`android/` ligger i git):
+4. Web-client-id är `aud` på id-token som servern verifierar. Sätt den i `GOOGLE_WEB_CLIENT_ID` och i Capacitor-init (`webClientId` + `iOSServerClientId`). Kopiera inte My Stardays `GOOGLE_WEB_CLIENT_ID`.
+5. iOS-client-id (`GOOGLE_IOS_CLIENT_ID`) är **ett eget** OAuth-client av typ iOS, bundle `se.korpasset.app`. Efter att det finns: lägg in det i [`native/ios/App/App/Info.plist`](../../native/ios/App/App/Info.plist) och bygg om TestFlight.
+
+   ```xml
+   <key>GIDClientID</key>
+   <string>ios-client.apps.googleusercontent.com</string>
+   <key>CFBundleURLTypes</key>
+   <array>
+     <dict>
+       <key>CFBundleURLSchemes</key>
+       <array>
+         <string>com.googleusercontent.apps.ios-client</string>
+       </array>
+     </dict>
+   </array>
+   ```
+
+   URL-schemat är iOS-client-id:t **baklänges** (börjar alltid med `com.googleusercontent.apps.`). Utan de här nycklarna kraschar eller hänger native Google-login även om VPS-env är rätt. Committa inte dokumentations-placeholders.
+6. SHA-256 från **Körpassets** Play App signing in i `ANDROID_SHA256_CERT_FINGERPRINTS` (kolon-separerad hex). Redeploy så `assetlinks.json` stämmer.
+7. Bygg (`android/` ligger i git):
 
 ```bash
 cd native
@@ -104,7 +123,7 @@ npx cap sync android
 npx cap open android
 ```
 
-7. Signerad AAB på Mac. Upload-keystore ligger utanför git, i `~/korpasset-keys/korpasset-upload.jks`. `native/android/` ligger i git — kör inte `cap add android` om mappen redan finns.
+8. Signerad AAB på Mac. Upload-keystore ligger utanför git, i `~/korpasset-keys/korpasset-upload.jks`. `native/android/` ligger i git — kör inte `cap add android` om mappen redan finns.
 
 ```bash
 cd /Users/pontusburman/korpasset
