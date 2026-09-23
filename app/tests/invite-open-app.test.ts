@@ -7,6 +7,7 @@ import { createContext, runInContext } from "node:vm";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const script = readFileSync(join(root, "app/public/app-oauth.js"), "utf8");
+const css = readFileSync(join(root, "app/public/app.css"), "utf8");
 const plist = readFileSync(join(root, "native/ios/App/App/Info.plist"), "utf8");
 const sceneDelegate = readFileSync(
   join(root, "native/ios/App/App/SceneDelegate.swift"),
@@ -26,10 +27,19 @@ function element(attrs: Record<string, string> = {}) {
   };
 }
 
-function load(pathname: string, native: boolean) {
-  const panel = element({ hidden: "true", id: "invite-open-app" });
+function load(pathname: string, native: boolean, panelHidden = true) {
+  const panel = element({
+    hidden: panelHidden ? "true" : "false",
+    id: "invite-open-app",
+  });
   const link = element({ id: "invite-open-app-link", href: "" });
   const form = element({ action: `/invite/token/accept` });
+  const created: Array<{ textContent: string; attrs: Record<string, string> }> = [];
+  const parent = {
+    insertBefore() {},
+    appendChild() {},
+  };
+  (form as { parentNode?: unknown }).parentNode = parent;
   const nodes = new Map<string, ReturnType<typeof element>>([
     ["invite-open-app", panel],
     ["invite-open-app-link", link],
@@ -46,16 +56,21 @@ function load(pathname: string, native: boolean) {
         return null;
       },
       createElement() {
-        return {
+        const el = {
           className: "",
           hidden: false,
           textContent: "",
-          setAttribute() {},
+          attrs: {} as Record<string, string>,
+          setAttribute(name: string, value: string) {
+            this.attrs[name] = value;
+          },
           appendChild() {},
         };
+        created.push(el);
+        return el;
       },
       addEventListener() {},
-      body: null,
+      body: parent,
     },
     window: {
       location: { pathname, search: "", href: `https://korpasset.se${pathname}`, assign() {} },
@@ -72,7 +87,7 @@ function load(pathname: string, native: boolean) {
     },
   };
   runInContext(script, createContext(sandbox));
-  return { panel, link, form };
+  return { panel, link, form, created };
 }
 
 describe("invitation link opens the app", () => {
@@ -83,10 +98,31 @@ describe("invitation link opens the app", () => {
     assert.equal(page.form.hidden, true);
   });
 
-  it("keeps the accept form inside the native app", () => {
-    const page = load("/invite/abc_DEF-123", true);
+  it("keeps the accept form inside the native app and hides Öppna i Körpasset", () => {
+    const page = load("/invite/abc_DEF-123", true, false);
     assert.equal(page.panel.hidden, true);
     assert.equal(page.form.hidden, false);
+    const providers = page.created
+      .map((el) => el.attrs["data-oauth-provider"])
+      .filter(Boolean);
+    assert.deepEqual(providers, ["apple", "google"]);
+    assert.equal(
+      page.created.some((el) => el.textContent === "Öppna i Körpasset"),
+      false,
+    );
+  });
+
+  it("does not inject Apple/Google login in the browser invite page", () => {
+    const page = load("/invite/abc_DEF-123", false);
+    assert.equal(page.panel.hidden, false);
+    assert.equal(
+      page.created.some((el) => el.attrs["data-oauth-provider"]),
+      false,
+    );
+  });
+
+  it("keeps [hidden] from being shown by .stack layout", () => {
+    assert.match(css, /\[hidden\]\s*\{\s*display:\s*none\s*!important;/);
   });
 
   it("leaves ordinary pages alone", () => {

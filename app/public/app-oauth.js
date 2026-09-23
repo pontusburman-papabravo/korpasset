@@ -365,8 +365,16 @@
     return consumeIncomingUrl("https://korpasset.se" + inviteDestination(token), eventType, ctx);
   }
 
+  function hideInviteOpenApp() {
+    const panel = document.getElementById("invite-open-app");
+    if (panel) panel.hidden = true;
+  }
+
   function prepareInviteHandoff() {
-    if (nativeApp()) return;
+    if (nativeApp()) {
+      hideInviteOpenApp();
+      return;
+    }
     const match = window.location.pathname.match(/^\/invite\/([A-Za-z0-9_-]+)$/);
     if (!match) return;
     const panel = document.getElementById("invite-open-app");
@@ -382,6 +390,7 @@
     if (!nativeApp()) return;
     const match = (window.location.pathname || "").match(/^\/invite\/([A-Za-z0-9_-]+)$/);
     if (!match) return;
+    hideInviteOpenApp();
     clearPending();
     if (document.querySelector && document.querySelector("[data-oauth-provider]")) return;
     if (typeof document.createElement !== "function") return;
