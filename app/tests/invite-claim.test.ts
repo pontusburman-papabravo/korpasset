@@ -211,6 +211,8 @@ describe("invite, guest and claim (FR-3, FR-10)", () => {
     assert.equal(page.statusCode, 200);
     assert.match(page.body, /Körpasset-appen/);
     assert.match(page.body, /Anslut som gäst/);
+    assert.match(page.body, new RegExp(`href="korpasset://invite/${invitation.token}"`));
+    assert.match(page.body, /id="invite-open-app"[^>]*hidden/);
     assert.match(page.body, /noindex, nofollow/);
     assert.doesNotMatch(page.body, /Bli betatestare/);
     assert.doesNotMatch(page.body, /action="\/interest"/);

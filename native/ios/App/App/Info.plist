@@ -76,6 +76,14 @@
 				<string>com.googleusercontent.apps.996223016705-br4rn62e3gd3ban81vulomh8r52i4bhr</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>se.korpasset.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>korpasset</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>
