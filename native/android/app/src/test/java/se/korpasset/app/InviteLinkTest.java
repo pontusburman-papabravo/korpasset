@@ -31,9 +31,31 @@ public class InviteLinkTest {
     }
 
     @Test
+    public void parsesThreeSlashCustomScheme() {
+        assertEquals(
+            "tok_1",
+            InviteLink.inviteToken("korpasset", "", "/invite/tok_1")
+        );
+        assertEquals(
+            "https://korpasset.se/invite/tok_1",
+            InviteLink.webUrl("korpasset", "", "/invite/tok_1", null)
+        );
+    }
+
+    @Test
+    public void treatsAppStartupAsNotAnInvite() {
+        assertNull(InviteLink.inviteToken("https", "korpasset.se", "/app"));
+        assertEquals(
+            "https://korpasset.se/app",
+            InviteLink.webUrl("https", "korpasset.se", "/app", null)
+        );
+    }
+
+    @Test
     public void ignoresOtherSchemesAndHosts() {
         assertNull(InviteLink.webUrl("com.googleusercontent.apps.example", "oauth", "/callback", null));
         assertNull(InviteLink.webUrl("https", "example.com", "/invite/abc", null));
         assertNull(InviteLink.webUrl("korpasset", "invite", "/not a token", null));
+        assertNull(InviteLink.inviteToken("korpasset", "invite", "/bad token"));
     }
 }
