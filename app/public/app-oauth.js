@@ -99,9 +99,10 @@
     try {
       await initialize(SocialLogin);
       const nonce = randomNonce();
+      const scopes = provider === "google" ? ["email", "profile"] : ["email", "name"];
       const result = await SocialLogin.login({
         provider,
-        options: { scopes: ["email", "name"], nonce: nonce },
+        options: { scopes: scopes, nonce: nonce },
       });
       const identityToken = idTokenFrom(result);
       if (!identityToken) {
