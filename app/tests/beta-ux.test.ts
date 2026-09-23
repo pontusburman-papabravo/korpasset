@@ -369,7 +369,7 @@ describe("beta UX HTTP", () => {
     await app.close();
   });
 
-  it("preselects recommended skills on drive focus", async () => {
+  it("does not preselect skills on drive focus", async () => {
     const { journey, studentId } = await setupRatedJourney();
     const recommendations = await recommendNextFocus(journey.id);
     assert.ok(recommendations.length >= 2);
@@ -380,9 +380,11 @@ describe("beta UX HTTP", () => {
       url: `/journey/${journey.id}/drive/new`,
     });
     assert.equal(page.statusCode, 200);
-    assert.match(page.body, new RegExp(`${recommendations.length} av 3 valda`));
+    assert.match(page.body, /0 av 3 valda/);
+    assert.doesNotMatch(page.body, /name="skill_ids"[^>]*checked/);
     for (const rec of recommendations) {
-      assert.match(
+      assert.match(page.body, new RegExp(`value="${rec.skillId}"`));
+      assert.doesNotMatch(
         page.body,
         new RegExp(`value="${rec.skillId}" checked`),
       );

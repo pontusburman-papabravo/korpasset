@@ -812,13 +812,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       const skills = (await listSkillsForTaxonomy()).filter(
         (skill) => !isSkillNotApplicable(skill.skillKey, access.transmissionScope),
       );
-      const recommendedIds = new Set(
-        (await recommendNextFocus(journeyId)).map((rec) => rec.skillId),
-      );
       const groups = groupSkillsByArea(skills);
-      const preselectedCount = skills.filter((skill) =>
-        recommendedIds.has(skill.skillId),
-      ).length;
 
       const areaHtml = [...groups.values()]
         .map(
@@ -826,16 +820,15 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
             <h3>${escapeHtml(group.areaTitle)}</h3>
             <div class="skill-grid">
               ${group.skills
-                .map((skill) => {
-                  const checked = recommendedIds.has(skill.skillId) ? " checked" : "";
-                  return `<div class="skill-option-row">
+                .map(
+                  (skill) => `<div class="skill-option-row">
                     <label class="skill-option">
-                      <input type="checkbox" name="skill_ids" value="${escapeHtml(skill.skillId)}"${checked}>
+                      <input type="checkbox" name="skill_ids" value="${escapeHtml(skill.skillId)}">
                       <span>${escapeHtml(skill.title)}</span>
                     </label>
                     <a class="skill-option__guide" href="/journey/${escapeHtml(journeyId)}/guide/${escapeHtml(skill.skillKey)}">Så tränar ni</a>
-                  </div>`;
-                })
+                  </div>`,
+                )
                 .join("")}
             </div>
           </section>`,
@@ -848,7 +841,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
           `<h1>Vad tränar ni på idag?</h1>
            <p>Välj 2–3 moment.</p>
            <p class="muted">${escapeHtml(emptyFocusCopy(journey?.practiceStage ?? "unknown"))}</p>
-           <p class="focus-count" id="focus-count" aria-live="polite">${preselectedCount} av 3 valda</p>
+           <p class="focus-count" id="focus-count" aria-live="polite">0 av 3 valda</p>
            <form method="post" action="/journey/${escapeHtml(journeyId)}/drives" class="stack" id="focus-form">
              ${supervisorPicker}
              ${areaHtml}
