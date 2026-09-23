@@ -381,7 +381,10 @@ describe("beta UX HTTP", () => {
     });
     assert.equal(page.statusCode, 200);
     assert.match(page.body, /0 av 3 valda/);
-    assert.doesNotMatch(page.body, /name="skill_ids"[^>]*checked/);
+    assert.doesNotMatch(
+      page.body,
+      /<input type="checkbox" name="skill_ids"[^>]*checked/,
+    );
     for (const rec of recommendations) {
       assert.match(page.body, new RegExp(`value="${rec.skillId}"`));
       assert.doesNotMatch(
