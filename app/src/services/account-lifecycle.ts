@@ -125,6 +125,8 @@ export async function deleteProductAccount(
       `UPDATE users
        SET account_state = 'deleted',
            display_name = NULL,
+           contact_email = NULL,
+           contact_email_normalized = NULL,
            updated_at = now()
        WHERE id = $1`,
       [userId],

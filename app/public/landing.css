@@ -514,6 +514,10 @@ a { color: inherit; }
   padding: 1.5rem 1rem 3rem;
 }
 
+.admin-shell--wide { max-width: 72rem; }
+
+.admin-table-wrap { overflow-x: auto; }
+
 .admin-table {
   width: 100%;
   border-collapse: collapse;
@@ -545,6 +549,10 @@ a { color: inherit; }
 .status--contacted { background: #e8eefc; color: #1d4ed8; }
 .status--invited { background: #ecfdf5; color: #047857; }
 .status--declined { background: #f3f4f6; color: #4b5563; }
+.status--guest { background: var(--cream-2); color: var(--navy); }
+.status--active { background: #ecfdf5; color: #047857; }
+.status--suspended { background: #fef3c7; color: #92400e; }
+.status--deleted { background: #f3f4f6; color: #4b5563; }
 
 .admin-toolbar {
   display: flex;

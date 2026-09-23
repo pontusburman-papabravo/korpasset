@@ -35,10 +35,27 @@ function providerAlreadyLinkedError(provider: OAuthProvider): ConflictError {
   );
 }
 
+export interface StoredIdentityEmail {
+  email: string;
+  emailNormalized: string;
+}
+
+/** Keep a provider-supplied address for admin and contact. Never use it as the login key. */
+export function optionalIdentityEmail(
+  value: string | null | undefined,
+): StoredIdentityEmail | null {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed || trimmed.length > 120) return null;
+  const emailNormalized = trimmed.toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalized)) return null;
+  return { email: trimmed, emailNormalized };
+}
+
 export async function continueWithOAuth(params: {
   provider: OAuthProvider;
   subject: string;
   displayName?: string | null;
+  email?: string | null;
   sessionUserId?: string | null;
 }): Promise<ContinueWithOAuthResult> {
   const subject = params.subject.trim();
@@ -46,6 +63,7 @@ export async function continueWithOAuth(params: {
     throw new AppError("Ogiltig inloggning", 401, "invalid_identity");
   }
   const displayName = sanitizeDisplayName(params.displayName);
+  const email = optionalIdentityEmail(params.email);
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
@@ -53,6 +71,7 @@ export async function continueWithOAuth(params: {
         provider: params.provider,
         subject,
         displayName,
+        email,
         sessionUserId: params.sessionUserId,
       });
     } catch (error) {
@@ -76,6 +95,7 @@ async function continueWithOAuthInTransaction(params: {
   provider: OAuthProvider;
   subject: string;
   displayName: string | null;
+  email: StoredIdentityEmail | null;
   sessionUserId?: string | null;
 }): Promise<ContinueWithOAuthResult> {
   return withTransaction(async (client) => {
@@ -110,6 +130,19 @@ async function continueWithOAuthInTransaction(params: {
       if (!owner || !isProductActorUsable(owner.accountState)) {
         throw new AppError("Kontot är inte tillgängligt", 403, "account_unavailable");
       }
+      if (params.email) {
+        await client.query(
+          `UPDATE auth_identities
+           SET email = $3, email_normalized = $4
+           WHERE provider = $1 AND provider_subject = $2`,
+          [
+            params.provider,
+            params.subject,
+            params.email.email,
+            params.email.emailNormalized,
+          ],
+        );
+      }
       return { userId: ownerId, created: false, claimedGuest: false };
     }
 
@@ -141,9 +174,17 @@ async function continueWithOAuthInTransaction(params: {
       }
 
       await client.query(
-        `INSERT INTO auth_identities (user_id, provider, provider_subject, verified_at)
-         VALUES ($1, $2, $3, now())`,
-        [sessionUserId, params.provider, params.subject],
+        `INSERT INTO auth_identities (
+           user_id, provider, provider_subject, verified_at, email, email_normalized
+         )
+         VALUES ($1, $2, $3, now(), $4, $5)`,
+        [
+          sessionUserId,
+          params.provider,
+          params.subject,
+          params.email?.email ?? null,
+          params.email?.emailNormalized ?? null,
+        ],
       );
 
       const nextName = row.display_name?.trim() ? row.display_name : params.displayName;
@@ -171,9 +212,17 @@ async function continueWithOAuthInTransaction(params: {
     );
     const userId = String(created.rows[0].id);
     await client.query(
-      `INSERT INTO auth_identities (user_id, provider, provider_subject, verified_at)
-       VALUES ($1, $2, $3, now())`,
-      [userId, params.provider, params.subject],
+      `INSERT INTO auth_identities (
+         user_id, provider, provider_subject, verified_at, email, email_normalized
+       )
+       VALUES ($1, $2, $3, now(), $4, $5)`,
+      [
+        userId,
+        params.provider,
+        params.subject,
+        params.email?.email ?? null,
+        params.email?.emailNormalized ?? null,
+      ],
     );
     return { userId, created: true, claimedGuest: false };
   });

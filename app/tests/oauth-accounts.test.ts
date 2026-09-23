@@ -298,4 +298,42 @@ describe("continueWithOAuth (FR-11, FR-10)", () => {
         googleSubjects[0] === "google-parallel-link-b",
     );
   });
+
+  it("stores a provider email and refreshes it without changing the subject", async () => {
+    const created = await continueWithOAuth({
+      provider: "apple",
+      subject: "apple-mail-1",
+      displayName: "Maja",
+      email: "Maja@Example.com",
+    });
+    const stored = await getPool().query(
+      `SELECT email, email_normalized, provider_subject FROM auth_identities WHERE user_id = $1`,
+      [created.userId],
+    );
+    assert.equal(stored.rows[0].email, "Maja@Example.com");
+    assert.equal(stored.rows[0].email_normalized, "maja@example.com");
+    assert.equal(stored.rows[0].provider_subject, "apple-mail-1");
+
+    await continueWithOAuth({
+      provider: "apple",
+      subject: "apple-mail-1",
+      email: "maja.ny@example.com",
+    });
+    const refreshed = await getPool().query(
+      `SELECT email, provider_subject FROM auth_identities WHERE user_id = $1`,
+      [created.userId],
+    );
+    assert.equal(refreshed.rows[0].email, "maja.ny@example.com");
+    assert.equal(refreshed.rows[0].provider_subject, "apple-mail-1");
+
+    await continueWithOAuth({
+      provider: "google",
+      subject: "google-no-mail",
+      email: "inte-en-adress",
+    });
+    const ignored = await getPool().query(
+      `SELECT email FROM auth_identities WHERE provider_subject = 'google-no-mail'`,
+    );
+    assert.equal(ignored.rows[0].email, null);
+  });
 });

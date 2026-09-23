@@ -1,4 +1,9 @@
 import type { AdminBetaStats, DayCount } from "../services/admin-stats.js";
+import type { DirectoryUser } from "../services/admin-directory.js";
+import {
+  DIRECTORY_ACCOUNT_STATES,
+  EDITABLE_ACCOUNT_STATES,
+} from "../services/admin-directory.js";
 import type {
   SupportSearchResult,
   SupportUserView,
@@ -15,7 +20,20 @@ import {
 } from "./layout.js";
 import { siteFooter, siteHeader } from "./landing.js";
 
-export type AdminNav = "overview" | "signups" | "statistik" | "support";
+export type AdminNav = "overview" | "signups" | "users" | "statistik" | "support";
+
+const ACCOUNT_STATE_LABELS: Record<string, string> = {
+  guest: "Gäst",
+  active: "Aktiv",
+  suspended: "Avstängd",
+  deleted: "Raderad",
+};
+
+const PROVIDER_LABELS: Record<string, string> = {
+  apple: "Apple",
+  google: "Google",
+  email_magic_link: "E-postlänk",
+};
 
 const ROLE_LABELS: Record<InterestRole, string> = {
   parent: "Förälder",
@@ -207,7 +225,7 @@ function searchForm(query = ""): string {
       <input id="q" name="q" type="search" value="${escapeHtml(query)}" placeholder="E-post, användar-UUID eller namn">
       ${primaryButton("Sök")}
     </div>
-    <p class="muted">Waitlist via e-post. Produktanvändare via UUID, ev. inloggningsidentitet, eller namn som svagt uppslag.</p>
+    <p class="muted">Waitlist via e-post. Produktanvändare via e-post, UUID, inloggningsidentitet eller namn. <a href="/admin/users">Öppna hela användarlistan</a>.</p>
   </form>`;
 }
 
@@ -451,7 +469,133 @@ export function statistikPage(stats: AdminBetaStats): string {
 function matchReasonLabel(reason: string): string {
   if (reason === "uuid") return "UUID";
   if (reason === "auth_identity") return "inloggningsidentitet";
+  if (reason === "contact_email") return "kontaktadress";
   return "namn (svagt uppslag)";
+}
+
+function accountStateLabel(state: string): string {
+  return ACCOUNT_STATE_LABELS[state] ?? state;
+}
+
+function providerLabel(provider: string): string {
+  return PROVIDER_LABELS[provider] ?? provider;
+}
+
+function roleLabel(role: "student" | "supervisor"): string {
+  return role === "student" ? "Elev" : "Handledare";
+}
+
+function usersQuery(params: { q?: string; state?: string; page?: number; csv?: boolean }): string {
+  const search = new URLSearchParams();
+  if (params.q) search.set("q", params.q);
+  if (params.state) search.set("state", params.state);
+  if (params.page && params.page > 1) search.set("page", String(params.page));
+  const path = params.csv ? "/admin/users.csv" : "/admin/users";
+  const qs = search.toString();
+  return qs ? `${path}?${qs}` : path;
+}
+
+function directoryName(user: DirectoryUser): string {
+  if (user.accountState === "deleted") {
+    if (user.roles.includes("supervisor")) return "Tidigare handledare";
+    if (user.roles.includes("student")) return "Tidigare elev";
+    return "Tidigare användare";
+  }
+  return user.displayName?.trim() || "Produktanvändare";
+}
+
+export function usersListPage(options: {
+  users: DirectoryUser[];
+  total: number;
+  page: number;
+  pageSize: number;
+  query: string;
+  state?: string;
+  successMessage?: string;
+}): string {
+  const { users, total, page, pageSize, query, state, successMessage } = options;
+  const rows = users
+    .map((user) => {
+      const emails = user.emails.length > 0 ? user.emails.join(", ") : "—";
+      const roles = user.roles.length > 0 ? user.roles.map(roleLabel).join(", ") : "—";
+      return `<tr>
+        <td><a href="/admin/users/${escapeHtml(user.id)}">${escapeHtml(directoryName(user))}</a>
+          <div class="muted">${escapeHtml(user.id)}</div></td>
+        <td>${escapeHtml(emails)}</td>
+        <td><span class="status status--${escapeHtml(user.accountState)}">${escapeHtml(accountStateLabel(user.accountState))}</span></td>
+        <td>${escapeHtml(roles)}</td>
+        <td>${escapeHtml(user.providers.map(providerLabel).join(", ") || "—")}</td>
+        <td>${escapeHtml(formatWhen(user.createdAt))}</td>
+      </tr>`;
+    })
+    .join("");
+
+  const filters = ["all", ...DIRECTORY_ACCOUNT_STATES]
+    .map((value) => {
+      const href = usersQuery({
+        q: query || undefined,
+        state: value === "all" ? undefined : value,
+      });
+      const label = value === "all" ? "Alla" : accountStateLabel(value);
+      const current = (value === "all" && !state) || value === state;
+      return `<a href="${escapeHtml(href)}"${current ? ' aria-current="page"' : ""}>${escapeHtml(label)}</a>`;
+    })
+    .join(" · ");
+
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(total, page * pageSize);
+  const prev =
+    page > 1
+      ? `<a href="${escapeHtml(usersQuery({ q: query || undefined, state, page: page - 1 }))}">Föregående</a>`
+      : `<span class="muted">Föregående</span>`;
+  const next =
+    page < pageCount
+      ? `<a href="${escapeHtml(usersQuery({ q: query || undefined, state, page: page + 1 }))}">Nästa</a>`
+      : `<span class="muted">Nästa</span>`;
+  const stateOptions = ["", ...DIRECTORY_ACCOUNT_STATES]
+    .map((value) => {
+      const selected = value === (state ?? "") ? " selected" : "";
+      const label = value ? accountStateLabel(value) : "Alla statusar";
+      return `<option value="${escapeHtml(value)}"${selected}>${escapeHtml(label)}</option>`;
+    })
+    .join("");
+
+  return adminPage(
+    "Användare",
+    `<main class="admin-shell admin-shell--wide">
+       <h1>Användare</h1>
+       <p>Alla produktkonton, även de som inte anmält sig till betan. Intresseanmälningar utan konto ligger under Intresseanmälningar.</p>
+       ${successMessage ? successBanner(successMessage) : ""}
+       <p>${from}–${to} av ${total}${query ? ` · sökning “${escapeHtml(query)}”` : ""}</p>
+       <form method="get" action="/admin/users" class="admin-search" role="search">
+         <label for="q">Sök användare</label>
+         <div class="admin-search__row">
+           <input id="q" name="q" type="search" value="${escapeHtml(query)}" placeholder="Namn, e-post, inloggnings-id eller UUID">
+           <select name="state" aria-label="Status">${stateOptions}</select>
+           ${primaryButton("Sök")}
+         </div>
+       </form>
+       <div class="admin-toolbar">
+         <div>${filters}</div>
+         <a href="${escapeHtml(usersQuery({ q: query || undefined, state, csv: true }))}">Ladda ner CSV</a>
+       </div>
+       <div class="admin-table-wrap">
+         <table class="admin-table">
+           <thead>
+             <tr><th>Namn</th><th>E-post</th><th>Status</th><th>Roll</th><th>Inloggning</th><th>Skapad</th></tr>
+           </thead>
+           <tbody>
+             ${rows || `<tr><td colspan="6">Inga användare matchar.</td></tr>`}
+           </tbody>
+         </table>
+       </div>
+       <nav class="admin-pagination" aria-label="Paginering">
+         ${prev} · sida ${page} av ${pageCount} · ${next}
+       </nav>
+     </main>`,
+    { signedIn: true, nav: "users" },
+  );
 }
 
 export function supportSearchPage(
@@ -489,7 +633,7 @@ export function supportSearchPage(
 
   let resultBlock = "";
   if (!search.query) {
-    resultBlock = `<p class="muted">Sök för att slå upp waitlist eller produktanvändare.</p>`;
+    resultBlock = `<p class="muted">Sök för att slå upp en person, eller öppna <a href="/admin/users">alla användare</a>.</p>`;
   } else if (search.waitlist.length === 0 && search.users.length === 0) {
     resultBlock = `<p>Ingen träff för “${escapeHtml(search.query)}”.</p>`;
   } else {
@@ -511,7 +655,7 @@ export function supportSearchPage(
     "Support",
     `<main class="admin-shell">
        <h1>Support</h1>
-       <p>Uppslag av waitlist och produktanvändare. Ingen generell användarlista.</p>
+       <p>Uppslag av waitlist och produktanvändare. <a href="/admin/users">Hela användarlistan</a> går att söka, ändra och exportera.</p>
        ${options.successMessage ? successBanner(options.successMessage) : ""}
        ${options.errorMessage ? errorBanner(options.errorMessage) : ""}
        ${searchForm(search.query)}
@@ -521,9 +665,70 @@ export function supportSearchPage(
   );
 }
 
+function loginSection(view: SupportUserView): string {
+  if (view.accountState === "deleted") {
+    return `<section>
+      <h2>E-post och inloggning</h2>
+      <p class="muted">E-post och inloggningskopplingar är borttagna med kontot.</p>
+    </section>`;
+  }
+  const rows = view.identities
+    .map((identity) => {
+      const email =
+        identity.email ??
+        (identity.provider === "email_magic_link" && identity.providerSubject.includes("@")
+          ? identity.providerSubject
+          : "—");
+      return `<tr>
+        <td>${escapeHtml(providerLabel(identity.provider))}</td>
+        <td>${escapeHtml(email)}</td>
+        <td><code>${escapeHtml(identity.providerSubject)}</code></td>
+      </tr>`;
+    })
+    .join("");
+  return `<section>
+    <h2>E-post och inloggning</h2>
+    <p>Kontaktadress: ${escapeHtml(view.contactEmail ?? "—")}</p>
+    <table class="admin-table">
+      <thead><tr><th>Leverantör</th><th>E-post från inloggning</th><th>Inloggnings-id</th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="3">Ingen inloggning kopplad.</td></tr>`}</tbody>
+    </table>
+  </section>`;
+}
+
+function userEditForm(view: SupportUserView): string {
+  if (view.accountState === "deleted") return "";
+  const options = EDITABLE_ACCOUNT_STATES.map((state) => {
+    const selected = state === view.accountState ? " selected" : "";
+    return `<option value="${state}"${selected}>${escapeHtml(accountStateLabel(state))}</option>`;
+  }).join("");
+  return `<form method="post" action="/admin/users/${escapeHtml(view.id)}" class="admin-form">
+    <h2>Ändra användare</h2>
+    <div>
+      <label for="display_name">Visningsnamn</label>
+      <input id="display_name" name="display_name" type="text" maxlength="80" value="${escapeHtml(view.displayName ?? "")}">
+    </div>
+    <div>
+      <label for="contact_email">E-post</label>
+      <input id="contact_email" name="contact_email" type="email" maxlength="120" value="${escapeHtml(view.contactEmail ?? "")}">
+    </div>
+    <p class="muted">Kontaktadressen kan rättas här. Inloggning sker fortfarande med Apple- eller Google-id, inte med adressen.</p>
+    <div>
+      <label for="account_state">Kontostatus</label>
+      <select id="account_state" name="account_state">${options}</select>
+    </div>
+    <p class="muted">Avstängd kan inte använda appen. Radering görs längre ner och går inte att ångra.</p>
+    ${primaryButton("Spara")}
+  </form>`;
+}
+
 export function supportUserPage(
   view: SupportUserView,
-  options: { errorMessage?: string } = {},
+  options: {
+    errorMessage?: string;
+    successMessage?: string;
+    editable?: boolean;
+  } = {},
 ): string {
   const heading = supportUserHeading(view);
   const deleted = view.accountState === "deleted";
@@ -563,9 +768,12 @@ export function supportUserPage(
          </section>`
       : "";
 
+  const deleteAction = options.editable
+    ? `/admin/users/${escapeHtml(view.id)}/delete-account`
+    : `/admin/support/users/${escapeHtml(view.id)}/delete-account`;
   const gdprForm = deleted
     ? `<p class="muted">Kontot är redan tombstonat. Gamla produkt-sessioner kan inte återaktivera det.</p>`
-    : `<form method="post" action="/admin/support/users/${escapeHtml(view.id)}/delete-account" class="admin-form admin-form--danger">
+    : `<form method="post" action="${deleteAction}" class="admin-form admin-form--danger">
          <h2>GDPR / kontoradering</h2>
          <p>Följer account-lifecycle: ingen <code>DELETE FROM users</code>. Elevens journey raderas. Handledare tombstonas. Waitlist orörs.</p>
          <label class="consent">
@@ -579,18 +787,23 @@ export function supportUserPage(
          ${primaryButton("Radera konto")}
        </form>`;
 
+  const backHref = options.editable ? "/admin/users" : "/admin/support";
+  const backLabel = options.editable ? "Alla användare" : "Support";
   return adminPage(
     heading,
     `<main class="admin-shell">
-       <p><a href="/admin/support">← Support</a></p>
+       <p><a href="${backHref}">← ${backLabel}</a></p>
        <h1>${escapeHtml(heading)}</h1>
+       ${options.successMessage ? successBanner(options.successMessage) : ""}
        ${options.errorMessage ? errorBanner(options.errorMessage) : ""}
-       <p>UUID <code>${escapeHtml(view.id)}</code> · account_state <strong>${escapeHtml(view.accountState)}</strong></p>
+       <p>UUID <code>${escapeHtml(view.id)}</code> · status <strong>${escapeHtml(accountStateLabel(view.accountState))}</strong></p>
        ${
          deleted
            ? ""
            : `<p>Visningsnamn: ${escapeHtml(view.displayName ?? "—")}</p>`
        }
+       ${loginSection(view)}
+       ${options.editable ? userEditForm(view) : `<p><a href="/admin/users/${escapeHtml(view.id)}">Ändra användare</a></p>`}
        <section class="admin-kpis">
          ${kpi("Journeys", String(view.journeyCount))}
          ${kpi("Körpass", String(view.driveCount))}
@@ -607,14 +820,16 @@ export function supportUserPage(
        ${waitlistNote}
        ${gdprForm}
      </main>`,
-    { signedIn: true, nav: "support" },
+    { signedIn: true, nav: options.editable ? "users" : "support" },
   );
 }
 
-export function supportUserGonePage(): string {
+export function supportUserGonePage(options: { editable?: boolean } = {}): string {
+  const backHref = options.editable ? "/admin/users" : "/admin/support";
+  const backLabel = options.editable ? "Alla användare" : "Support";
   return adminPage(
     "Saknas",
-    `<main class="admin-shell">${errorBanner("Användaren hittades inte")}<p><a href="/admin/support">Tillbaka</a></p></main>`,
-    { signedIn: true, nav: "support" },
+    `<main class="admin-shell">${errorBanner("Användaren hittades inte")}<p><a href="${backHref}">Tillbaka till ${backLabel.toLowerCase()}</a></p></main>`,
+    { signedIn: true, nav: options.editable ? "users" : "support" },
   );
 }

@@ -104,6 +104,7 @@ async function continueFromToken(
     provider,
     subject: identity.subject,
     displayName: displayName || identity.name,
+    email: identity.email,
     sessionUserId: getSessionUserId(request),
   });
   setSessionCookie(reply, result.userId);

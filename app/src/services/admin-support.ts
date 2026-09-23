@@ -28,7 +28,7 @@ export interface SupportUserHit {
   id: string;
   displayName: string | null;
   accountState: string;
-  matchReasons: Array<"uuid" | "auth_identity" | "display_name">;
+  matchReasons: Array<"uuid" | "auth_identity" | "contact_email" | "display_name">;
 }
 
 export interface SupportSearchResult {
@@ -49,8 +49,9 @@ export interface SupportUserView {
   id: string;
   accountState: string;
   displayName: string | null;
+  contactEmail: string | null;
   createdAt: string;
-  identities: Array<{ provider: string; providerSubject: string }>;
+  identities: Array<{ provider: string; providerSubject: string; email: string | null }>;
   journeys: SupportJourneyRole[];
   journeyCount: number;
   driveCount: number;
@@ -108,17 +109,33 @@ export async function searchSupport(rawQuery: string): Promise<SupportSearchResu
     );
     waitlist.push(...signups.rows.map((row) => mapWaitlist(row as Record<string, unknown>)));
 
-    const byIdentity = await getPool().query(
-      `SELECT u.id, u.display_name, u.account_state
-       FROM auth_identities a
-       JOIN users u ON u.id = a.user_id
-       WHERE a.provider = 'email_magic_link'
-         AND lower(a.provider_subject) = $1
+    const byEmail = await getPool().query(
+      `SELECT u.id, u.display_name, u.account_state,
+              (u.contact_email_normalized = $1) AS via_contact,
+              EXISTS (
+                SELECT 1 FROM auth_identities a
+                WHERE a.user_id = u.id
+                  AND (
+                    a.email_normalized = $1
+                    OR (a.provider = 'email_magic_link' AND lower(a.provider_subject) = $1)
+                  )
+              ) AS via_identity
+       FROM users u
+       WHERE u.contact_email_normalized = $1
+          OR EXISTS (
+            SELECT 1 FROM auth_identities a
+            WHERE a.user_id = u.id
+              AND (
+                a.email_normalized = $1
+                OR (a.provider = 'email_magic_link' AND lower(a.provider_subject) = $1)
+              )
+          )
        LIMIT 25`,
       [email],
     );
-    for (const row of byIdentity.rows) {
-      addUser(row, "auth_identity");
+    for (const row of byEmail.rows) {
+      if (row.via_identity) addUser(row, "auth_identity");
+      if (row.via_contact) addUser(row, "contact_email");
     }
   }
 
@@ -172,13 +189,14 @@ function actorLabel(accountState: string, role: "student" | "supervisor", displa
 
 export async function getSupportUserView(userId: string): Promise<SupportUserView | null> {
   const userResult = await getPool().query(
-    `SELECT id, display_name, account_state, created_at FROM users WHERE id = $1`,
+    `SELECT id, display_name, contact_email, account_state, created_at FROM users WHERE id = $1`,
     [userId],
   );
   const user = userResult.rows[0] as
     | {
         id: string;
         display_name: string | null;
+        contact_email: string | null;
         account_state: string;
         created_at: Date | string;
       }
@@ -186,7 +204,10 @@ export async function getSupportUserView(userId: string): Promise<SupportUserVie
   if (!user) return null;
 
   const identities = await getPool().query(
-    `SELECT provider, provider_subject FROM auth_identities WHERE user_id = $1 ORDER BY created_at`,
+    `SELECT provider, provider_subject, email
+     FROM auth_identities
+     WHERE user_id = $1
+     ORDER BY created_at`,
     [userId],
   );
 
@@ -250,9 +271,15 @@ export async function getSupportUserView(userId: string): Promise<SupportUserVie
     [userId],
   );
 
-  const identityEmails = identities.rows
-    .filter((row) => row.provider === "email_magic_link")
-    .map((row) => String(row.provider_subject).toLowerCase());
+  const identityEmails = identities.rows.flatMap((row) => {
+    const values: string[] = [];
+    if (row.email) values.push(String(row.email).toLowerCase());
+    if (row.provider === "email_magic_link") {
+      values.push(String(row.provider_subject).toLowerCase());
+    }
+    return values;
+  });
+  if (user.contact_email) identityEmails.push(user.contact_email.toLowerCase());
 
   let relatedWaitlist: SupportWaitlistHit[] = [];
   if (identityEmails.length > 0) {
@@ -272,12 +299,14 @@ export async function getSupportUserView(userId: string): Promise<SupportUserVie
     id: user.id,
     accountState: user.account_state,
     displayName: deleted ? null : user.display_name,
+    contactEmail: deleted || user.contact_email == null ? null : user.contact_email,
     createdAt: new Date(String(user.created_at)).toISOString(),
     identities: deleted
       ? []
       : identities.rows.map((row) => ({
           provider: String(row.provider),
           providerSubject: String(row.provider_subject),
+          email: row.email == null ? null : String(row.email),
         })),
     journeys,
     journeyCount: Number(counts.rows[0]?.journeys ?? 0),

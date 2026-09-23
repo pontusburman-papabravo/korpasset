@@ -220,7 +220,7 @@ export function siteHeader(
     ctaHref?: string;
     variant?: "site" | "admin";
     signedIn?: boolean;
-    adminNav?: "overview" | "signups" | "statistik" | "support";
+    adminNav?: "overview" | "signups" | "users" | "statistik" | "support";
   } = {},
 ): string {
   if (options.variant === "admin") {
@@ -230,6 +230,7 @@ export function siteHeader(
       ? `<nav class="site-nav__links site-nav__links--admin" aria-label="Admin">
       ${current("/admin", "overview", "Översikt")}
       ${current("/admin/signups", "signups", "Intresseanmälningar")}
+      ${current("/admin/users", "users", "Användare")}
       ${current("/admin/statistik", "statistik", "Statistik")}
       <form method="post" action="/admin/logout"><button type="submit" class="btn-link">Logga ut</button></form>
     </nav>`

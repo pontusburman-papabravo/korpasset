@@ -17,6 +17,14 @@ import {
 } from "../services/admin-users.js";
 import { recordAdminAudit } from "../services/admin-audit.js";
 import {
+  DIRECTORY_PAGE_SIZE,
+  getDirectoryUser,
+  isDirectoryAccountState,
+  listDirectoryUsers,
+  updateDirectoryUser,
+  type DirectoryUser,
+} from "../services/admin-directory.js";
+import {
   getAdminBetaStats,
   listRecentInterestSignups,
 } from "../services/admin-stats.js";
@@ -55,6 +63,7 @@ import {
   supportSearchPage,
   supportUserGonePage,
   supportUserPage,
+  usersListPage,
 } from "./admin-pages.js";
 import {
   ADMIN_LOGIN_RATE_LIMIT,
@@ -70,6 +79,23 @@ function parseStatus(value: string | undefined): InterestStatus | undefined {
   return INTEREST_STATUSES.includes(value as InterestStatus)
     ? (value as InterestStatus)
     : undefined;
+}
+
+function directoryCsv(users: DirectoryUser[]): string {
+  const header = "created_at,id,display_name,contact_email,emails,account_state,roles,providers";
+  const lines = users.map((user) =>
+    [
+      user.createdAt,
+      user.id,
+      csvCell(user.displayName ?? ""),
+      csvCell(user.contactEmail ?? ""),
+      csvCell(user.emails.join("; ")),
+      user.accountState,
+      csvCell(user.roles.join(" ")),
+      csvCell(user.providers.join(" ")),
+    ].join(","),
+  );
+  return [header, ...lines].join("\n");
 }
 
 function parsePage(value: string | undefined): number {
@@ -377,6 +403,143 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     if (!(await requireAdmin(request, reply))) return;
     const stats = await getAdminBetaStats();
     return reply.type("text/html").send(statistikPage(stats));
+  });
+
+  app.get("/admin/users", async (request, reply) => {
+    if (!(await requireAdmin(request, reply))) return;
+    const query = request.query as { q?: string; state?: string; page?: string; deleted?: string };
+    const state = isDirectoryAccountState(query.state) ? query.state : undefined;
+    const page = parsePage(query.page);
+    const offset = (page - 1) * DIRECTORY_PAGE_SIZE;
+    const { users, total } = await listDirectoryUsers({
+      q: query.q,
+      state,
+      limit: DIRECTORY_PAGE_SIZE,
+      offset,
+    });
+    return reply.type("text/html").send(
+      usersListPage({
+        users,
+        total,
+        page,
+        pageSize: DIRECTORY_PAGE_SIZE,
+        query: (query.q ?? "").trim(),
+        state,
+        successMessage:
+          query.deleted === "1" ? "Kontot är raderat enligt account-lifecycle." : undefined,
+      }),
+    );
+  });
+
+  app.get("/admin/users.csv", async (request, reply) => {
+    if (!(await requireAdmin(request, reply))) return;
+    const query = request.query as { q?: string; state?: string };
+    const state = isDirectoryAccountState(query.state) ? query.state : undefined;
+    const { users } = await listDirectoryUsers({ q: query.q, state });
+    return reply
+      .type("text/csv; charset=utf-8")
+      .header("content-disposition", "attachment; filename=korpasset-anvandare.csv")
+      .send(directoryCsv(users));
+  });
+
+  app.get("/admin/users/:id", async (request, reply) => {
+    if (!(await requireAdmin(request, reply))) return;
+    const { id } = request.params as { id: string };
+    const query = request.query as { saved?: string };
+    const view = await getSupportUserView(id);
+    if (!view) {
+      return reply.status(404).type("text/html").send(supportUserGonePage({ editable: true }));
+    }
+    return reply.type("text/html").send(
+      supportUserPage(view, {
+        editable: true,
+        successMessage: query.saved === "1" ? "Ändringarna är sparade." : undefined,
+      }),
+    );
+  });
+
+  app.post("/admin/users/:id", async (request, reply) => {
+    const admin = await requireAdmin(request, reply);
+    if (!admin) return;
+    const { id } = request.params as { id: string };
+    const body = request.body as {
+      display_name?: string;
+      contact_email?: string;
+      account_state?: string;
+    };
+    const before = await getDirectoryUser(id);
+    if (!before) {
+      return reply.status(404).type("text/html").send(supportUserGonePage({ editable: true }));
+    }
+    try {
+      const updated = await updateDirectoryUser(id, {
+        displayName: body.display_name ?? "",
+        contactEmail: body.contact_email ?? "",
+        accountState: body.account_state ?? "",
+      });
+      await recordAdminAudit({
+        adminUserId: admin.id,
+        operation: "user_update",
+        targetType: "user",
+        targetId: id,
+        summary: [
+          `display_name_changed=${before.displayName !== updated.displayName}`,
+          `contact_email_changed=${(before.contactEmail ?? "") !== (updated.contactEmail ?? "")}`,
+          `account_state ${before.accountState} → ${updated.accountState}`,
+        ].join("; "),
+      });
+      return reply.redirect(`/admin/users/${id}?saved=1`);
+    } catch (error) {
+      const view = await getSupportUserView(id);
+      const message = error instanceof AppError ? error.message : "Kunde inte spara";
+      if (!view) {
+        return reply.status(404).type("text/html").send(supportUserGonePage({ editable: true }));
+      }
+      return reply
+        .status(error instanceof AppError ? error.statusCode : 400)
+        .type("text/html")
+        .send(supportUserPage(view, { editable: true, errorMessage: message }));
+    }
+  });
+
+  app.post("/admin/users/:id/delete-account", async (request, reply) => {
+    const admin = await requireAdmin(request, reply);
+    if (!admin) return;
+    const { id } = request.params as { id: string };
+    const body = request.body as {
+      confirm_irreversible?: string;
+      confirm_user_id?: string;
+    };
+    const view = await getSupportUserView(id);
+    if (!view) {
+      return reply.status(404).type("text/html").send(supportUserGonePage({ editable: true }));
+    }
+    const typedId = (body.confirm_user_id ?? "").trim();
+    if (body.confirm_irreversible !== "yes" || typedId !== id) {
+      return reply.status(400).type("text/html").send(
+        supportUserPage(view, {
+          editable: true,
+          errorMessage: "Bekräfta den irreversibla operationen och skriv in rätt UUID.",
+        }),
+      );
+    }
+    try {
+      const summary = await deleteProductAccount(id);
+      await recordAdminAudit({
+        adminUserId: admin.id,
+        operation: "gdpr_delete_account",
+        targetType: "user",
+        targetId: id,
+        summary: formatDeletionAuditSummary(summary),
+      });
+      return reply.redirect("/admin/users?deleted=1");
+    } catch (error) {
+      const message = error instanceof AppError ? error.message : "Kunde inte radera kontot";
+      return reply
+        .status(error instanceof AppError ? error.statusCode : 400)
+        .type("text/html")
+        .send(supportUserPage(view, { editable: true, errorMessage: message }));
+    }
   });
 
   app.get("/admin/support", async (request, reply) => {

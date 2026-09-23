@@ -96,7 +96,7 @@ describe("admin MVP v1", () => {
 
   it("protects overview, statistik and support with the same admin auth", async () => {
     const app = await createTestApp();
-    for (const url of ["/admin", "/admin/statistik", "/admin/support"]) {
+    for (const url of ["/admin", "/admin/statistik", "/admin/support", "/admin/users"]) {
       const hidden = await app.inject({ method: "GET", url });
       assert.equal(hidden.statusCode, 404);
     }
@@ -104,7 +104,7 @@ describe("admin MVP v1", () => {
 
     const admin = await seedAdmin();
     const authed = await createTestApp();
-    for (const url of ["/admin", "/admin/statistik", "/admin/support"]) {
+    for (const url of ["/admin", "/admin/statistik", "/admin/support", "/admin/users"]) {
       const anon = await authed.inject({ method: "GET", url });
       assert.equal(anon.statusCode, 302);
       assert.equal(anon.headers.location, "/admin/login");
@@ -122,6 +122,8 @@ describe("admin MVP v1", () => {
     assert.match(overview.body, /href="\/admin"/);
     assert.match(overview.body, /href="\/admin\/signups"/);
     assert.match(overview.body, /href="\/admin\/statistik"/);
+    assert.match(overview.body, /Användare/);
+    assert.match(overview.body, /href="\/admin\/users"/);
     assert.doesNotMatch(
       overview.body,
       /<nav class="site-nav__links site-nav__links--admin"[^>]*>[\s\S]*href="\/admin\/support"/,
