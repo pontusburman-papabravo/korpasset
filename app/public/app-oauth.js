@@ -237,7 +237,17 @@
     }
   }
 
-  function diagnose(result) {
+  function deeplinkDebugUiEnabled(ctx) {
+    if (ctx && ctx.debugUi === true) return true;
+    try {
+      const search = (ctx && ctx.search) || window.location.search || "";
+      return /(?:^|[?&])deeplink_debug=1(?:&|$)/.test(search);
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function diagnose(result, ctx) {
     try {
       console.info("[korpasset-deeplink]", result);
     } catch (error) {
@@ -248,6 +258,7 @@
     } catch (error) {
       /* ignore */
     }
+    if (!deeplinkDebugUiEnabled(ctx)) return;
     try {
       if (!document || typeof document.getElementById !== "function") return;
       let el = document.getElementById("deeplink-debug");
@@ -314,7 +325,7 @@
       const parsed = parseInviteUrl(rawUrl);
       if (!parsed) {
         result.earlyReturn = "unparsed";
-        diagnose(result);
+        diagnose(result, ctx);
         return result;
       }
       result.token = parsed.token;
@@ -323,16 +334,16 @@
       const path = currentPathFrom(ctx);
       if (!shouldNavigateToPending(path, parsed.token)) {
         result.earlyReturn = "already-on-invite";
-        diagnose(result);
+        diagnose(result, ctx);
         return result;
       }
-      diagnose(result);
+      diagnose(result, ctx);
       assignLocation(parsed.destination, ctx);
       return result;
     } catch (error) {
       result.error = error && error.message ? error.message : String(error);
       result.earlyReturn = "exception";
-      diagnose(result);
+      diagnose(result, ctx);
       return result;
     }
   }
@@ -455,6 +466,7 @@
     consumeIncomingUrl: consumeIncomingUrl,
     consumePendingIfNeeded: consumePendingIfNeeded,
     inviteDestination: inviteDestination,
+    deeplinkDebugUiEnabled: deeplinkDebugUiEnabled,
   };
 
   document.addEventListener("click", function (event) {

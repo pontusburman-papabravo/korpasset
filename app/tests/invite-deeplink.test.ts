@@ -27,6 +27,16 @@ type DeeplinkApi = {
     ctx?: HandlerCtx,
   ) => HandlerResult;
   consumePendingIfNeeded: (eventType: string, ctx?: HandlerCtx) => HandlerResult;
+  deeplinkDebugUiEnabled: (ctx?: HandlerCtx) => boolean;
+};
+
+type DebugEl = {
+  id: string;
+  hidden: boolean;
+  textContent: string;
+  className: string;
+  setAttribute: (name: string, value: string) => void;
+  appendChild: (child: DebugEl) => void;
 };
 
 type StorageLike = {
@@ -38,6 +48,8 @@ type StorageLike = {
 type HandlerCtx = {
   currentPath?: string;
   currentUrl?: string;
+  search?: string;
+  debugUi?: boolean;
   storage?: StorageLike;
   assign?: (url: string) => void;
 };
@@ -70,19 +82,28 @@ function memoryStore(): StorageLike {
 
 function loadNative(options: {
   pathname?: string;
+  search?: string;
   launchUrl?: string;
   pending?: string;
 } = {}) {
   const assigns: string[] = [];
+  const created: DebugEl[] = [];
   const store = memoryStore();
   if (options.pending) store.setItem("korpasset.pendingInvite", options.pending);
   const listeners: Record<string, (event: { url: string }) => void> = {};
   const pathname = options.pathname ?? "/app";
+  const search = options.search ?? "";
+  const body = {
+    children: [] as DebugEl[],
+    appendChild(child: DebugEl) {
+      this.children.push(child);
+    },
+  };
   const windowObj: Record<string, unknown> = {
     location: {
       pathname,
-      search: "",
-      href: `https://korpasset.se${pathname}`,
+      search,
+      href: `https://korpasset.se${pathname}${search}`,
       assign(url: string) {
         assigns.push(url);
       },
@@ -108,23 +129,26 @@ function loadNative(options: {
     URL,
     console,
     document: {
-      getElementById() {
-        return null;
+      getElementById(id: string) {
+        return created.find((el) => el.id === id) ?? null;
       },
       querySelector() {
         return null;
       },
       createElement() {
-        return {
-          className: "",
-          hidden: false,
+        const el: DebugEl = {
+          id: "",
+          hidden: true,
           textContent: "",
+          className: "",
           setAttribute() {},
           appendChild() {},
         };
+        created.push(el);
+        return el;
       },
       addEventListener() {},
-      body: null,
+      body,
     },
     window: windowObj,
   };
@@ -133,7 +157,12 @@ function loadNative(options: {
     assigns,
     store,
     listeners,
+    created,
+    body,
     deeplink: windowObj.KORPASSET_DEEPLINK as DeeplinkApi,
+    debugEl() {
+      return created.find((el) => el.id === "deeplink-debug") ?? null;
+    },
     async flush() {
       await new Promise((resolve) => setImmediate(resolve));
       await new Promise((resolve) => setImmediate(resolve));
@@ -275,6 +304,40 @@ describe("native invite deep-link handoff", () => {
     assert.equal(result.earlyReturn, "already-on-invite");
     assert.equal(result.pendingSaved, true);
     assert.deepEqual(assigns, []);
+  });
+
+  it("does not render visible debug UI on a normal invite handoff", async () => {
+    const page = loadNative({
+      pathname: "/app",
+      launchUrl: "korpasset://invite/coldToken",
+    });
+    await page.flush();
+    assert.deepEqual(page.assigns, ["/invite/coldToken"]);
+    assert.equal(page.debugEl(), null);
+    assert.equal(page.body.children.length, 0);
+    assert.equal(page.deeplink.deeplinkDebugUiEnabled(), false);
+    assert.equal(page.deeplink.deeplinkDebugUiEnabled({ search: "?foo=1" }), false);
+    assert.equal(
+      page.deeplink.deeplinkDebugUiEnabled({ search: "?deeplink_debug=10" }),
+      false,
+    );
+  });
+
+  it("renders deeplink diagnostics only when ?deeplink_debug=1 is set", async () => {
+    const page = loadNative({
+      pathname: "/app",
+      search: "?deeplink_debug=1",
+      launchUrl: "korpasset://invite/coldToken",
+    });
+    await page.flush();
+    assert.deepEqual(page.assigns, ["/invite/coldToken"]);
+    assert.equal(page.deeplink.deeplinkDebugUiEnabled(), true);
+    const panel = page.debugEl();
+    assert.ok(panel);
+    assert.equal(panel.hidden, false);
+    assert.match(panel.textContent, /cold start/);
+    assert.match(panel.textContent, /coldToken/);
+    assert.match(panel.textContent, /korpasset:\/\/invite\/coldToken/);
   });
 });
 
