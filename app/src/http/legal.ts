@@ -121,7 +121,7 @@ export function privacyPage(): string {
        <li>En intresseanmälan till betan raderas inte automatiskt med produktkontot.</li>
      </ul>
      <p>Interna produkthändelser kan fortfarande innehålla samma interna användar-id. De innehåller inte namn eller e-post.</p>
-     <p>Databasbackuper kan innehålla uppgifter en tid efter radering. Det finns för närvarande ingen automatisk rensning av backuper i tjänsten.</p>
+     <p>Säkerhetskopior av databasen kan innehålla personuppgifter en begränsad tid efter att de raderats i tjänsten. De används bara för att återställa tjänsten, inte för vanlig behandling. Hur länge kopiorna behålls är ännu inte fastställt som en automatisk rutin.</p>
 
      <h2>Cookies och lokal teknik</h2>
      <p>På Körpassets publika landningssida sätter vi inga cookies och gör inga tredjepartsanrop för typsnitt, analys eller reklam.</p>
