@@ -27,6 +27,12 @@
                 <data android:scheme="https" android:host="korpasset.se" android:pathPrefix="/onboarding" />
                 <data android:scheme="https" android:host="korpasset.se" android:path="/konto" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="korpasset" android:host="invite" android:pathPrefix="/" />
+            </intent-filter>
         </activity>
 
         <provider
