@@ -57,7 +57,12 @@ export const config = {
     return uniqueCsv(process.env.APPLE_CLIENT_ID, process.env.APPLE_CLIENT_IDS);
   },
   get googleAudiences() {
-    return uniqueCsv(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_IDS)
+    return uniqueCsv(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_IDS,
+      process.env.GOOGLE_WEB_CLIENT_ID,
+      process.env.GOOGLE_IOS_CLIENT_ID,
+    )
       .map((item) => sanitizePublicGoogleClientId(item))
       .filter(Boolean);
   },

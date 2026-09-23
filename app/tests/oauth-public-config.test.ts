@@ -86,6 +86,10 @@ describe("public Google OAuth client IDs", () => {
     const published = publicOAuthConfig();
     assert.equal(published.googleWebClientId, "123-web.apps.googleusercontent.com");
     assert.equal(published.googleIosClientId, "123-ios.apps.googleusercontent.com");
+    assert.deepEqual(config.googleAudiences, [
+      "123-web.apps.googleusercontent.com",
+      "123-ios.apps.googleusercontent.com",
+    ]);
   });
 
   it("omits placeholder IDs from /app KORPASSET_OAUTH", async () => {
