@@ -100,7 +100,7 @@ describe("HTTP happy path (two isolated sessions)", () => {
     });
     assert.equal(focusPage.statusCode, 200);
     assert.match(focusPage.body, /Vad tränar ni på idag/);
-    assert.match(focusPage.body, /[1-3] av 3 valda/);
+    assert.match(focusPage.body, /0 av 3 valda/);
 
     const driveCreate = await injectWithSession(app, studentCookies, {
       method: "POST",
