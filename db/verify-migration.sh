@@ -185,11 +185,15 @@ BEGIN
     VALUES ('33333333-3333-4333-8333-333333333333',
             'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
             '44444444-4444-4444-8444-444444444444',
-            'supervisor', 'needs_help');
-    RAISE EXCEPTION 'supervisor without observer_user_id should be rejected';
+            'external', 'needs_help');
+    RAISE EXCEPTION 'external without external_source_ref should be rejected';
   EXCEPTION WHEN check_violation THEN
     RAISE NOTICE 'observation source rule correctly enforced';
   END;
+
+  UPDATE drive_observations
+     SET observer_user_id = NULL
+   WHERE drive_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 END $$;
 SQL
 

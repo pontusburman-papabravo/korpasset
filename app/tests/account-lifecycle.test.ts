@@ -15,6 +15,8 @@ import { createJourneyForStudent } from "../src/services/journeys.js";
 import {
   deleteProductAccount,
 } from "../src/services/account-lifecycle.js";
+import { getLatestEndedDrive } from "../src/services/drives.js";
+import { recordProductEvent } from "../src/services/product-events.js";
 import { createTestApp } from "./helpers.js";
 import { formBody, injectWithSession } from "./http-helpers.js";
 import { resetDatabaseData } from "./setup.js";
@@ -88,16 +90,18 @@ describe("account lifecycle / tombstoning invariants", () => {
     assert.equal(observations.rows[0].count, 1);
   });
 
-  it("rejects SET NULL on supervisor observer_user_id because of source CHECK", async () => {
+  it("allows SET NULL on supervisor observer_user_id so history can be detached", async () => {
     const seeded = await seedRatedDrive();
-    await assert.rejects(
-      () =>
-        getPool().query(
-          `UPDATE drive_observations SET observer_user_id = NULL WHERE id = $1`,
-          [seeded.observationId],
-        ),
-      (error: Error) => /violates check constraint/i.test(error.message),
+    await getPool().query(
+      `UPDATE drive_observations SET observer_user_id = NULL WHERE id = $1`,
+      [seeded.observationId],
     );
+    const observation = await getPool().query(
+      `SELECT observer_user_id, assessment FROM drive_observations WHERE id = $1`,
+      [seeded.observationId],
+    );
+    assert.equal(observation.rows[0].observer_user_id, null);
+    assert.equal(observation.rows[0].assessment, "with_support");
   });
 
   it("tombstones a supervisor without deleting the student journey or ledger", async () => {
@@ -276,27 +280,81 @@ describe("account lifecycle / tombstoning invariants", () => {
     assert.equal(newUser.rows[0].account_state, "guest");
   });
 
-  it("deleteProductAccount tombstones a supervisor without dropping the student ledger", async () => {
+  it("deleteProductAccount unlinks a supervisor without dropping the student ledger", async () => {
     const seeded = await seedRatedDrive();
+    await recordProductEvent({
+      name: "drive_completed",
+      journeyId: seeded.journeyId,
+      userId: seeded.supervisorId,
+      actorRole: "supervisor",
+    });
 
     const summary = await deleteProductAccount(seeded.supervisorId);
     assert.equal(summary.deleted.authIdentities, 1);
     assert.equal(summary.deleted.studentJourneys, 0);
     assert.equal(summary.tombstoned.userRow, true);
-    assert.ok(summary.retained.historicalObservationAttributions >= 1);
+    assert.ok(summary.unlinked.historicalObservationAttributions >= 1);
+    assert.equal(summary.retained.studentHistoryPreserved, true);
+    assert.ok(summary.unlinked.productEvents >= 1);
 
     const user = await getPool().query(
-      `SELECT account_state, display_name FROM users WHERE id = $1`,
+      `SELECT account_state, display_name, contact_email FROM users WHERE id = $1`,
       [seeded.supervisorId],
     );
     assert.equal(user.rows[0].account_state, "deleted");
     assert.equal(user.rows[0].display_name, null);
+    assert.equal(user.rows[0].contact_email, null);
     assert.equal((await listAccessibleActiveJourneys(seeded.supervisorId)).length, 0);
     assert.ok(await getJourneyAccess(seeded.journeyId, seeded.studentId));
+
+    const observation = await getPool().query(
+      `SELECT observer_user_id, assessment FROM drive_observations WHERE id = $1`,
+      [seeded.observationId],
+    );
+    assert.equal(observation.rows[0].observer_user_id, null);
+    assert.equal(observation.rows[0].assessment, "with_support");
+
+    const drive = await getPool().query(
+      `SELECT supervisor_user_id, started_by_user_id FROM drives WHERE id = $1`,
+      [seeded.driveId],
+    );
+    assert.equal(drive.rows[0].supervisor_user_id, null);
+    assert.equal(drive.rows[0].started_by_user_id, seeded.studentId);
+
+    const collab = await getPool().query(
+      `SELECT count(*)::int AS n FROM journey_collaborators WHERE user_id = $1`,
+      [seeded.supervisorId],
+    );
+    assert.equal(collab.rows[0].n, 0);
+
+    const events = await getPool().query(
+      `SELECT count(*)::int AS n FROM product_events WHERE user_id = $1`,
+      [seeded.supervisorId],
+    );
+    assert.equal(events.rows[0].n, 0);
+
+    const identities = await getPool().query(
+      `SELECT count(*)::int AS n FROM auth_identities WHERE user_id = $1`,
+      [seeded.supervisorId],
+    );
+    assert.equal(identities.rows[0].n, 0);
+
+    const latest = await getLatestEndedDrive(seeded.journeyId);
+    assert.ok(latest);
+    assert.equal(latest.id, seeded.driveId);
+    assert.equal(latest.supervisorUserId, null);
+    assert.equal(latest.supervisorLabel, "Tidigare handledare");
+    assert.equal(latest.rated, true);
   });
 
   it("deleteProductAccount deletes the student-owned journey but never hard-deletes the user row", async () => {
     const seeded = await seedRatedDrive();
+    await recordProductEvent({
+      name: "journey_created",
+      journeyId: seeded.journeyId,
+      userId: seeded.studentId,
+      actorRole: "student",
+    });
     const summary = await deleteProductAccount(seeded.studentId);
     assert.equal(summary.deleted.studentJourneys, 1);
     assert.ok(summary.deleted.studentDrives >= 1);
@@ -313,5 +371,12 @@ describe("account lifecycle / tombstoning invariants", () => {
       [seeded.journeyId],
     );
     assert.equal(journey.rows[0].n, 0);
+
+    const events = await getPool().query(
+      `SELECT count(*)::int AS n FROM product_events WHERE user_id = $1`,
+      [seeded.studentId],
+    );
+    assert.equal(events.rows[0].n, 0);
+    assert.ok(summary.unlinked.productEvents >= 1);
   });
 });

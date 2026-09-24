@@ -116,11 +116,11 @@ export function privacyPage(): string {
        <li>Inloggningskopplingar till Apple och Google tas bort. Du kan inte logga in på samma konto igen.</li>
        <li>Sessionen på den enhet där du raderar rensas. På andra enheter slutar den gamla sessionen gälla nästa gång tjänsten läser kontot, eftersom kontot är markerat som raderat.</li>
        <li>Om du är elev raderas din körkortsresa med körpass, observationer, träningsfokus och inbjudningar.</li>
-       <li>Om du är handledare tas din åtkomst till andras resor bort. Körpass och observationer som hör till elevens resa behålls, utan ditt namn. Kvarvarande koppling är ett internt användar-id som inte går att logga in med.</li>
+       <li>Om du är handledare tas din åtkomst till andras resor bort. Körpass och observationer som hör till elevens resa behålls, utan ditt namn och utan koppling till ditt konto.</li>
        <li>Själva användarraden raderas inte ur databasen. Kontot markeras som raderat.</li>
        <li>En intresseanmälan till betan raderas inte automatiskt med produktkontot.</li>
      </ul>
-     <p>Interna produkthändelser kan fortfarande innehålla samma interna användar-id. De innehåller inte namn eller e-post.</p>
+     <p>Interna produkthändelser kopplas loss från ditt användar-id. De behåller inte en koppling som går att följa tillbaka till kontot.</p>
      <p>Säkerhetskopior av databasen kan innehålla personuppgifter en begränsad tid efter att de raderats i tjänsten. De används bara för att återställa tjänsten, inte för vanlig behandling. Hur länge kopiorna behålls är ännu inte fastställt som en automatisk rutin.</p>
 
      <h2>Cookies och lokal teknik</h2>
@@ -311,7 +311,7 @@ export function accountDeletionPage(): string {
 
      <h2>Vad som behålls</h2>
      <ul>
-       <li>Om du är handledare behålls observationer och körpass på elevens resa, utan ditt namn, så att eleven inte förlorar sin historik. Kvarvarande koppling är ett internt användar-id som inte går att logga in med.</li>
+       <li>Om du är handledare behålls observationer och körpass på elevens resa, utan ditt namn och utan koppling till ditt konto, så att eleven inte förlorar sin historik.</li>
        <li>Intresseanmälan till betan (namn och e-post på korpasset.se) raderas inte automatiskt med produktkontot. Begär det i samma mejl om du vill att den också ska tas bort. Intresseanmälningar raderas senast 18 månader efter anmälan.</li>
      </ul>
 

@@ -398,7 +398,7 @@ describe("admin MVP v1", () => {
       `SELECT observer_user_id, note FROM drive_observations WHERE drive_id = $1`,
       [seeded.firstDriveId],
     );
-    assert.equal(observation.rows[0].observer_user_id, seeded.supervisorId);
+    assert.equal(observation.rows[0].observer_user_id, null);
     assert.equal(observation.rows[0].note, "privat anteckning");
 
     const audit = await getPool().query(
@@ -407,7 +407,7 @@ describe("admin MVP v1", () => {
     assert.equal(audit.rows[0].operation, "gdpr_delete_account");
     assert.equal(audit.rows[0].target_id, seeded.supervisorId);
     assert.match(audit.rows[0].summary, /waitlist_orörd=true/);
-    assert.match(audit.rows[0].summary, /user_id_pseudonymiserad=true/);
+    assert.match(audit.rows[0].summary, /historik_frikopplad=true/);
 
     const tombstoneView = await app.inject({
       method: "GET",

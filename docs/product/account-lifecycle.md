@@ -26,7 +26,7 @@ Waitlist (`interest_signups`) och `/admin` är andra universum.
 | `guest` | Actor utan Apple/Google. Skapas vid QR/länk så handledaren kan delta direkt. | Ja, på resor hen redan har access till | Nej |
 | `active` | Apple eller Google är kopplat. Samma knapp är återkommande inloggning. | Ja | Ja |
 | `suspended` | Kontot är avstängt. Identiteter får ligga kvar. | Nej | Ja, men låst |
-| `deleted` | Tombstone. Identiteter borta, `display_name` nollad, `user_id` kvar i historik. | Nej | Nej |
+| `deleted` | Tombstone. Identiteter borta, `display_name` nollad. Historik på andras resor frikopplad. | Nej | Nej |
 
 ```text
 guest
@@ -102,7 +102,7 @@ Om identity redan sitter på en **annan** user: **409**. Ingen merge. Ingen tyst
 | --- | --- |
 | Logga ut | Cookie rensas. User och identities kvar. |
 | Ändra visningsnamn | Bara `users.display_name`. Inte identity, inte resa. |
-| Radera konto i appen | Se [kravspec §10.2](../kravspec.md#102-kontoradering-och-data-lifecycle-tombstoning): identiteter bort, namn nollat, `deleted`, elevresor CASCADE, handledare tombstone med kvarvarande `user_id` i historik. Waitlist orörd. |
+| Radera konto i appen | Se [kravspec §10.2](../kravspec.md#102-kontoradering-och-data-lifecycle-tombstoning): identiteter bort, namn nollat, `deleted`, elevresor CASCADE. Handledarhistorik på andras resor behålls men frikopplas från `users`. Waitlist orörd. |
 | Radera via webben (`/radera-konto`) | Supportväg när appen inte finns. Samma tombstone. |
 
 Efter radering: ny Apple/Google-inloggning är ett nytt konto, inte recovery av den tombstonade `user_id`.
