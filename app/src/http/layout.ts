@@ -1,4 +1,5 @@
 import { config } from "../config.js";
+import { consentBody, consentHead } from "./consent.js";
 import { jsonLdScript, SITE_DESCRIPTION, SITE_NAME, SITE_THEME_COLOR } from "./seo.js";
 
 export const BRAND_ASSETS = {
@@ -69,6 +70,7 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
   <meta name="robots" content="noindex, nofollow">
   ${faviconLink()}
   <link rel="stylesheet" href="/app.css">
+  ${consentHead()}
 </head>
 <body class="app">
   <header class="app-bar">
@@ -115,6 +117,7 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
   </script>
   <script>window.KORPASSET_OAUTH = ${JSON.stringify(publicOAuthConfig())};</script>
   <script src="/app-oauth.js" defer></script>
+  ${consentBody()}
 </body>
 </html>`;
 }
@@ -151,6 +154,8 @@ export function siteLayout(
     documentTitle?: string;
     robots?: string;
     jsonLd?: unknown;
+    /** Admin pages stay free of the public cookie banner and analytics tag. */
+    consent?: boolean;
   } = {},
 ): string {
   const description = options.description ?? SITE_DESCRIPTION;
@@ -162,6 +167,8 @@ export function siteLayout(
   const imageUrl = publicUrl(BRAND_ASSETS.ogImage);
   const robots = options.robots ?? "index, follow";
   const structuredData = options.jsonLd ? `\n  ${jsonLdScript(options.jsonLd)}` : "";
+  const consent = options.consent === false ? "" : `\n  ${consentHead()}`;
+  const consentMarkup = options.consent === false ? "" : `\n  ${consentBody()}`;
 
   return `<!DOCTYPE html>
 <html lang="sv">
@@ -192,10 +199,11 @@ export function siteLayout(
   <meta name="twitter:description" content="${escapeHtml(description)}">
   <meta name="twitter:image" content="${escapeHtml(imageUrl)}">
   <link rel="stylesheet" href="/landing.css">
-  ${extraCss}${structuredData}
+  ${extraCss}${structuredData}${consent}
 </head>
 <body class="site">
   ${body}
+  ${consentMarkup}
 </body>
 </html>`;
 }

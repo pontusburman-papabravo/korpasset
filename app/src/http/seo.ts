@@ -29,6 +29,11 @@ export const PUBLIC_INDEX_PAGES = [
     changefreq: "yearly",
   },
   {
+    path: "/cookies",
+    priority: "0.4",
+    changefreq: "yearly",
+  },
+  {
     path: "/villkor",
     priority: "0.4",
     changefreq: "yearly",

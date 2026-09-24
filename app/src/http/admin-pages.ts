@@ -80,8 +80,8 @@ export function adminPage(
       variant: "admin",
       signedIn: options.signedIn,
       adminNav: options.signedIn ? options.nav : undefined,
-    })}${body}${siteFooter()}`,
-    { robots: "noindex, nofollow", path: "/admin" },
+    })}${body}${siteFooter({ consent: false })}`,
+    { robots: "noindex, nofollow", path: "/admin", consent: false },
   );
 }
 
