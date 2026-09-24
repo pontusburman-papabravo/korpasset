@@ -38,7 +38,10 @@ describe("native shell and deep links", () => {
     setEnv("APPLE_TEAM_ID", "TEAM123");
     setEnv("APPLE_BUNDLE_ID", "se.korpasset.app");
     setEnv("ANDROID_PACKAGE_NAME", "se.korpasset.app");
-    setEnv("ANDROID_SHA256_CERT_FINGERPRINTS", "AA:BB:CC");
+    setEnv(
+      "ANDROID_SHA256_CERT_FINGERPRINTS",
+      "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99",
+    );
   });
 
   afterEach(() => {
@@ -65,6 +68,15 @@ describe("native shell and deep links", () => {
       "/onboarding",
       "/konto",
     ]);
+    assert.deepEqual(
+      (body.applinks.details[0] as { components: Array<Record<string, string>> }).components,
+      [
+        { "/": "/invite/*" },
+        { "/": "/app" },
+        { "/": "/onboarding" },
+        { "/": "/konto" },
+      ],
+    );
     assert.deepEqual(body.webcredentials.apps, ["TEAM123.se.korpasset.app"]);
     await app.close();
   });
@@ -82,7 +94,9 @@ describe("native shell and deep links", () => {
     }>;
     assert.equal(body.length, 1);
     assert.equal(body[0].target.package_name, "se.korpasset.app");
-    assert.deepEqual(body[0].target.sha256_cert_fingerprints, ["AA:BB:CC"]);
+    assert.deepEqual(body[0].target.sha256_cert_fingerprints, [
+      "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99",
+    ]);
     await app.close();
   });
 

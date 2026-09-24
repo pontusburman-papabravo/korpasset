@@ -382,8 +382,6 @@
     panel.hidden = false;
     const link = document.getElementById("invite-open-app-link");
     if (link) link.setAttribute("href", "korpasset://invite/" + match[1]);
-    const form = document.querySelector('form[action^="/invite/"]');
-    if (form) form.hidden = true;
   }
 
   function prepareNativeInviteLogin() {

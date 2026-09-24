@@ -369,7 +369,7 @@ utan dubbletter. `archived`/`completed` räknas inte. Collaborator-access i v1 �
 | --- | --- |
 | ID | FR-10 |
 | Aktör | Handledare |
-| Status | Specificerat, auth-providers inte byggda |
+| Status | Implementerat. Samma `user_id` behålls när Apple eller Google claimas. Enhetsverifierat för inloggning i den riktiga appen. Inte verifierat som TestFlight- eller Play-uppladdning. |
 | Beskrivning | Guest kan senare claima Apple eller Google i appen utan att byta `user_id`. |
 | Undantag | Claim av identity som redan hör till annan user är ett separat reconciliation-fall och ingår inte i första vertical slice. |
 
@@ -379,7 +379,7 @@ utan dubbletter. `archived`/`completed` räknas inte. Collaborator-access i v1 �
 | --- | --- |
 | ID | FR-11 |
 | Aktör | Elev eller handledare |
-| Status | Specificerat, inte byggt |
+| Status | Implementerat. Första lyckade Apple- eller Google-inloggningen skapar kontot. Samma provider-identitet loggar in samma user. Enhetsverifierat i den riktiga appen. Butiksuppladdning är inte verifierad. |
 | Beskrivning | Det finns ingen separat registrering och inget val av roll. Första lyckade Sign in with Apple eller Sign in with Google i appen skapar `users` (`account_state = active`) och en rad i `auth_identities`. Samma knapp är återkommande inloggning. Roll uppstår när personen skapar en resa (elev) eller accepterar en inbjudan (handledare). |
 | Identitet | `provider_subject` är Apple respektive Google `sub`. E-post är inte nyckel och används inte för auto-merge. |
 | Kanal | Bara iOS- och Android-appen. `korpasset.se` skapar inte produktkonton (intresseanmälan är waitlist, inte signup). |

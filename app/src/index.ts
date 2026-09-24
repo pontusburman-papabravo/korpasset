@@ -36,6 +36,11 @@ async function main(): Promise<void> {
         "GOOGLE_IOS_CLIENT_ID saknas eller är ogiltig — Google-inloggning på iPhone är avstängd",
       );
     }
+    if (config.androidSha256CertFingerprints.length === 0) {
+      app.log.warn(
+        "ANDROID_SHA256_CERT_FINGERPRINTS saknas — assetlinks.json är tom och Android App Links verifieras inte",
+      );
+    }
   }
   startWaitlistRetentionJob(app.log);
   app.log.info(

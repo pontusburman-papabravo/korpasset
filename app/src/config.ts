@@ -81,7 +81,7 @@ export const config = {
     return env("ANDROID_PACKAGE_NAME", config.appleBundleId);
   },
   get androidSha256CertFingerprints() {
-    return uniqueCsv(process.env.ANDROID_SHA256_CERT_FINGERPRINTS);
+    return sanitizeSha256Fingerprints(process.env.ANDROID_SHA256_CERT_FINGERPRINTS);
   },
   isOAuthConfigured(provider: "apple" | "google"): boolean {
     return provider === "apple"
@@ -149,6 +149,28 @@ export function assertProductionConfig(): void {
       "APP_BASE_URL must be https in production (ALLOW_HTTP=true is only for local prod-like runs)",
     );
   }
+
+  const oauthMissing: string[] = [];
+  if (!config.appleTeamId) oauthMissing.push("APPLE_TEAM_ID");
+  if (config.appleAudiences.length === 0) {
+    oauthMissing.push("APPLE_CLIENT_ID or APPLE_CLIENT_IDS");
+  }
+  if (config.googleAudiences.length === 0) {
+    oauthMissing.push("GOOGLE_CLIENT_ID, GOOGLE_CLIENT_IDS, or GOOGLE_WEB_CLIENT_ID");
+  }
+  if (!config.googleIosClientId) oauthMissing.push("GOOGLE_IOS_CLIENT_ID");
+  if (oauthMissing.length > 0) {
+    throw new Error(
+      `Production requires ${oauthMissing.join(", ")} (product login must not 503)`,
+    );
+  }
+}
+
+/** Play App Signing fingerprints only. Drops placeholders and malformed values. */
+export function sanitizeSha256Fingerprints(value: string | undefined): string[] {
+  return uniqueCsv(value)
+    .map((item) => item.toUpperCase())
+    .filter((item) => /^(?:[0-9A-F]{2}:){31}[0-9A-F]{2}$/.test(item));
 }
 
 export const productionDefaults = {

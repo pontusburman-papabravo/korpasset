@@ -33,6 +33,12 @@ export function appleAppSiteAssociation(): object {
         {
           appID: appId,
           paths: ["/invite/*", "/app", "/onboarding", "/konto"],
+          components: [
+            { "/": "/invite/*" },
+            { "/": "/app" },
+            { "/": "/onboarding" },
+            { "/": "/konto" },
+          ],
         },
       ],
     },
@@ -77,6 +83,7 @@ async function continueFromToken(
   }
 
   if (!config.isOAuthConfigured(provider)) {
+    request.log.error({ oauth: provider }, "oauth not configured");
     reply.status(503).send({ error: "Inloggning är inte konfigurerad ännu." });
     return;
   }
@@ -157,12 +164,16 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
       await continueFromToken(request, reply, provider);
     } catch (error) {
       if (error instanceof AppError) {
+        request.log.warn(
+          { oauth: provider, code: error.code, status: error.statusCode },
+          "oauth failed",
+        );
         return reply.status(error.statusCode).send({
           error: error.message,
           code: error.code,
         });
       }
-      request.log.error({ err: error }, "oauth continue failed");
+      request.log.error({ err: error, oauth: provider }, "oauth continue failed");
       return reply.status(500).send({ error: "Something went wrong" });
     }
   });
