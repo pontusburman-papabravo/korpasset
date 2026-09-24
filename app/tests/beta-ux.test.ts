@@ -465,8 +465,16 @@ describe("beta UX HTTP", () => {
         message: "Kunde inte välja dagens fokus.",
       }),
     });
-    assert.equal(posted.statusCode, 200);
-    assert.match(posted.body, /Tack — vi har tagit emot det/);
+    assert.equal(posted.statusCode, 303);
+    assert.equal(posted.headers.location, "/mer?skickat=1");
+    assert.doesNotMatch(posted.body, /Tack — vi har tagit emot det/);
+    const thanks = await injectWithSession(app, session(userId), {
+      method: "GET",
+      url: "/mer?skickat=1",
+    });
+    assert.equal(thanks.statusCode, 200);
+    assert.match(thanks.body, /Tack — vi har tagit emot det/);
+    assert.match(thanks.body, /href="\/hjalp"/);
     assert.equal(sent.length, 1);
     assert.match(sent[0].subject, /Välja dagens fokus/);
     assert.match(sent[0].text, new RegExp(userId));

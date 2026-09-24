@@ -103,6 +103,7 @@ import {
 } from "./handoff-context.js";
 import { supervisorGuideForSkillKey } from "../domain/supervisor-guide.js";
 import { renderLandingPage } from "./landing.js";
+import { isFeedbackSentQuery } from "./help.js";
 import {
   coachingStepsForSkillKey,
   parseFormStringList,
@@ -373,6 +374,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         renderMorePage({
           identity,
           journeyCount: journeys.length,
+          sentNotice: isFeedbackSentQuery(request.query),
         }),
         {
           journeyId: resolved?.journey.id,

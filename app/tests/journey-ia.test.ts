@@ -12,6 +12,7 @@ import {
   createInvitation,
 } from "../src/services/invitations.js";
 import { createJourneyForStudent } from "../src/services/journeys.js";
+import { resetRateLimitsForTests } from "../src/http/rate-limit.js";
 import {
   getActiveNextDrivePlan,
   saveNextDrivePlan,
@@ -387,6 +388,51 @@ describe("four-tab IA and journey context", () => {
       writers[0] === studentId ? "Ella" : "Pappa",
     );
     assert.ok(plan.skills.every((skill) => union.has(skill.skillId)));
+  });
+
+  it("redirects help submit to Mer so back is a GET, not a POST document", async () => {
+    resetRateLimitsForTests();
+    const { userId } = await createJourneyForStudent("Ella");
+    const app = await createTestApp();
+    const posted = await injectWithSession(app, session(userId), {
+      method: "POST",
+      url: "/hjalp",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({
+        topic: "other",
+        message: "Vit sida efter tillbaka från hjälp.",
+      }),
+    });
+    assert.equal(posted.statusCode, 303);
+    assert.equal(posted.headers.location, "/mer?skickat=1");
+
+    const mer = await injectWithSession(app, session(userId), {
+      method: "GET",
+      url: String(posted.headers.location),
+    });
+    assert.equal(mer.statusCode, 200);
+    assert.match(mer.body, /Tack — vi har tagit emot det/);
+    assert.match(mer.body, /Min körkortsresa/);
+    assert.match(mer.body, /href="\/hjalp"/);
+
+    const anonymous = await app.inject({
+      method: "POST",
+      url: "/hjalp",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({
+        topic: "other",
+        message: "Feedback utan inloggning.",
+      }),
+    });
+    assert.equal(anonymous.statusCode, 303);
+    assert.equal(anonymous.headers.location, "/hjalp?skickat=1");
+    const anonymousThanks = await app.inject({
+      method: "GET",
+      url: String(anonymous.headers.location),
+    });
+    assert.match(anonymousThanks.body, /Tack — vi har tagit emot det/);
+    assert.match(anonymousThanks.body, /href="\/app"/);
+    await app.close();
   });
 
   it("sets aria-current on the active tab", async () => {
