@@ -15,7 +15,7 @@ Fyra nivåer som inte får blandas:
 | Roll | Uppstår per `driving_journey` (elev eller handledare). | Inte valt vid registrering. |
 | Entitlement | Tillhör resan. | Aldrig kontot. Inget Premium-konto. |
 
-Waitlist (`interest_signups`) och `/admin` är andra universum.
+Waitlist (`interest_signups`) och `/admin` är andra universum. Waitlist-rader raderas automatiskt senast 18 månader efter anmälan; produktkontoradering rör dem inte.
 
 ## 1. Account state
 

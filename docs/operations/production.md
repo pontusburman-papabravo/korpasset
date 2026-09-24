@@ -118,6 +118,7 @@ Startsekvens i containern:
 2. `applyMigrations` (idempotent)
 3. taxonomy seed (idempotent)
 4. lyssna på `0.0.0.0:$PORT`
+5. starta waitlist-retention (raderar `interest_signups` äldre än 18 månader, vid boot och därefter en gång per dygn)
 
 Manuell migrate utan att starta appen (dev):
 
