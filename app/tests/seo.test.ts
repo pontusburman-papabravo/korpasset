@@ -95,7 +95,7 @@ describe("public SEO files and metadata", () => {
     assert.match(contact.body, /körkortstillstånd/);
     assert.match(contact.body, /handledare under övningskörningen/);
     assert.match(terms.body, /privat övningskörning/);
-    assert.match(terms.body, /träna inför körkort/);
+    assert.match(terms.body, /träna vidare/);
     assert.match(terms.body, /uppkörning/);
     await app.close();
   });
