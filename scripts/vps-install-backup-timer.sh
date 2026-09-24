@@ -24,18 +24,17 @@ mkdir -p "$BACKUP_DIR"
 chown "$APP_USER:$APP_USER" "$BACKUP_DIR"
 chmod 700 "$BACKUP_DIR"
 
-for src in /home/deploy/korpasset-backups /var/www/korpasset/backups; do
-  if [[ -d "$src" ]]; then
-    find "$src" -maxdepth 1 -type f -name 'korpasset-*.dump' \
-      -exec mv -n {} "$BACKUP_DIR/" \;
-  fi
-done
-
 install -m 644 "$APP_PATH/deploy/korpasset-backup.service" /etc/systemd/system/korpasset-backup.service
 install -m 644 "$APP_PATH/deploy/korpasset-backup.timer" /etc/systemd/system/korpasset-backup.timer
 systemctl daemon-reload
 systemctl enable --now korpasset-backup.timer
 systemctl is-active --quiet korpasset-backup.timer
+
+# Always adopt leftover dumps and prune. Do this even if today's dump
+# already exists, otherwise copies ≥14 days can survive until 03:17 UTC.
+sudo -u "$APP_USER" -- \
+  env VPS_APP_PATH="$APP_PATH" KORPASSET_BACKUP_DIR="$BACKUP_DIR" \
+  "$APP_PATH/scripts/vps-backup.sh" --adopt-legacy
 
 today_prefix="$(date -u +%Y%m%d)"
 if ! compgen -G "$BACKUP_DIR/korpasset-${today_prefix}"*.dump >/dev/null; then

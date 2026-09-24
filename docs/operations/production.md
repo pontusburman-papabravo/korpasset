@@ -143,8 +143,10 @@ Inga hemligheter, invitation-tokens eller personnamn ska läggas till i loggar.
 Produktion tar en dump **varje dygn** (`korpasset-backup.timer`, 03:17 UTC) till
 `/var/backups/korpasset`. Kopior som är **14 dagar gamla eller äldre** raderas
 automatiskt. De används bara för att återställa tjänsten, inte för vanlig
-behandling. Deploy (`scripts/vps-deploy-revision.sh`) installerar timern och
-tar en första dump om dagens fil saknas.
+behandling. Deploy (`scripts/vps-deploy-revision.sh`) installerar timern,
+flyttar ev. äldre dumpar till den katalogen och **gallrar alltid**, även om
+dagens dump redan finns. En ny dump skapas bara om dagens fil saknas.
+`korpasset-*.dump` utan canonical tidsstämpel bedöms på filens mtime.
 
 Ta också en manuell dump **före** migrate som ändrar schema:
 

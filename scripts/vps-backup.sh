@@ -6,19 +6,43 @@ set -euo pipefail
 BACKUP_RETENTION_DAYS=14
 APP_PATH="${VPS_APP_PATH:-/var/www/korpasset}"
 BACKUP_DIR="${KORPASSET_BACKUP_DIR:-/var/backups/korpasset}"
+LEGACY_BACKUP_DIRS="${KORPASSET_LEGACY_BACKUP_DIRS:-/home/deploy/korpasset-backups:/var/www/korpasset/backups}"
 COMPOSE=(docker compose --project-directory "$APP_PATH/deploy" -f "$APP_PATH/deploy/docker-compose.yml")
 
 usage() {
-  echo "Usage: $0 [--prune-only]" >&2
+  echo "Usage: $0 [--prune-only|--adopt-legacy]" >&2
   exit 2
 }
 
-PRUNE_ONLY=0
+MODE="backup"
 if [[ "${1:-}" == "--prune-only" ]]; then
-  PRUNE_ONLY=1
+  MODE="prune"
+elif [[ "${1:-}" == "--adopt-legacy" ]]; then
+  MODE="adopt"
 elif [[ -n "${1:-}" ]]; then
   usage
 fi
+
+file_mtime_stamp() {
+  date -u -d "@$(stat -c %Y "$1")" +%Y%m%dT%H%M%SZ
+}
+
+adopt_legacy_backups() {
+  local dest="$1"
+  local src moved=0
+  IFS=':' read -r -a sources <<< "$LEGACY_BACKUP_DIRS"
+  for src in "${sources[@]}"; do
+    [[ -n "$src" && -d "$src" ]] || continue
+    [[ "$src" == "$dest" ]] && continue
+    shopt -s nullglob
+    local file
+    for file in "$src"/korpasset-*.dump; do
+      mv -n "$file" "$dest/"
+      moved=$((moved + 1))
+    done
+  done
+  echo "backup adopt moved=$moved"
+}
 
 prune_expired_backups() {
   local dir="$1"
@@ -31,8 +55,7 @@ prune_expired_backups() {
     stamp="${stamp#korpasset-}"
     stamp="${stamp%.dump}"
     if [[ ! "$stamp" =~ ^[0-9]{8}T[0-9]{6}Z$ ]]; then
-      echo "skipping unrecognized backup name $(basename "$file")" >&2
-      continue
+      stamp="$(file_mtime_stamp "$file")"
     fi
     if [[ "$stamp" < "$cutoff" || "$stamp" == "$cutoff" ]]; then
       rm -f "$file"
@@ -47,7 +70,13 @@ prune_expired_backups() {
 mkdir -p "$BACKUP_DIR"
 chmod 700 "$BACKUP_DIR" 2>/dev/null || true
 
-if [[ "$PRUNE_ONLY" -eq 1 ]]; then
+if [[ "$MODE" == "adopt" ]]; then
+  adopt_legacy_backups "$BACKUP_DIR"
+  prune_expired_backups "$BACKUP_DIR"
+  exit 0
+fi
+
+if [[ "$MODE" == "prune" ]]; then
   prune_expired_backups "$BACKUP_DIR"
   exit 0
 fi

@@ -28,6 +28,21 @@ async function prune(dir: string): Promise<string> {
   return `${result.stdout}${result.stderr}`;
 }
 
+async function adoptLegacy(dir: string, legacyDirs: string[]): Promise<string> {
+  const result = await execFileAsync("bash", [SCRIPT, "--adopt-legacy"], {
+    env: {
+      ...process.env,
+      KORPASSET_BACKUP_DIR: dir,
+      KORPASSET_LEGACY_BACKUP_DIRS: legacyDirs.join(":"),
+    },
+  });
+  return `${result.stdout}${result.stderr}`;
+}
+
+async function touchDaysAgo(path: string, days: number): Promise<void> {
+  await execFileAsync("touch", ["-d", `${days} days ago`, path]);
+}
+
 describe("backup 14-day retention", () => {
   it("deletes dumps that are 14 days old or older and keeps younger ones", async () => {
     const dir = await mkdtemp(join(tmpdir(), "korpasset-backups-"));
@@ -58,6 +73,38 @@ describe("backup 14-day retention", () => {
       assert.match(second, /kept=2/);
     } finally {
       await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("prunes expired dumps on install even when today's dump already exists", async () => {
+    const dest = await mkdtemp(join(tmpdir(), "korpasset-backups-dest-"));
+    const legacy = await mkdtemp(join(tmpdir(), "korpasset-backups-legacy-"));
+    try {
+      const today = `korpasset-${stampDaysAgo(0)}.dump`;
+      const expired = `korpasset-${stampDaysAgo(14)}.dump`;
+      const oddOld = "korpasset-legacy-pre-canonical.dump";
+      const oddYoung = "korpasset-manual.dump";
+      await writeFile(join(dest, today), "today");
+      await writeFile(join(legacy, expired), "expired-canonical");
+      await writeFile(join(dest, oddOld), "expired-odd");
+      await writeFile(join(dest, oddYoung), "young-odd");
+      await touchDaysAgo(join(dest, oddOld), 20);
+      await touchDaysAgo(join(dest, oddYoung), 2);
+
+      const output = await adoptLegacy(dest, [legacy]);
+      assert.match(output, /moved=1/);
+      assert.match(output, /deleted=2/);
+      assert.match(output, /kept=2/);
+
+      const remaining = new Set(await readdir(dest));
+      assert.equal(remaining.has(today), true);
+      assert.equal(remaining.has(oddYoung), true);
+      assert.equal(remaining.has(expired), false);
+      assert.equal(remaining.has(oddOld), false);
+      assert.deepEqual(await readdir(legacy), []);
+    } finally {
+      await rm(dest, { recursive: true, force: true });
+      await rm(legacy, { recursive: true, force: true });
     }
   });
 });
