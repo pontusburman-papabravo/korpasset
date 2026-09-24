@@ -73,7 +73,7 @@ describe("cookie consent", () => {
 
   it("wires the production GA4 id through Compose without putting the tag in the HTML", () => {
     const compose = fs.readFileSync(new URL("../../deploy/docker-compose.yml", import.meta.url), "utf8");
-    assert.match(compose, /GA_MEASUREMENT_ID: \$\{GA_MEASUREMENT_ID:-G-7YNVJ8F9EL\}/);
+    assert.match(compose, /GA_MEASUREMENT_ID: \$\{GA_MEASUREMENT_ID:-G-H275WSBLJ8\}/);
   });
 
   it("allows the Google tag to run after consent without opening the rest of the web", () => {
