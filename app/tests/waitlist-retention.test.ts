@@ -162,7 +162,7 @@ describe("waitlist retention legal copy", () => {
     const deletion = await app.inject({ method: "GET", url: "/radera-konto" });
 
     assert.match(privacy.body, /automatiskt jobb/);
-    assert.match(privacy.body, /äldre än 18 månader/);
+    assert.match(privacy.body, /18 månader gamla eller äldre/);
     assert.doesNotMatch(privacy.body, /inget automatiskt retention-jobb/);
     assert.doesNotMatch(privacy.body, /sker denna radering manuellt/);
     assert.match(privacy.body, /intresseanmälan till betan raderas inte automatiskt/i);

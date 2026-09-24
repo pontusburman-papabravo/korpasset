@@ -210,6 +210,11 @@ if [[ "$ok" -ne 1 ]]; then
   exit 1
 fi
 
+if [[ -x "$APP_PATH/scripts/vps-install-backup-timer.sh" ]]; then
+  log "Daglig databasbackup (14 dagar)"
+  VPS_APP_PATH="$APP_PATH" VPS_USER="$APP_USER" bash "$APP_PATH/scripts/vps-install-backup-timer.sh"
+fi
+
 if [[ -n "${GH_TOKEN:-}" ]]; then
   log "Sätter GitHub environment vps"
   if ! command -v gh >/dev/null 2>&1; then

@@ -30,6 +30,8 @@ require_tree_path() {
 require_tree_path deploy/docker-compose.yml
 require_tree_path deploy/Dockerfile
 require_tree_path scripts/vps-deploy-revision.sh
+require_tree_path scripts/vps-backup.sh
+require_tree_path scripts/vps-install-backup-timer.sh
 
 # Never print values. Empty or missing keys fail the deploy.
 require_env_nonempty() {
@@ -76,6 +78,7 @@ COMPOSE=(docker compose --project-directory "$APP_PATH/deploy" -f "$APP_PATH/dep
 
 for _ in $(seq 1 45); do
   if curl -fsS http://127.0.0.1:3000/health >/dev/null; then
+    bash "$APP_PATH/scripts/vps-install-backup-timer.sh"
     echo "Deployed $DEPLOY_SHA"
     exit 0
   fi

@@ -118,7 +118,7 @@ Startsekvens i containern:
 2. `applyMigrations` (idempotent)
 3. taxonomy seed (idempotent)
 4. lyssna på `0.0.0.0:$PORT`
-5. starta waitlist-retention (raderar `interest_signups` äldre än 18 månader, vid boot och därefter en gång per dygn)
+5. starta waitlist-retention (raderar `interest_signups` som är 18 månader gamla eller äldre, vid boot och därefter en gång per dygn)
 
 Manuell migrate utan att starta appen (dev):
 
@@ -140,19 +140,30 @@ Inga hemligheter, invitation-tokens eller personnamn ska läggas till i loggar.
 
 ## Backup och restore
 
-Ta dump **före** migrate som ändrar schema, och rutinmässigt (minst dagligen när beta är live).
+Produktion tar en dump **varje dygn** (`korpasset-backup.timer`, 03:17 UTC) till
+`/var/backups/korpasset`. Kopior som är **14 dagar gamla eller äldre** raderas
+automatiskt. De används bara för att återställa tjänsten, inte för vanlig
+behandling. Deploy (`scripts/vps-deploy-revision.sh`) installerar timern och
+tar en första dump om dagens fil saknas.
+
+Ta också en manuell dump **före** migrate som ändrar schema:
 
 ```bash
 # Backup (custom format, lämpligt för pg_restore)
-pg_dump -Fc "$DATABASE_URL" -f "korpasset-$(date -u +%Y%m%dT%H%M%SZ).dump"
+sudo -u deploy VPS_APP_PATH=/var/www/korpasset \
+  /var/www/korpasset/scripts/vps-backup.sh
 
 # Restore mot tom eller återställd databas
-pg_restore --clean --if-exists --no-owner --no-acl -d "$DATABASE_URL" korpasset-YYYYMMDD.dump
+pg_restore --clean --if-exists --no-owner --no-acl -d "$DATABASE_URL" \
+  /var/backups/korpasset/korpasset-YYYYMMDDTHHMMSSZ.dump
 ```
 
 Efter restore: starta appen (migrate är no-op om `schema_migrations` följde med dump:en). Verifiera `GET /health`.
 
 Lagra dump utanför apprecot. Innehållet är personuppgifter (namn, journey-data).
+Manuella dumpar i `/var/www/korpasset/backups` eller
+`/home/deploy/korpasset-backups` flyttas till `/var/backups/korpasset` när
+timern installeras.
 
 ## Test vs production
 
