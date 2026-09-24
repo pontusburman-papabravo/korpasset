@@ -230,6 +230,16 @@ export async function listAccessibleActiveJourneys(
   }));
 }
 
+export async function ownsActiveStudentJourney(userId: string): Promise<boolean> {
+  const result = await getPool().query(
+    `SELECT 1 FROM driving_journeys
+     WHERE student_user_id = $1 AND status = 'active'
+     LIMIT 1`,
+    [userId],
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
 export async function resolveHomeJourneyId(
   userId: string,
   client?: pg.PoolClient,

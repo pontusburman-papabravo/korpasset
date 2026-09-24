@@ -239,6 +239,21 @@ a.journey-choice .journey-choice__meta {
   color: var(--muted);
 }
 
+.signed-in-as {
+  margin: 0 0 1.15rem;
+}
+
+.signed-in-as__who {
+  margin: 0;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.signed-in-as__provider {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+}
+
 .more-menu {
   display: grid;
   gap: 0.15rem;

@@ -228,14 +228,27 @@ async function continueWithOAuthInTransaction(params: {
   });
 }
 
-export async function listLinkedProviders(userId: string): Promise<OAuthProvider[]> {
+export interface LinkedIdentity {
+  provider: OAuthProvider;
+  email: string | null;
+}
+
+export async function listLinkedIdentities(userId: string): Promise<LinkedIdentity[]> {
   const result = await getPool().query(
-    `SELECT provider FROM auth_identities
+    `SELECT provider, email FROM auth_identities
      WHERE user_id = $1 AND provider IN ('apple', 'google')
      ORDER BY created_at`,
     [userId],
   );
-  return result.rows.map((row) => row.provider as OAuthProvider);
+  return result.rows.map((row) => ({
+    provider: row.provider as OAuthProvider,
+    email: typeof row.email === "string" && row.email.trim() ? row.email : null,
+  }));
+}
+
+export async function listLinkedProviders(userId: string): Promise<OAuthProvider[]> {
+  const identities = await listLinkedIdentities(userId);
+  return identities.map((identity) => identity.provider);
 }
 
 export interface FeedbackReplyContact {

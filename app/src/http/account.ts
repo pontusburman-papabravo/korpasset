@@ -5,8 +5,9 @@ import {
 } from "../auth/session.js";
 import { deleteProductAccount } from "../services/account-lifecycle.js";
 import {
-  listLinkedProviders,
+  listLinkedIdentities,
   providerLabel,
+  type LinkedIdentity,
 } from "../services/oauth-accounts.js";
 import { getReusableSessionUserId, getUserById, updateDisplayName } from "../services/users.js";
 import type { OAuthProvider } from "../auth/oauth-verify.js";
@@ -17,6 +18,7 @@ import {
   primaryButton,
   type AppLayoutOptions,
 } from "./layout.js";
+import { renderSignedInAs } from "./account-identity.js";
 import { clearActiveJourneyCookie } from "./active-journey.js";
 
 function providerRow(provider: OAuthProvider, linked: boolean): string {
@@ -34,6 +36,7 @@ function providerRow(provider: OAuthProvider, linked: boolean): string {
 function accountPage(options: {
   displayName: string;
   linked: OAuthProvider[];
+  identities: LinkedIdentity[];
   errorMessage?: string;
   nav?: AppLayoutOptions;
 }): string {
@@ -44,6 +47,7 @@ function accountPage(options: {
     `${options.errorMessage ? errorBanner(options.errorMessage) : ""}
      <h1>Konto</h1>
      <p class="muted">Här är du som person — inte en roll och inte en prenumeration.</p>
+     ${renderSignedInAs({ displayName: options.displayName, identities: options.identities })}
      <form method="post" action="/konto/namn" class="stack">
        <div>
          <label for="name">Namn</label>
@@ -53,7 +57,7 @@ function accountPage(options: {
      </form>
      <section class="card account-providers">
        <h2>Inloggning</h2>
-       <p>Du loggar in med Apple eller Google. Identitetsnyckel är provider <code>sub</code>, inte e-post. Du kan koppla båda till samma konto, men bara en Apple och en Google.</p>
+       <p>Du kan koppla både Apple och Google till samma Körpasset-konto och använda båda för att logga in.</p>
        <p id="oauth-error" class="banner banner-error" hidden></p>
        <ul class="account-providers__list">
          ${providerRow("apple", hasApple)}
@@ -63,6 +67,7 @@ function accountPage(options: {
      <form method="post" action="/logout">
        <button type="submit" class="btn btn-secondary">Logga ut</button>
      </form>
+     <p class="muted">För att byta till ett annat Körpasset-konto behöver du logga ut. Elev och handledare är roller i en körkortsresa, inte olika inloggningar.</p>
      <p class="muted"><a href="/integritet">Integritetspolicy</a> · <a href="/cookies">Cookies</a> · <button type="button" class="consent-footer-link" data-consent-open>Cookieinställningar</button> · <a href="/villkor">Villkor</a> · <a href="/radera-konto">Radera konto</a></p>
      <section class="card account-delete">
        <h2>Radera konto</h2>
@@ -82,10 +87,11 @@ async function renderAccountPage(
   extras: { errorMessage?: string } = {},
 ): Promise<string> {
   const user = await getUserById(userId);
-  const linked = await listLinkedProviders(userId);
+  const identities = await listLinkedIdentities(userId);
   return accountPage({
     displayName: user?.displayName ?? "",
-    linked,
+    linked: identities.map((identity) => identity.provider),
+    identities,
     errorMessage: extras.errorMessage,
   });
 }

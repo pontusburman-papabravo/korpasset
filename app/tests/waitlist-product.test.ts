@@ -30,7 +30,7 @@ describe("waitlist-driven product updates", () => {
     const app = await createTestApp();
     const chooser = await app.inject({ method: "GET", url: "/onboarding" });
     assert.equal(chooser.statusCode, 200);
-    assert.match(chooser.body, /Hur är du med i övningskörningen/);
+    assert.match(chooser.body, /Vad vill du göra/);
     assert.match(chooser.body, /Jag tar körkort/);
     assert.match(chooser.body, /Jag är handledare eller förälder/);
     assert.doesNotMatch(chooser.body, /Starta min körkortsresa/);
