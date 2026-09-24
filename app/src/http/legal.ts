@@ -78,7 +78,8 @@ export function privacyPage(): string {
      <p>Sådana leverantörer får bara behandla personuppgifter i den omfattning som behövs för respektive tjänst och enligt tillämpliga avtal och dataskyddsregler.</p>
      <p>Sign in with Apple och Sign in with Google innebär att Apple respektive Google behandlar uppgifter i samband med inloggningen. De kan behandla uppgifter utanför EU/EES.</p>
      <p>Resend kan behandla e-postuppgifter utanför EU/EES när bekräftelsemejl skickas.</p>
-     <p>Vi använder inte analys- eller reklamleverantörer och har ingen betalningsleverantör i betan.</p>
+     <p>Vi har ingen betalningsleverantör i betan.</p>
+     <p>Google Analytics och andra tredjepartsverktyg används bara om du har samtyckt till det. Utan samtycke laddas de inte. Mer står i avsnittet om cookies och i <a href="/cookies">cookiepolicyn</a>.</p>
 
      <h2>Lagring</h2>
      <p>Personuppgifter från en intresseanmälan raderas senast 18 månader efter anmälan, tidigare om du begär det eller när betakön inte längre behövs.</p>
@@ -124,13 +125,18 @@ export function privacyPage(): string {
      <p>Säkerhetskopior av databasen kan innehålla personuppgifter i högst 14 dagar efter att de raderats i tjänsten. De används bara för att återställa tjänsten, inte för vanlig behandling. Ett automatiskt jobb tar en kopia varje dygn och tar bort kopior som är 14 dagar gamla eller äldre.</p>
 
      <h2>Cookies och lokal teknik</h2>
-     <p>På Körpassets publika landningssida sätter vi inga cookies och gör inga tredjepartsanrop för typsnitt, analys eller reklam.</p>
+     <p>Vi ber om samtycke innan vi använder analyscookies eller andra tredjepartsverktyg. Nödvändiga cookies sätts utan det valet, eftersom webbplatsen och inloggningen inte fungerar utan dem. Reglerna följer dataskyddsförordningen (GDPR) och reglerna om kakor i lagen om elektronisk kommunikation.</p>
+     <p>Valfria kategorier är avstängda tills du själv godkänner dem. Du kan godkänna alla, avvisa alla valfria eller anpassa valet. Samma val kan ändras eller återkallas via Cookieinställningar, lika enkelt som det gavs. Att återkalla samtycket påverkar inte behandling som redan har skett.</p>
+     <p>Själva valet sparas i en nödvändig förstapartscookie i upp till sex månader. Den innehåller kategorierna du valt, en versionsmarkering och en tidpunkt. Den innehåller inte namn eller e-postadress.</p>
+     <p>Analys, om du samtycker, är Google Analytics 4 från Google. Mätningen startar bara när ett mät-id är konfigurerat och du har godkänt analys. Google kan behandla uppgifter utanför EU/EES. Vi använder inte uppgifterna för riktad annonsmarknadsföring från vår sida.</p>
+     <p>Marknadsföring och andra tredjepartsverktyg körs bara om du samtycker till den kategorin. Inget sådant verktyg laddas utan samtycke.</p>
+     <p>Publika sidor gör inga anrop till typsnitt, analys eller reklam innan du har gjort ett val. En fullständig förteckning finns i <a href="/cookies">cookiepolicyn</a>.</p>
      <p>När du loggar in i produkten sätts en nödvändig HttpOnly-cookie som håller dig inloggad i upp till ett år. Cookien innehåller en signerad hänvisning till ditt användar-id, inte namn eller e-postadress.</p>
      <p>När en elev öppnar handledarens startlänk kan en HttpOnly-cookie sättas i upp till sju dagar. Den används för att hålla reda på den tekniska händelsen att länken öppnats. Värdet är en teknisk flagga, inte namn eller e-postadress. Cookien sätts inte av en vanlig inbjudningslänk.</p>
      <p>När du öppnar produkten eller en inbjudan kan en cookie användas för att känna igen att du kommit in via appen eller den ytan. Den är inte HttpOnly och innehåller bara värdet 1, inte namn eller e-postadress.</p>
      <p>Administrationsdelen använder en separat nödvändig HttpOnly-cookie för autentisering, i upp till 12 timmar.</p>
      <p>I appen kan webbläsarens sessionStorage användas tillfälligt för inbjudningslänkar. Det skickas inte som en cookie.</p>
-     <p>Dessa tekniker används för att tjänsten ska fungera och inte för reklam eller spårning mellan olika webbplatser.</p>
+     <p>De nödvändiga cookies som listas här används för att tjänsten ska fungera. De används inte för reklam eller spårning mellan webbplatser.</p>
 
      <h2>Ändringar i policyn</h2>
      <p>Vi kan uppdatera denna integritetspolicy när Körpasset utvecklas eller när vår behandling av personuppgifter förändras.</p>
@@ -262,6 +268,53 @@ export function termsPage(): string {
      <p>Support: <a href="mailto:support@korpasset.se">support@korpasset.se</a></p>`,
     "/villkor",
     "Användarvillkor för Körpasset. Privat övningskörning mot B-körkort: stöd för handledare och elev som ska ta körkort, inte ett betyg inför uppkörning.",
+  );
+}
+
+export function cookiesPage(): string {
+  return renderLegalPage(
+    "Cookies",
+    `<h1>Cookiepolicy</h1>
+     <p>Senast uppdaterad: 24 september 2026</p>
+     <p>Papa Bravo AB använder cookies och liknande lagring på korpasset.se. Den här sidan beskriver vilka, varför och hur du väljer.</p>
+     <p>En cookie är en liten textfil som webbplatsen sparar i din webbläsare. Liknande teknik, till exempel localStorage, behandlas på samma sätt.</p>
+
+     <h2>Så väljer du</h2>
+     <p>Första gången du besöker en sida med cookiebannern kan du:</p>
+     <ul>
+       <li>godkänna alla cookies</li>
+       <li>tillåta bara nödvändiga cookies</li>
+       <li>anpassa analys och marknadsföring var för sig</li>
+     </ul>
+     <p>Valfria rutor är inte ifyllda i förväg. Fortsatt surfande räknas inte som samtycke. Webbplatsen går att använda om du avvisar valfria cookies.</p>
+     <p>Valet sparas i upp till sex månader. Du kan ändra eller återkalla det när som helst via <button type="button" class="consent-footer-link" data-consent-open>Cookieinställningar</button>. Återkallelse stoppar fortsatt användning av de valfria verktygen. Behandling som redan skett påverkas inte.</p>
+     <p>Mer om personuppgifter finns i <a href="/integritet">integritetspolicyn</a>.</p>
+
+     <h2>Nödvändiga</h2>
+     <p>Dessa behövs för att tjänsten ska fungera. De kräver inte samtycke och kan inte stängas av i bannern.</p>
+     <ul>
+       <li><strong>korpasset_consent</strong> — sparar ditt cookieval, version och tidpunkt. Förstapart. Upp till 6 månader. Inte HttpOnly, så att sidan kan läsa valet innan andra verktyg laddas.</li>
+       <li><strong>bilklar_session</strong> — håller dig inloggad i produkten. HttpOnly. Upp till 1 år. Innehåller en signerad hänvisning till ditt användar-id, inte namn eller e-post.</li>
+       <li><strong>korpasset_native</strong> — känner igen att du öppnat produkten eller en inbjudan via appen. Värdet är 1. Inte HttpOnly.</li>
+       <li>En tillfällig HttpOnly-cookie kan sättas i upp till sju dagar när en elev öppnar handledarens startlänk, så att den tekniska händelsen kan räknas. En vanlig inbjudningslänk sätter den inte.</li>
+       <li><strong>korpasset_admin</strong> — inloggning i administrationsdelen. HttpOnly. Upp till 12 timmar. Bara under /admin.</li>
+     </ul>
+
+     <h2>Analys</h2>
+     <p>Används bara om du godkänner analys. Rättslig grund är ditt samtycke.</p>
+     <p>Verktyget är Google Analytics 4 (Google Ireland Limited och Google LLC). Det hjälper oss att se hur webbplatsen används, till exempel vilka sidor som besöks. Google kan behandla uppgifter utanför EU/EES enligt Googles egna villkor.</p>
+     <p>Skriptet från Google laddas inte, och inga analyscookies sätts, förrän du har samtyckt och ett mät-id är konfigurerat hos oss. Om du senare återkallar samtycket laddas inte skriptet vid nästa sidvisning, och analyscookies som vi kan radera från webbläsaren tas bort.</p>
+     <p>Google kan då sätta cookies som <strong>_ga</strong> och <strong>_ga_…</strong>. De används för att skilja webbläsare åt och gäller vanligtvis upp till 24 månader, enligt Googles inställning.</p>
+
+     <h2>Marknadsföring och andra tredjepartsverktyg</h2>
+     <p>Används bara om du godkänner den kategorin. Rättslig grund är ditt samtycke.</p>
+     <p>Kategorin är till för marknadsföring och annat inbäddat innehåll från tredje part. Inget sådant verktyg körs utan samtycke. När ett verktyg kopplas in beskrivs leverantör, syfte och lagringstid här, och du får frågan igen om syftet är nytt.</p>
+
+     <h2>Kontakt</h2>
+     <p>Frågor om cookies och personuppgifter: <a href="mailto:support@korpasset.se">support@korpasset.se</a>.</p>
+     <p>Du kan också lämna klagomål till Integritetsskyddsmyndigheten, IMY.</p>`,
+    "/cookies",
+    "Så använder Körpasset cookies. Nödvändiga cookies krävs för tjänsten. Google Analytics och andra tredjepartsverktyg används bara efter samtycke.",
   );
 }
 

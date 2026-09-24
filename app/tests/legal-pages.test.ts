@@ -26,7 +26,8 @@ describe("public legal pages", () => {
     assert.equal(terms.cookies.length, 0);
     assert.doesNotMatch(privacy.body, /fonts\.googleapis/);
     assert.doesNotMatch(terms.body, /fonts\.googleapis/);
-    assert.doesNotMatch(privacy.body, /gtag|google-analytics|plausible|facebook\.net/i);
+    assert.doesNotMatch(privacy.body, /googletagmanager|google-analytics\.com|plausible|facebook\.net/i);
+    assert.doesNotMatch(privacy.body, /<script[^>]+gtag/i);
     await app.close();
   });
 
@@ -48,6 +49,10 @@ describe("public legal pages", () => {
       assert.match(page.body, /href="\/villkor"/);
     }
     assert.match(home.body, /href="\/radera-konto"/);
+    assert.match(home.body, /href="\/cookies"/);
+    assert.match(home.body, /data-consent-open/);
+    assert.match(account.body, /href="\/cookies"/);
+    assert.match(account.body, /data-consent-open/);
     assert.match(account.body, /href="\/radera-konto"/);
     assert.match(account.body, /action="\/konto\/radera"/);
 
@@ -90,12 +95,16 @@ describe("public legal pages", () => {
     assert.match(privacy.body, /Interna produkthändelser kopplas loss/);
     assert.doesNotMatch(privacy.body, /internt användar-id/);
     assert.match(privacy.body, /Säkerhetskopior av databasen kan innehålla personuppgifter i högst 14 dagar/);
+    assert.match(privacy.body, /automatiskt jobb tar en kopia varje dygn/);
+    assert.match(privacy.body, /14 dagar gamla eller äldre/);
     assert.match(privacy.body, /bara för att återställa tjänsten/);
     assert.match(privacy.body, /inte för vanlig behandling/);
-    assert.match(privacy.body, /14 dagar gamla eller äldre/);
     assert.doesNotMatch(privacy.body, /ännu inte fastställt/);
     assert.doesNotMatch(privacy.body, /ingen automatisk rensning av backuper/);
-    assert.match(privacy.body, /sätter vi inga cookies/);
+    assert.match(privacy.body, /ber om samtycke innan vi använder analyscookies/);
+    assert.match(privacy.body, /Google Analytics/);
+    assert.match(privacy.body, /inte ifyllda i förväg|Valfria kategorier är avstängda/);
+    assert.doesNotMatch(privacy.body, /sätter vi inga cookies/);
     assert.match(privacy.body, /Cookien sätts inte av en vanlig inbjudningslänk/);
     assert.doesNotMatch(privacy.body, /avidentifierar personuppgifter/);
     assert.doesNotMatch(privacy.body, /rättsliga anspråk/);

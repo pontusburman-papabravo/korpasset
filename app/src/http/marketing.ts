@@ -6,7 +6,13 @@ import {
   renderInterestFormError,
   renderInterestThanksPage,
 } from "./landing.js";
-import { accountDeletionPage, contactPage, privacyPage, termsPage } from "./legal.js";
+import {
+  accountDeletionPage,
+  contactPage,
+  cookiesPage,
+  privacyPage,
+  termsPage,
+} from "./legal.js";
 import { robotsTxt, sitemapXml } from "./seo.js";
 import { INTEREST_RATE_LIMIT, allowRequest } from "./rate-limit.js";
 
@@ -43,6 +49,10 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
 
   app.get("/integritet", async (_request, reply) => {
     return reply.type("text/html").send(privacyPage());
+  });
+
+  app.get("/cookies", async (_request, reply) => {
+    return reply.type("text/html").send(cookiesPage());
   });
 
   app.get("/villkor", async (_request, reply) => {

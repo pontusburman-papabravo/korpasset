@@ -88,6 +88,14 @@ export const config = {
       ? config.appleAudiences.length > 0
       : config.googleAudiences.length > 0;
   },
+  /**
+   * GA4 measurement id (G-…). Empty unless the value matches Google's format,
+   * so a placeholder never reaches the page.
+   */
+  get gaMeasurementId() {
+    const value = (process.env.GA_MEASUREMENT_ID ?? "").trim();
+    return /^G-[A-Z0-9]+$/.test(value) ? value : "";
+  },
   /** Guest-elev via /onboarding. Off in production unless explicitly enabled. */
   get allowGuestStudentOnboarding() {
     if (process.env.ALLOW_GUEST_STUDENT_ONBOARDING === "true") return true;

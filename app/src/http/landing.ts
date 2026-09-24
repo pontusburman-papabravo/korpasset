@@ -253,7 +253,12 @@ export function siteHeader(
   </header>`;
 }
 
-export function siteFooter(): string {
+export function siteFooter(options: { consent?: boolean } = {}): string {
+  const cookieLinks =
+    options.consent === false
+      ? ""
+      : `<a href="/cookies">Cookies</a>
+        <button type="button" class="consent-footer-link" data-consent-open>Cookieinställningar</button>`;
   return `<footer class="site-footer">
     <div class="site-inner site-footer__grid">
       <div>
@@ -262,6 +267,7 @@ export function siteFooter(): string {
       </div>
       <div>
         <a href="/integritet">Integritet</a>
+        ${cookieLinks}
         <a href="/villkor">Villkor</a>
         <a href="/kontakt">Kontakt</a>
         <a href="/radera-konto">Radera konto</a>
