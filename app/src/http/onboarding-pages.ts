@@ -34,9 +34,15 @@ function copyableUrlField(id: string, url: string, label: string): string {
          </div>`;
 }
 
-export function onboardingChooser(): string {
-  return `<h1>Hur är du med i övningskörningen?</h1>
-         <p class="muted">Om du är förälder eller handledare: välj det. Körkortsresan tillhör den som tar körkort — inte den som hittade Körpasset.</p>
+export function onboardingChooser(signedInHtml = ""): string {
+  return `<h1>Vad vill du göra?</h1>
+         <p class="muted">Välj hur du ska vara med i övningskörningen — inte vem du loggar in som. Om du är förälder eller handledare: välj det. Körkortsresan tillhör den som tar körkort — inte den som hittade Körpasset.</p>
+         ${signedInHtml}
+         ${
+           signedInHtml
+             ? `<p class="muted">Samma konto kan vara elev i en resa och handledare i en annan. För att byta Apple- eller Google-konto: logga ut.</p>`
+             : ""
+         }
          <div class="stack">
            <a class="card journey-choice" href="/onboarding?som=elev">
              <strong>Jag tar körkort</strong>
@@ -49,9 +55,15 @@ export function onboardingChooser(): string {
          </div>`;
 }
 
-export function supervisorOnboardingPage(): string {
+export function supervisorOnboardingPage(signedInHtml = ""): string {
   return `<h1>Få in den som tar körkort</h1>
+         ${signedInHtml}
          <p>Du kan sätta igång. Körkortsresan skapas och ägs av eleven — inte av dig.</p>
+         ${
+           signedInHtml
+             ? `<p>När eleven bjuder in dig kopplas du på det här kontot. Elev och handledare är roller i resan, inte olika inloggningar.</p>`
+             : ""
+         }
          <ol class="plain-list">
            <li>Skicka länken nedan till eleven.</li>
            <li>Eleven fortsätter med Apple eller Google och skapar sin körkortsresa.</li>
@@ -65,7 +77,7 @@ export function supervisorOnboardingPage(): string {
 
 export function studentOnboardingForm(
   errorMessage?: string,
-  values: { name?: string; practiceStage?: string } = {},
+  values: { name?: string; practiceStage?: string; signedInHtml?: string } = {},
 ): string {
   const stageOptions = PRACTICE_STAGES.filter((stage) => stage !== "unknown")
     .map((stage) => {
@@ -80,7 +92,7 @@ export function studentOnboardingForm(
     })
     .join("");
 
-  return `${errorMessage ? errorBanner(errorMessage) : ""}
+  return `${values.signedInHtml ?? ""}${errorMessage ? errorBanner(errorMessage) : ""}
          <h1>Starta din körkortsresa</h1>
          <p class="muted">Det här skapar <strong>din</strong> körkortsresa. Om du är förälder till den som tar körkort ska du inte fylla i det här — gå tillbaka och välj handledare.</p>
          <form method="post" action="/start" class="stack">

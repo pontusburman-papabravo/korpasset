@@ -57,6 +57,8 @@ describe("konto UI", () => {
     assert.equal(page.statusCode, 200);
     assert.match(page.body, /value="Ella"/);
     assert.match(page.body, /inte en roll och inte en prenumeration/);
+    assert.match(page.body, /Inloggad som/);
+    assert.match(page.body, /Ella/);
     assert.match(page.body, /Apple/);
     assert.match(page.body, /Google/);
     assert.match(page.body, /data-provider="apple" data-linked="false"/);
@@ -75,6 +77,27 @@ describe("konto UI", () => {
     await app.close();
   });
 
+  it("shows the active login as email and provider, not as a role", async () => {
+    const google = await continueWithOAuth({
+      provider: "google",
+      subject: "google-konto-email",
+      displayName: "Pontus",
+      email: "pontus@example.com",
+    });
+    const app = await createTestApp();
+    const page = await injectWithSession(app, session(google.userId), {
+      method: "GET",
+      url: "/konto",
+    });
+    assert.match(page.body, /Inloggad som/);
+    assert.match(page.body, /pontus@example.com/);
+    assert.match(page.body, /<p class="signed-in-as__provider">Google<\/p>/);
+    assert.match(page.body, /Logga ut/);
+    assert.match(page.body, /Elev och handledare är roller/);
+    assert.doesNotMatch(page.body, /type="email"/);
+    await app.close();
+  });
+
   it("shows a linked Apple identity and lets the user attach Google", async () => {
     const apple = await continueWithOAuth({
       provider: "apple",
@@ -86,6 +109,8 @@ describe("konto UI", () => {
       method: "GET",
       url: "/konto",
     });
+    assert.match(page.body, /Inloggad som/);
+    assert.match(page.body, /<p class="signed-in-as__provider">Apple<\/p>/);
     assert.match(page.body, /data-provider="apple" data-linked="true"/);
     assert.match(page.body, /<strong>Apple<\/strong> är kopplat/);
     assert.match(page.body, /data-provider="google" data-linked="false"/);

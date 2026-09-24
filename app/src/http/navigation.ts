@@ -65,6 +65,7 @@ export function renderJourneyPickerPage(
 export function renderMorePage(options: {
   identity: ReturnType<typeof journeyIdentityForRole> | null;
   journeyCount: number;
+  canStartOwnJourney?: boolean;
 }): string {
   const identity = options.identity
     ? renderJourneyIdentity(options.identity)
@@ -73,8 +74,12 @@ export function renderMorePage(options: {
     options.journeyCount > 1
       ? `<p><a class="btn btn-secondary" href="/app">Byt körkortsresa</a></p>`
       : "";
+  const startOwn = options.canStartOwnJourney
+    ? `<p><a class="btn btn-secondary" href="/onboarding?som=elev">Starta min körkortsresa</a></p>`
+    : "";
   return `${identity}
     ${switcher}
+    ${startOwn}
     <nav class="more-menu" aria-label="Mer">
       <a href="/konto">Konto</a>
       <a href="/hjalp">Hjälp</a>

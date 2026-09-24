@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
-import { createSessionToken } from "../src/auth/session.js";
+import { createSessionToken, parseSessionToken } from "../src/auth/session.js";
 import { getPool } from "../src/db/pool.js";
 import { continueWithOAuth } from "../src/services/oauth-accounts.js";
 import { createJourneyForStudent } from "../src/services/journeys.js";
@@ -81,8 +81,11 @@ describe("app entry (GET /app) and production onboarding", () => {
       { method: "GET", url: "/onboarding" },
     );
     assert.equal(onboarding.statusCode, 200);
-    assert.match(onboarding.body, /Hur är du med i övningskörningen/);
+    assert.match(onboarding.body, /Vad vill du göra/);
+    assert.match(onboarding.body, /inte vem du loggar in som/);
     assert.match(onboarding.body, /Jag är handledare eller förälder/);
+    assert.doesNotMatch(onboarding.body, /Fortsätt med Apple/);
+    assert.doesNotMatch(onboarding.body, /Fortsätt med Google/);
     const studentPath = await injectWithSession(
       app,
       { bilklar_session: createSessionToken(apple.userId) },
@@ -200,6 +203,102 @@ describe("app entry (GET /app) and production onboarding", () => {
     );
     assert.equal(row.rows[0].student_user_id, apple.userId);
     assert.equal(row.rows[0].status, "active");
+    await app.close();
+  });
+
+  it("keeps a Google session when the user chooses Handledare", async () => {
+    const google = await continueWithOAuth({
+      provider: "google",
+      subject: "google-stay-session",
+      displayName: "Pontus",
+      email: "pontus.google@example.com",
+    });
+    const apple = await continueWithOAuth({
+      provider: "apple",
+      subject: "apple-other-phone-account",
+      displayName: "Pontus",
+      email: "pontus.apple@example.com",
+    });
+    const app = await createTestApp();
+    const cookies = { bilklar_session: createSessionToken(google.userId) };
+    const handledare = await injectWithSession(app, cookies, {
+      method: "GET",
+      url: "/onboarding?som=handledare",
+    });
+    assert.equal(handledare.statusCode, 200);
+    assert.match(handledare.body, /Inloggad som/);
+    assert.match(handledare.body, /pontus.google@example.com/);
+    assert.match(handledare.body, /Google/);
+    assert.match(handledare.body, /inte olika inloggningar/);
+    assert.doesNotMatch(handledare.body, /pontus.apple@example.com/);
+    assert.doesNotMatch(handledare.body, /Fortsätt med Apple/);
+    assert.doesNotMatch(handledare.body, /Fortsätt med Google/);
+    const setCookie = handledare.cookies.find((item) => item.name === "bilklar_session");
+    if (setCookie?.value) {
+      assert.equal(parseSessionToken(setCookie.value)?.userId, google.userId);
+    }
+    const konto = await injectWithSession(app, cookies, {
+      method: "GET",
+      url: "/konto",
+    });
+    assert.match(konto.body, /pontus.google@example.com/);
+    assert.doesNotMatch(konto.body, /pontus.apple@example.com/);
+    assert.ok(apple.userId !== google.userId);
+    await app.close();
+  });
+
+  it("lets a signed-in supervisor start their own student journey on the same account", async () => {
+    const supervisor = await continueWithOAuth({
+      provider: "google",
+      subject: "google-supervisor-own-journey",
+      displayName: "Pontus",
+      email: "pontus.supervisor@example.com",
+    });
+    const clara = await createJourneyForStudent("Clara");
+    await addSupervisor(clara.journey.id, clara.userId, "Pontus", supervisor.userId);
+    const app = await createTestApp();
+    const cookies = { bilklar_session: createSessionToken(supervisor.userId) };
+
+    const appHome = await injectWithSession(app, cookies, {
+      method: "GET",
+      url: "/app",
+    });
+    assert.equal(appHome.statusCode, 302);
+    assert.equal(appHome.headers.location, `/journey/${clara.journey.id}`);
+    assert.doesNotMatch(String(appHome.body), /Fortsätt med Apple/);
+
+    const mer = await injectWithSession(app, cookies, {
+      method: "GET",
+      url: "/mer",
+    });
+    assert.match(mer.body, /Starta min körkortsresa/);
+    assert.match(mer.body, /href="\/onboarding\?som=elev"/);
+
+    const elev = await injectWithSession(app, cookies, {
+      method: "GET",
+      url: "/onboarding?som=elev",
+    });
+    assert.equal(elev.statusCode, 200);
+    assert.match(elev.body, /Starta min körkortsresa/);
+    assert.match(elev.body, /pontus.supervisor@example.com/);
+    assert.doesNotMatch(elev.body, /Fortsätt med Apple/);
+
+    const started = await injectWithSession(app, cookies, {
+      method: "POST",
+      url: "/start",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({ name: "Pontus", practice_stage: "building" }),
+    });
+    assert.equal(started.statusCode, 302);
+    const location = String(started.headers.location);
+    assert.match(location, /^\/journey\//);
+    const journeyId = location.slice("/journey/".length);
+    const row = await getPool().query(
+      `SELECT student_user_id FROM driving_journeys WHERE id = $1`,
+      [journeyId],
+    );
+    assert.equal(row.rows[0].student_user_id, supervisor.userId);
+    assert.notEqual(journeyId, clara.journey.id);
     await app.close();
   });
 

@@ -14,6 +14,7 @@ import {
   isPracticeStage,
   listAccessibleActiveJourneys,
   listActiveSupervisors,
+  ownsActiveStudentJourney,
   updatePracticeStage,
   updateTransmissionScope,
 } from "../services/journeys.js";
@@ -59,6 +60,8 @@ import {
   studentOnboardingForm,
   supervisorOnboardingPage,
 } from "./onboarding-pages.js";
+import { renderSignedInAs } from "./account-identity.js";
+import { listLinkedIdentities } from "../services/oauth-accounts.js";
 import {
   daysSinceDriveBucket,
   recordProductEventSafe,
@@ -373,6 +376,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         renderMorePage({
           identity,
           journeyCount: journeys.length,
+          canStartOwnJourney: !journeys.some((journey) => journey.studentUserId === userId),
         }),
         {
           journeyId: resolved?.journey.id,
@@ -384,23 +388,34 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
 
   app.get("/onboarding", async (request, reply) => {
     const userId = getSessionUserId(request);
-    if (userId) {
-      const home = await signedInHome(userId);
-      if (home.kind !== "onboarding") {
-        return reply.redirect("/app");
-      }
-    }
     const query = request.query as { som?: string; via?: string };
     const path = onboardingPath(query);
     const sessionUserId = await getReusableSessionUserId(userId);
     const user = sessionUserId ? await getUserById(sessionUserId) : null;
+
+    if (sessionUserId) {
+      const home = await signedInHome(sessionUserId);
+      if (home.kind !== "onboarding") {
+        const ownsStudent = await ownsActiveStudentJourney(sessionUserId);
+        if (path === "val" || (path === "elev" && ownsStudent)) {
+          return reply.redirect("/app");
+        }
+      }
+    }
+
     await recordOnboardingObservation(query, sessionUserId);
     if (isParentHandoffQuery(query)) {
       setHandoffCookie(reply);
     }
+    const signedInHtml = sessionUserId
+      ? renderSignedInAs({
+          displayName: user?.displayName ?? null,
+          identities: await listLinkedIdentities(sessionUserId),
+        })
+      : "";
     if (path === "handledare") {
       return reply.type("text/html").send(
-        layout("Anslut som handledare", supervisorOnboardingPage()),
+        layout("Anslut som handledare", supervisorOnboardingPage(signedInHtml)),
       );
     }
     if (!canCreateStudentJourney(user?.accountState)) {
@@ -418,11 +433,14 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       return reply.type("text/html").send(
         layout(
           "Starta din körkortsresa",
-          studentOnboardingForm(undefined, { name: user?.displayName ?? "" }),
+          studentOnboardingForm(undefined, {
+            name: user?.displayName ?? "",
+            signedInHtml,
+          }),
         ),
       );
     }
-    reply.type("text/html").send(layout("Kom in i Körpasset", onboardingChooser()));
+    reply.type("text/html").send(layout("Kom in i Körpasset", onboardingChooser(signedInHtml)));
   });
 
   app.post("/start", async (request, reply) => {
