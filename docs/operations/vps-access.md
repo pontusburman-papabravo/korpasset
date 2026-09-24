@@ -52,6 +52,9 @@ docker compose --project-directory /var/www/korpasset/deploy \
 
 Agent-SSH: `scripts/vps-ssh.sh check`.
 
+Daglig Postgres-dump ligger i `/var/backups/korpasset` (14 dagars retention). Se
+[Production](production.md#backup-och-restore).
+
 ## Tom server (första boot)
 
 Logga in som root på en **ny** Ubuntu 24 (inte den live VPS:en om den redan

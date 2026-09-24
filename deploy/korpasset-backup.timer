@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Körpasset Postgres backup
+
+[Timer]
+OnCalendar=*-*-* 03:17:00 UTC
+Persistent=true
+RandomizedDelaySec=180
+Unit=korpasset-backup.service
+
+[Install]
+WantedBy=timers.target
