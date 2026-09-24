@@ -2,6 +2,7 @@ import { buildServer } from "./http/server.js";
 import { assertProductionConfig, config, isProduction } from "./config.js";
 import { applyMigrations } from "./db/migrate.js";
 import { seedTaxonomy } from "./db/seed-taxonomy.js";
+import { startWaitlistRetentionJob } from "./jobs/waitlist-retention.js";
 
 function logFatal(error: unknown): void {
   const message = error instanceof Error ? error.stack ?? error.message : String(error);
@@ -36,6 +37,7 @@ async function main(): Promise<void> {
       );
     }
   }
+  startWaitlistRetentionJob(app.log);
   app.log.info(
     {
       url: config.appBaseUrl,

@@ -4,7 +4,7 @@ export function privacyPage(): string {
   return renderLegalPage(
     "Integritetspolicy",
     `<h1>Integritetspolicy</h1>
-     <p>Senast uppdaterad: 23 september 2026</p>
+     <p>Senast uppdaterad: 24 september 2026</p>
      <p>Papa Bravo AB är personuppgiftsansvarig för Körpasset, en digital tjänst för privat övningskörning mot svenskt B-körkort.</p>
      <p>Vi samlar in så lite personuppgifter som möjligt. Vi säljer inte dina personuppgifter och använder dem inte för riktad annonsmarknadsföring.</p>
      <p>Du kan kontakta oss på:</p>
@@ -82,7 +82,7 @@ export function privacyPage(): string {
 
      <h2>Lagring</h2>
      <p>Personuppgifter från en intresseanmälan raderas senast 18 månader efter anmälan, tidigare om du begär det eller när betakön inte längre behövs.</p>
-     <p>Under betan sker denna radering manuellt av administratör. Det finns för närvarande inget automatiskt retention-jobb för intresseanmälningar.</p>
+     <p>Ett automatiskt jobb i tjänsten tar bort intresseanmälningar som är äldre än 18 månader. Administratör kan radera en anmälan tidigare om du begär det.</p>
      <p>Uppgifter i ett Körpasset-konto och en körkortsresa sparas så länge de behövs för att tillhandahålla tjänsten. Det finns inget automatiskt jobb som raderar inaktiva konton.</p>
 
      <h2>Säkerhet</h2>
@@ -312,7 +312,7 @@ export function accountDeletionPage(): string {
      <h2>Vad som behålls</h2>
      <ul>
        <li>Om du är handledare behålls observationer och körpass på elevens resa, utan ditt namn och utan koppling till ditt konto, så att eleven inte förlorar sin historik.</li>
-       <li>Intresseanmälan till betan (namn och e-post på korpasset.se) raderas inte automatiskt med produktkontot. Begär det i samma mejl om du vill att den också ska tas bort. Intresseanmälningar raderas senast 18 månader efter anmälan.</li>
+       <li>Intresseanmälan till betan (namn och e-post på korpasset.se) raderas inte automatiskt med produktkontot. Begär det i samma mejl om du vill att den också ska tas bort. Intresseanmälningar raderas automatiskt senast 18 månader efter anmälan.</li>
      </ul>
 
      <h2>Radera data utan att radera kontot</h2>
