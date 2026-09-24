@@ -238,6 +238,48 @@ export async function listLinkedProviders(userId: string): Promise<OAuthProvider
   return result.rows.map((row) => row.provider as OAuthProvider);
 }
 
+export interface FeedbackReplyContact {
+  replyTo: string | null;
+  contactEmail: string | null;
+  identityLines: string[];
+}
+
+/** Address we can actually write back to after in-app help. */
+export async function getFeedbackReplyContact(
+  userId: string,
+): Promise<FeedbackReplyContact> {
+  const user = await getPool().query(
+    `SELECT contact_email FROM users WHERE id = $1`,
+    [userId],
+  );
+  const identities = await getPool().query(
+    `SELECT provider, email FROM auth_identities
+     WHERE user_id = $1 AND provider IN ('apple', 'google')
+     ORDER BY created_at`,
+    [userId],
+  );
+  const contactEmail =
+    typeof user.rows[0]?.contact_email === "string" && user.rows[0].contact_email.trim()
+      ? user.rows[0].contact_email.trim()
+      : null;
+  const identityEmails = identities.rows
+    .map((row) =>
+      typeof row.email === "string" && row.email.trim() ? row.email.trim() : null,
+    )
+    .filter((email): email is string => Boolean(email));
+  const identityLines = identities.rows.map((row) => {
+    const label = providerLabel(row.provider as OAuthProvider);
+    const email =
+      typeof row.email === "string" && row.email.trim() ? row.email.trim() : "";
+    return email ? `${label} <${email}>` : label;
+  });
+  return {
+    replyTo: contactEmail ?? identityEmails[0] ?? null,
+    contactEmail,
+    identityLines,
+  };
+}
+
 export async function findUserIdByIdentity(
   provider: OAuthProvider,
   subject: string,
