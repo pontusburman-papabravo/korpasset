@@ -1,0 +1,1014 @@
+{
+  "status": "draft",
+  "notRuntime": true,
+  "lastUpdated": "2026-09-15",
+  "taxonomyVersion": 1,
+  "locale": "sv-SE",
+  "licenseClass": "B",
+  "artifact": "skill-prerequisites-v1",
+  "description": "Pedagogical prerequisite graph between skills. Official requirements live in skill-official-basis-v1.json, not on edges. strength=hard marks strong pedagogical dependencies only.",
+  "introductionStages": [
+    {
+      "key": "foundation",
+      "dataType": "PEDAGOGICAL PRACTICE"
+    },
+    {
+      "key": "controlled_traffic",
+      "dataType": "PEDAGOGICAL PRACTICE"
+    },
+    {
+      "key": "mixed_traffic",
+      "dataType": "PEDAGOGICAL PRACTICE"
+    },
+    {
+      "key": "complex_traffic",
+      "dataType": "PEDAGOGICAL PRACTICE"
+    },
+    {
+      "key": "independent_readiness",
+      "dataType": "PEDAGOGICAL PRACTICE"
+    }
+  ],
+  "pedagogicalChains": [
+    {
+      "name": "vehicle_basics",
+      "dataType": "PEDAGOGICAL PRACTICE",
+      "skills": [
+        "car_control_pre_drive_check",
+        "car_control_smooth_start_stop",
+        "car_control_braking",
+        "positioning_road_position"
+      ],
+      "note": "Typisk tidig kedja — inte obligatorisk ordning."
+    },
+    {
+      "name": "observation_to_interaction",
+      "dataType": "PEDAGOGICAL PRACTICE",
+      "skills": [
+        "observation_mirror_routine",
+        "observation_blind_spot",
+        "observation_scanning",
+        "observation_signaling"
+      ]
+    },
+    {
+      "name": "intersections_to_roundabout",
+      "dataType": "PEDAGOGICAL PRACTICE",
+      "skills": [
+        "intersections_right_hand_rule",
+        "intersections_give_way",
+        "roundabout_entry",
+        "roundabout_positioning",
+        "roundabout_exit"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "skillKey": "car_control_pre_drive_check",
+      "title": "Säkerhetskontroll",
+      "introductionStage": "foundation",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [],
+      "taxonomyLikelyPrerequisites": [],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "car_control_smooth_start_stop",
+      "title": "Start och stannande",
+      "introductionStage": "foundation",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "car_control_pre_drive_check",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Säkerhetskontroll är officiell rutin före varje pass; start/stopp kan övas parallellt på tom yta."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_pre_drive_check"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "car_control_braking",
+      "title": "Bromsning",
+      "introductionStage": "foundation",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "car_control_smooth_start_stop",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Grundläggande fartkontroll före finare bromsteknik."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_smooth_start_stop"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "car_control_gear_shifting",
+      "title": "Växling",
+      "introductionStage": "foundation",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "car_control_smooth_start_stop",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: växling bygger på grundläggande start/stopp-kontroll (manuell bil)."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_smooth_start_stop"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "car_control_speed_adaptation",
+      "title": "Hastighetsanpassning",
+      "introductionStage": "controlled_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "car_control_braking",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: hastighetsanpassning kräver kontrollerad bromsning."
+        },
+        {
+          "skillKey": "positioning_road_position",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Placering och hastighet övas ofta tillsammans i bostadsområde."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_braking"
+      ],
+      "taxonomyDeviations": [
+        {
+          "issue": "added soft positioning prerequisite",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ]
+    },
+    {
+      "skillKey": "observation_mirror_routine",
+      "title": "Spegelrutin",
+      "introductionStage": "controlled_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "car_control_smooth_start_stop",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Spegelrutin kräver grundläggande fordonskontroll."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_smooth_start_stop"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "observation_blind_spot",
+      "title": "Döda vinkeln",
+      "introductionStage": "mixed_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "observation_mirror_routine",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Döda vinkeln kompletterar spegelrutin, inte ersätter den."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "observation_mirror_routine"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "observation_signaling",
+      "title": "Tecken och blinkers",
+      "introductionStage": "controlled_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "car_control_smooth_start_stop",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Blinkers kan övas tidigt i lugn miljö."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_smooth_start_stop"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "observation_scanning",
+      "title": "Avsökning",
+      "introductionStage": "controlled_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "observation_mirror_routine",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Avsökning bygger på etablerad blickvana."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "observation_mirror_routine"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "positioning_road_position",
+      "title": "Placering på vägen",
+      "introductionStage": "controlled_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "car_control_smooth_start_stop",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Placering övas när eleven kan starta/stanna kontrollerat."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_smooth_start_stop"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "positioning_lane_selection",
+      "title": "Val av körfält",
+      "introductionStage": "mixed_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "positioning_road_position",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: körfältsval bygger på grundplacering i körfält."
+        },
+        {
+          "skillKey": "observation_scanning",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Körfältsval kräver avsökning av skyltning och trafik."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "positioning_road_position",
+        "observation_scanning"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "positioning_lane_change",
+      "title": "Körfältsbyte",
+      "introductionStage": "mixed_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "observation_mirror_routine",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: körfältsbyte kräver etablerad spegelrutin."
+        },
+        {
+          "skillKey": "observation_blind_spot",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Kontrollblick före körfältsbyte."
+        },
+        {
+          "skillKey": "observation_signaling",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Tecken före körfältsbyte."
+        },
+        {
+          "skillKey": "positioning_road_position",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Grundplacering före sidoförflyttning."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "observation_mirror_routine",
+        "observation_blind_spot",
+        "observation_signaling",
+        "positioning_road_position"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "positioning_turning",
+      "title": "Sväng",
+      "introductionStage": "mixed_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "positioning_road_position",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: sväng kräver stabil grundplacering."
+        },
+        {
+          "skillKey": "observation_signaling",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Blinkers före sväng."
+        },
+        {
+          "skillKey": "car_control_speed_adaptation",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Fart innan och i sväng."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "positioning_road_position",
+        "observation_signaling",
+        "car_control_speed_adaptation"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "intersections_right_hand_rule",
+      "title": "Högerregeln",
+      "introductionStage": "controlled_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "car_control_speed_adaptation",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Högerregel kräver kontrollerad fart i korsning."
+        },
+        {
+          "skillKey": "observation_scanning",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: högerregel kräver avsökning av korsande trafik."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_speed_adaptation",
+        "observation_scanning"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "intersections_give_way",
+      "title": "Väjningsplikt och stopp",
+      "introductionStage": "mixed_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "car_control_smooth_start_stop",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Stopp/start vid väjningsplikt."
+        },
+        {
+          "skillKey": "car_control_braking",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Kontrollerad inbromsning mot väjningslinje."
+        },
+        {
+          "skillKey": "observation_scanning",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: väjningsplikt kräver systematisk avsökning."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_smooth_start_stop",
+        "observation_scanning"
+      ],
+      "taxonomyDeviations": [
+        {
+          "issue": "added soft braking prerequisite",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ]
+    },
+    {
+      "skillKey": "intersections_traffic_lights",
+      "title": "Trafikljus",
+      "introductionStage": "mixed_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "car_control_speed_adaptation",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Anpassa fart mot signal."
+        },
+        {
+          "skillKey": "observation_scanning",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Uppmärksamhet på signal och korsande trafik."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_speed_adaptation",
+        "observation_scanning"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "roundabout_entry",
+      "title": "Infart i rondell",
+      "introductionStage": "complex_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "intersections_give_way",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: rondellinfart bygger på väjningsbeteende i korsning."
+        },
+        {
+          "skillKey": "car_control_speed_adaptation",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Sänka fart före infart."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "intersections_give_way",
+        "observation_scanning",
+        "car_control_speed_adaptation"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "roundabout_positioning",
+      "title": "Placering i rondell",
+      "introductionStage": "complex_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "roundabout_entry",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Placering i cirkulation efter säker infart."
+        },
+        {
+          "skillKey": "positioning_road_position",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Spårning i körfält."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "roundabout_entry",
+        "positioning_road_position"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "roundabout_exit",
+      "title": "Utfart ur rondell",
+      "introductionStage": "complex_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "roundabout_positioning",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Utfart bygger på korrekt läge i rondellen."
+        },
+        {
+          "skillKey": "observation_signaling",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: utfart ur rondell kräver tydlig signalering."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "roundabout_positioning",
+        "observation_signaling"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "urban_vulnerable_road_users",
+      "title": "Oskyddade trafikanter",
+      "introductionStage": "mixed_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "observation_scanning",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: oskyddade trafikanter kräver aktiv avsökning."
+        },
+        {
+          "skillKey": "car_control_speed_adaptation",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Fartanpassning vid gående/cyklister."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "observation_scanning",
+        "car_control_speed_adaptation"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "urban_passing_stationary",
+      "title": "Passera stillastående fordon",
+      "introductionStage": "mixed_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "positioning_road_position",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: passerande stillastående kräver korrekt sidoplacering."
+        },
+        {
+          "skillKey": "observation_scanning",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Upptäcka dörrar, fotgängare mellan bilar."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "positioning_road_position",
+        "observation_scanning"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "urban_tight_spaces",
+      "title": "Trånga gator",
+      "introductionStage": "mixed_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "positioning_road_position",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Grundplacering i smala gator."
+        },
+        {
+          "skillKey": "car_control_smooth_start_stop",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Långsam kontroll vid möte i trång gata."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "positioning_road_position",
+        "car_control_smooth_start_stop"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "rural_joining_and_leaving",
+      "title": "Infart och avfart på landsväg",
+      "introductionStage": "complex_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "car_control_speed_adaptation",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: infart/sväng på landsväg kräver fartkontroll."
+        },
+        {
+          "skillKey": "intersections_give_way",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Väjning vid infart."
+        },
+        {
+          "skillKey": "positioning_turning",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Svängteknik vid avfart."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_speed_adaptation",
+        "observation_signaling",
+        "intersections_give_way",
+        "positioning_turning"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "rural_curves",
+      "title": "Kurvor på landsväg",
+      "introductionStage": "complex_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "car_control_speed_adaptation",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: kurvkörning kräver fartkontroll."
+        },
+        {
+          "skillKey": "positioning_road_position",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Placering i kurva."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_speed_adaptation",
+        "positioning_road_position"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "rural_meeting_traffic",
+      "title": "Möte",
+      "introductionStage": "complex_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "positioning_road_position",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: möte på landsväg kräver grundplacering."
+        },
+        {
+          "skillKey": "car_control_speed_adaptation",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Fart och lucka vid möte."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "positioning_road_position",
+        "car_control_speed_adaptation"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "rural_passing",
+      "title": "Omkörning",
+      "introductionStage": "complex_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "rural_meeting_traffic",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Mötesbeteende före omkörning."
+        },
+        {
+          "skillKey": "observation_mirror_routine",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: omkörning kräver etablerad spegelrutin."
+        },
+        {
+          "skillKey": "car_control_speed_adaptation",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Acceleration och återgång."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "observation_mirror_routine",
+        "observation_signaling",
+        "car_control_speed_adaptation",
+        "rural_meeting_traffic"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "highway_merging",
+      "title": "Påfart",
+      "introductionStage": "complex_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "positioning_lane_change",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: motorvägspåfart bygger på körfältsbyte."
+        },
+        {
+          "skillKey": "car_control_speed_adaptation",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Accelerationsfält kräver fartmatchning."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_speed_adaptation",
+        "observation_mirror_routine",
+        "observation_blind_spot",
+        "positioning_lane_change"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "highway_lane_discipline",
+      "title": "Körfält på motorväg",
+      "introductionStage": "complex_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "positioning_lane_selection",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: körfältsdisciplin på motorväg bygger på körfältsval."
+        },
+        {
+          "skillKey": "highway_merging",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Erfarenhet från påfart."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "positioning_lane_selection",
+        "highway_merging"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "highway_exiting",
+      "title": "Avfart",
+      "introductionStage": "complex_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "highway_lane_discipline",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: avfart kräver erfarenhet av körfältsdisciplin."
+        },
+        {
+          "skillKey": "observation_signaling",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Tidig planering och tecken."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "highway_lane_discipline",
+        "observation_signaling",
+        "car_control_speed_adaptation"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "maneuver_reversing",
+      "title": "Backning",
+      "introductionStage": "foundation",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "car_control_smooth_start_stop",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: backning bygger på grundläggande start/stopp-kontroll."
+        },
+        {
+          "skillKey": "observation_scanning",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Uppsikt bakåt."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_smooth_start_stop",
+        "observation_scanning"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "maneuver_hill_start",
+      "title": "Start i lutning",
+      "introductionStage": "mixed_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "car_control_smooth_start_stop",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: start i lutning kräver säker start/stopp-teknik."
+        },
+        {
+          "skillKey": "car_control_gear_shifting",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Manuell bil — växling i lutning. Ej hard vid automatic_only."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_smooth_start_stop",
+        "car_control_gear_shifting"
+      ],
+      "taxonomyDeviations": [
+        {
+          "issue": "gear_shifting hard should be conditional on manual transmission",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ]
+    },
+    {
+      "skillKey": "maneuver_parallel_parking",
+      "title": "Parallellparkering",
+      "introductionStage": "mixed_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "maneuver_reversing",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: fickparkering kräver säker backning."
+        },
+        {
+          "skillKey": "observation_scanning",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Uppsikt mot trafik under parkering."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "maneuver_reversing",
+        "observation_scanning",
+        "positioning_road_position"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "maneuver_parking",
+      "title": "Övrig parkering",
+      "introductionStage": "mixed_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "maneuver_reversing",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: parkering bygger på backningsförmåga."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "maneuver_reversing"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "maneuver_turning_around",
+      "title": "Vändning",
+      "introductionStage": "mixed_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "maneuver_reversing",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: vändning kräver säker backning."
+        },
+        {
+          "skillKey": "observation_scanning",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Säker plats och uppsikt."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "maneuver_reversing",
+        "observation_scanning"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "independent_route_planning",
+      "title": "Köra mot mål",
+      "introductionStage": "independent_readiness",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "positioning_lane_selection",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: självständig navigering kräver körfältsval och avsökning."
+        },
+        {
+          "skillKey": "observation_scanning",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Navigera kräver avsökning."
+        },
+        {
+          "skillKey": "independent_risk_awareness",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Självständig körning kräver riskmedvetenhet."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "positioning_lane_selection",
+        "observation_scanning",
+        "independent_risk_awareness"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "independent_risk_awareness",
+      "title": "Riskmedvetenhet",
+      "introductionStage": "mixed_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "observation_scanning",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: riskmedvetenhet bygger på systematisk avsökning."
+        },
+        {
+          "skillKey": "car_control_speed_adaptation",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Riskmedvetenhet kopplas till fart."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "observation_scanning",
+        "car_control_speed_adaptation"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "independent_safety_margins",
+      "title": "Säkerhetsmarginaler",
+      "introductionStage": "mixed_traffic",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "car_control_speed_adaptation",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: säkerhetsmarginaler kopplas till fartkontroll."
+        },
+        {
+          "skillKey": "observation_scanning",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Avstånd kräver uppmärksamhet framåt."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_speed_adaptation",
+        "observation_scanning"
+      ],
+      "taxonomyDeviations": []
+    },
+    {
+      "skillKey": "independent_eco_driving",
+      "title": "Sparsam körning",
+      "introductionStage": "independent_readiness",
+      "introductionStageDataType": "PEDAGOGICAL PRACTICE",
+      "prerequisites": [
+        {
+          "skillKey": "car_control_speed_adaptation",
+          "strength": "hard",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Pedagogiskt: eco-körning kräver fartkontroll."
+        },
+        {
+          "skillKey": "independent_route_planning",
+          "strength": "soft",
+          "dataType": "PEDAGOGICAL PRACTICE",
+          "rationale": "Planerad körning i blandad miljö."
+        }
+      ],
+      "taxonomyLikelyPrerequisites": [
+        "car_control_speed_adaptation",
+        "car_control_gear_shifting",
+        "independent_route_planning"
+      ],
+      "taxonomyDeviations": [
+        {
+          "issue": "route_planning demoted to soft; speed_adaptation is official hard",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ]
+    }
+  ]
+}

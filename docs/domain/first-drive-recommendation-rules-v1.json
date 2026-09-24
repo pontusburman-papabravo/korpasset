@@ -1,0 +1,160 @@
+{
+  "status": "draft",
+  "notRuntime": true,
+  "lastUpdated": "2026-09-15",
+  "taxonomyVersion": 1,
+  "locale": "sv-SE",
+  "licenseClass": "B",
+  "artifact": "first-drive-recommendation-rules-v1",
+  "description": "Rules for zero-observation starting points and post-observation next steps.",
+  "firstDriveStartingPoints": [
+    {
+      "skillKey": "car_control_pre_drive_check",
+      "title": "Säkerhetskontroll",
+      "priority": 1,
+      "dataType": "PEDAGOGICAL PRACTICE",
+      "rationale": "Naturlig startpunkt före första passet — etablerar rutin.",
+      "officialEvidence": [
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 14–17 §§"
+        },
+        {
+          "sourceId": "ts-rad-handledaren-2026",
+          "reference": "Råd till handledaren 2026-08-01"
+        }
+      ]
+    },
+    {
+      "skillKey": "car_control_smooth_start_stop",
+      "title": "Start och stannande",
+      "priority": 2,
+      "dataType": "PEDAGOGICAL PRACTICE",
+      "rationale": "Första motoriska tröskel på lugn yta.",
+      "officialEvidence": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 2 kap. 2 § p. 4"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: start från vägkant"
+        }
+      ]
+    },
+    {
+      "skillKey": "car_control_braking",
+      "title": "Bromsning",
+      "priority": 3,
+      "dataType": "PEDAGOGICAL PRACTICE",
+      "rationale": "Grundbroms direkt efter start/stopp i samma pass.",
+      "officialEvidence": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 2 kap. 2 § p. 5"
+        },
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 18 §"
+        }
+      ]
+    },
+    {
+      "skillKey": "positioning_road_position",
+      "title": "Placering på vägen",
+      "priority": 4,
+      "dataType": "PEDAGOGICAL PRACTICE",
+      "rationale": "Nästa steg när eleven lämnar tom yta — placering i körfält.",
+      "officialEvidence": [
+        {
+          "sourceId": "ts-planera-ovningskorning",
+          "reference": "Planera övningskörningen — lugna platser först"
+        }
+      ]
+    },
+    {
+      "skillKey": "observation_signaling",
+      "title": "Tecken och blinkers",
+      "priority": 5,
+      "optional": true,
+      "dataType": "PEDAGOGICAL PRACTICE",
+      "rationale": "Enkel tidig vinst; kan kombineras med start/stopp.",
+      "officialEvidence": []
+    }
+  ],
+  "firstDriveDataType": "PEDAGOGICAL PRACTICE",
+  "observationProgressionRules": {
+    "needs_help": {
+      "action": "repeat_same_or_easier_context",
+      "priority": 1,
+      "dataType": "PRODUCT HYPOTHESIS",
+      "alignsWith": "Transportstyrelsen — öva tills momentet sitter"
+    },
+    "with_support": {
+      "action": "repeat_same_context",
+      "optionalAdjacentPrerequisite": true,
+      "dataType": "PRODUCT HYPOTHESIS"
+    },
+    "independent": {
+      "action": "increase_one_context_dimension_or_introduce_adjacent_skill",
+      "dataType": "PRODUCT HYPOTHESIS"
+    }
+  },
+  "recommendationEvidenceExamples": [
+    {
+      "dataType": "PRODUCT HYPOTHESIS",
+      "example": {
+        "skillKey": "positioning_road_position",
+        "lastAssessment": "independent",
+        "lastContext": {
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry"
+        },
+        "inference": "Not done everywhere — suggest same skill at urban + moderate traffic",
+        "nextStep": {
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry"
+        }
+      }
+    },
+    {
+      "dataType": "PRODUCT HYPOTHESIS",
+      "example": {
+        "skillKey": "intersections_give_way",
+        "lastAssessment": "needs_help",
+        "lastContext": {
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry"
+        },
+        "inference": "Repeat same skill or step down to residential + light",
+        "nextStep": {
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry"
+        }
+      }
+    }
+  ],
+  "recommendationPriorityOrder": [
+    "active_training_focus",
+    "needs_help_recent",
+    "with_support_recent",
+    "independent_context_step_up",
+    "adjacent_unobserved_core",
+    "first_drive_starting_points"
+  ],
+  "explicitlyNotModelled": [
+    "readiness_percentage",
+    "required_lesson_count",
+    "universal_mandatory_skill_order",
+    "exact_repetition_count",
+    "ML/AI predictions"
+  ]
+}

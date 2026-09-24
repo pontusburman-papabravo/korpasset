@@ -1,0 +1,911 @@
+{
+  "status": "draft",
+  "notRuntime": true,
+  "lastUpdated": "2026-09-15",
+  "taxonomyVersion": 1,
+  "locale": "sv-SE",
+  "licenseClass": "B",
+  "artifact": "skill-official-basis-v1",
+  "description": "Mapping of each canonical skill to official Swedish sources (skill → officialBasis[]). Does not imply training order. Taxonomy whyNeeded is intentionally omitted — it is not guaranteed official text.",
+  "sourceCatalog": [
+    {
+      "id": "tsfs-2011-20",
+      "title": "TSFS 2011:20 Kursplan, behörighet B",
+      "url": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf"
+    },
+    {
+      "id": "tsfs-2012-43",
+      "title": "TSFS 2012:43 Förarprov, behörighet B",
+      "url": "https://lagen.nu/tsfs/2012:43"
+    },
+    {
+      "id": "ts-planera-ovningskorning",
+      "title": "Transportstyrelsen — Planera övningskörningen",
+      "url": "https://www.transportstyrelsen.se/sv/vagtrafik/korkort/ta-korkort/handledarskap-och-ovningskorning/planera-ovningsskorningen/"
+    },
+    {
+      "id": "ts-ovningskora",
+      "title": "Transportstyrelsen — Övningsköra",
+      "url": "https://www.transportstyrelsen.se/sv/vagtrafik/korkort/ta-korkort/handledarskap-och-ovningskorning/ovningskora/"
+    },
+    {
+      "id": "ts-handledare",
+      "title": "Transportstyrelsen — Handledare",
+      "url": "https://www.transportstyrelsen.se/sv/vagtrafik/korkort/ta-korkort/handledarskap-och-ovningskorning/handledare/"
+    },
+    {
+      "id": "ts-rad-handledaren-2026",
+      "title": "Råd till handledaren vid privat övningskörning (2026-08-01)",
+      "url": "https://www.transportstyrelsen.se/globalassets/global/publikationer-och-rapporter/vag/korkort/rad_till_handledaren_a5_2026-08-01.pdf"
+    },
+    {
+      "id": "ts-riskutbildning-b",
+      "title": "Transportstyrelsen — Riskutbildning för personbil",
+      "url": "https://www.transportstyrelsen.se/sv/vagtrafik/korkort/ta-korkort/riskutbildning/riskutbildning-bil/"
+    },
+    {
+      "id": "trv-korprov-b",
+      "title": "Trafikverket — Så går körprovet till (behörighet B)",
+      "url": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/"
+    }
+  ],
+  "skills": [
+    {
+      "skillKey": "car_control_pre_drive_check",
+      "title": "Säkerhetskontroll",
+      "areaKey": "car_control",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 2 kap. 2 § p. 3",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 14–17 §§",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "ts-rad-handledaren-2026",
+          "reference": "Råd till handledaren 2026-08-01",
+          "sourceTitle": "Råd till handledaren vid privat övningskörning (2026-08-01)",
+          "sourceUrl": "https://www.transportstyrelsen.se/globalassets/global/publikationer-och-rapporter/vag/korkort/rad_till_handledaren_a5_2026-08-01.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "car_control_smooth_start_stop",
+      "title": "Start och stannande",
+      "areaKey": "car_control",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 2 kap. 2 § p. 4",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: start från vägkant",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "car_control_braking",
+      "title": "Bromsning",
+      "areaKey": "car_control",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 2 kap. 2 § p. 5",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 18 §",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "car_control_gear_shifting",
+      "title": "Växling",
+      "areaKey": "car_control",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 2 kap. 2 § p. 4",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: villkor 78",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "car_control_speed_adaptation",
+      "title": "Hastighetsanpassning",
+      "areaKey": "car_control",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 3 kap. 2 § p. 6",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 § p. 3",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "observation_mirror_routine",
+      "title": "Spegelrutin",
+      "areaKey": "observation_interaction",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 3 kap. 2 § p. 3",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 § p. 2",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "observation_blind_spot",
+      "title": "Döda vinkeln",
+      "areaKey": "observation_interaction",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 3 kap. 2 § p. 3",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: körfältsbyte",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "observation_signaling",
+      "title": "Tecken och blinkers",
+      "areaKey": "observation_interaction",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 3 kap. 2 § p. 2–3",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: cirkulationsplats, körfältsbyte, sväng från landsväg",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "observation_scanning",
+      "title": "Avsökning",
+      "areaKey": "observation_interaction",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 3 kap. 2 § p. 3, 7–8",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 § p. 1–2",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "positioning_road_position",
+      "title": "Placering på vägen",
+      "areaKey": "positioning_lanes",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 3 kap. 2 § p. 6",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 § p. 5",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "positioning_lane_selection",
+      "title": "Val av körfält",
+      "areaKey": "positioning_lanes",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 §",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: körning i körfält",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "positioning_lane_change",
+      "title": "Körfältsbyte",
+      "areaKey": "positioning_lanes",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: körfältsbyte",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 §",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "positioning_turning",
+      "title": "Sväng",
+      "areaKey": "positioning_lanes",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 3 kap. 2 § p. 6",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: gatukorsning, sväng från landsväg",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "intersections_right_hand_rule",
+      "title": "Högerregeln",
+      "areaKey": "intersections_roundabouts",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 3 kap. 2 § p. 2",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: gatukorsning",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "intersections_give_way",
+      "title": "Väjningsplikt och stopp",
+      "areaKey": "intersections_roundabouts",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 3 kap. 2 § p. 2",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 § färd i vägkorsning",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "intersections_traffic_lights",
+      "title": "Trafikljus",
+      "areaKey": "intersections_roundabouts",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: signalerande korsning",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 § p. 2",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "roundabout_entry",
+      "title": "Infart i rondell",
+      "areaKey": "intersections_roundabouts",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 § cirkulationsplats",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: cirkulationsplats",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "roundabout_positioning",
+      "title": "Placering i rondell",
+      "areaKey": "intersections_roundabouts",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: cirkulationsplats (placering)",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 §",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "roundabout_exit",
+      "title": "Utfart ur rondell",
+      "areaKey": "intersections_roundabouts",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: cirkulationsplats (tecken, avsikt)",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 §",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "urban_vulnerable_road_users",
+      "title": "Oskyddade trafikanter",
+      "areaKey": "urban_traffic",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 §",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: oskyddade trafikanter",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "urban_passing_stationary",
+      "title": "Passera stillastående fordon",
+      "areaKey": "urban_traffic",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 §",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: passerande av stillastående fordon",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "urban_tight_spaces",
+      "title": "Trånga gator",
+      "areaKey": "urban_traffic",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 3 kap. 1–2 §§",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: körning i tätort",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "rural_joining_and_leaving",
+      "title": "Infart och avfart på landsväg",
+      "areaKey": "rural_roads",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: infart till landsväg, sväng från landsväg",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 §",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "rural_curves",
+      "title": "Kurvor på landsväg",
+      "areaKey": "rural_roads",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: smal och/eller krokig väg",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 3 kap. 2 § p. 6–7",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "rural_meeting_traffic",
+      "title": "Möte",
+      "areaKey": "rural_roads",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 § möte",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: möte",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "rural_passing",
+      "title": "Omkörning",
+      "areaKey": "rural_roads",
+      "mvpPriority": "supporting",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 § omkörning",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: omkörning",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "highway_merging",
+      "title": "Påfart",
+      "areaKey": "highway",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 § infart på motorväg/motortrafikled",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: motorväg",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "highway_lane_discipline",
+      "title": "Körfält på motorväg",
+      "areaKey": "highway",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 § val av körfält",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: motorväg, motortrafikled",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "highway_exiting",
+      "title": "Avfart",
+      "areaKey": "highway",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 § avfart från motorväg",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: motorväg",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "maneuver_reversing",
+      "title": "Backning",
+      "areaKey": "maneuvering",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 18 §",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: backning",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "maneuver_hill_start",
+      "title": "Start i lutning",
+      "areaKey": "maneuvering",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 18 §",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: start i lutning",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "maneuver_parallel_parking",
+      "title": "Parallellparkering",
+      "areaKey": "maneuvering",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 18 § parkering",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: parkering i ficka längs väg",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "maneuver_parking",
+      "title": "Övrig parkering",
+      "areaKey": "maneuvering",
+      "mvpPriority": "supporting",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 18 §",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: parkering på parkeringsplats",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "maneuver_turning_around",
+      "title": "Vändning",
+      "areaKey": "maneuvering",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 18 §",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: vändning",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "independent_route_planning",
+      "title": "Köra mot mål",
+      "areaKey": "independent_safe_driving",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 12 §",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "trv-korprov-b",
+          "reference": "Trafikverket: självständig körning mot mål",
+          "sourceTitle": "Trafikverket — Så går körprovet till (behörighet B)",
+          "sourceUrl": "https://www.trafikverket.se/korkort/ta-korkort/personbil-och-latt-lastbil/sa-gar-korprovet-till/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "independent_risk_awareness",
+      "title": "Riskmedvetenhet",
+      "areaKey": "independent_safe_driving",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 3 kap. 2 § p. 7–9",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 11 § och 19 § p. 1",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "independent_safety_margins",
+      "title": "Säkerhetsmarginaler",
+      "areaKey": "independent_safe_driving",
+      "mvpPriority": "core",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 3 kap. 2 § p. 4",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 § p. 3",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "skillKey": "independent_eco_driving",
+      "title": "Sparsam körning",
+      "areaKey": "independent_safe_driving",
+      "mvpPriority": "supporting",
+      "officialBasis": [
+        {
+          "sourceId": "tsfs-2011-20",
+          "reference": "TSFS 2011:20, 3 kap. 2 § p. 5",
+          "sourceTitle": "TSFS 2011:20 Kursplan, behörighet B",
+          "sourceUrl": "https://www.transportstyrelsen.se/tsfs/TSFS%202011_20.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "tsfs-2012-43",
+          "reference": "TSFS 2012:43, 19 § p. 4",
+          "sourceTitle": "TSFS 2012:43 Förarprov, behörighet B",
+          "sourceUrl": "https://lagen.nu/tsfs/2012:43",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "ts-planera-ovningskorning",
+          "reference": "Planera övningskörningen",
+          "sourceTitle": "Transportstyrelsen — Planera övningskörningen",
+          "sourceUrl": "https://www.transportstyrelsen.se/sv/vagtrafik/korkort/ta-korkort/handledarskap-och-ovningskorning/planera-ovningsskorningen/",
+          "dataType": "OFFICIAL REQUIREMENT"
+        },
+        {
+          "sourceId": "ts-rad-handledaren-2026",
+          "reference": "Råd till handledaren 2026-08-01",
+          "sourceTitle": "Råd till handledaren vid privat övningskörning (2026-08-01)",
+          "sourceUrl": "https://www.transportstyrelsen.se/globalassets/global/publikationer-och-rapporter/vag/korkort/rad_till_handledaren_a5_2026-08-01.pdf",
+          "dataType": "OFFICIAL REQUIREMENT"
+        }
+      ]
+    }
+  ]
+}
