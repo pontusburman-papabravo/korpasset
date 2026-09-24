@@ -326,6 +326,69 @@ describe("four-tab IA and journey context", () => {
     await app.close();
   });
 
+  it("serializes concurrent plan saves so one writer fully replaces the other", async () => {
+    const { journey, userId: studentId } = await createJourneyForStudent("Ella");
+    const supervisor = await addSupervisor(journey.id, studentId, "Pappa");
+    const studentSkills = await skillIdsByKeys([
+      "intersections_right_hand_rule",
+      "intersections_give_way",
+    ]);
+    const supervisorSkills = await skillIdsByKeys([
+      "intersections_traffic_lights",
+      "car_control_pre_drive_check",
+      "car_control_smooth_start_stop",
+    ]);
+    const union = new Set([...studentSkills, ...supervisorSkills]);
+    assert.equal(union.size, 5);
+
+    const results = await Promise.all([
+      saveNextDrivePlan(journey.id, studentId, studentSkills),
+      saveNextDrivePlan(journey.id, supervisor.userId, supervisorSkills),
+    ]);
+    assert.ok(results.every((result) => result.plan.skills.length >= 2));
+
+    const active = await getPool().query(
+      `SELECT skill_id, created_by_user_id
+       FROM training_focus_items
+       WHERE journey_id = $1 AND status = 'active'
+       ORDER BY created_at`,
+      [journey.id],
+    );
+    const activeSkillIds = active.rows.map((row) => String(row.skill_id)).sort();
+    const writers = [...new Set(active.rows.map((row) => String(row.created_by_user_id)))];
+    assert.ok(active.rows.length >= 2 && active.rows.length <= 3);
+    assert.equal(writers.length, 1);
+    assert.ok(
+      [studentId, supervisor.userId].includes(writers[0]),
+      "winner must be one of the two writers",
+    );
+
+    const studentSet = [...studentSkills].sort();
+    const supervisorSet = [...supervisorSkills].sort();
+    const matchesStudent =
+      activeSkillIds.length === studentSet.length &&
+      activeSkillIds.every((id, index) => id === studentSet[index]);
+    const matchesSupervisor =
+      activeSkillIds.length === supervisorSet.length &&
+      activeSkillIds.every((id, index) => id === supervisorSet[index]);
+    assert.equal(
+      matchesStudent || matchesSupervisor,
+      true,
+      `active skills must be one save, not the union: ${activeSkillIds.join(",")}`,
+    );
+    assert.equal(activeSkillIds.some((id) => !union.has(id)), false);
+
+    const plan = await getActiveNextDrivePlan(journey.id);
+    assert.ok(plan);
+    assert.equal(plan.skills.length, active.rows.length);
+    assert.equal(plan.plannedByUserId, writers[0]);
+    assert.equal(
+      plan.plannedByName,
+      writers[0] === studentId ? "Ella" : "Pappa",
+    );
+    assert.ok(plan.skills.every((skill) => union.has(skill.skillId)));
+  });
+
   it("sets aria-current on the active tab", async () => {
     const { journey, userId } = await createJourneyForStudent("Ella");
     const app = await createTestApp();

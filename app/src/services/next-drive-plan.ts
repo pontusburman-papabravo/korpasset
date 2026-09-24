@@ -74,6 +74,10 @@ export async function saveNextDrivePlan(
   }
 
   return withTransaction(async (client) => {
+    await client.query(
+      `SELECT id FROM driving_journeys WHERE id = $1 FOR UPDATE`,
+      [journeyId],
+    );
     const existing = await client.query(
       `SELECT id FROM training_focus_items
        WHERE journey_id = $1 AND status = 'active'`,
