@@ -40,7 +40,8 @@ function num(value: unknown): number {
  * Elev: owned `driving_journeys` are deleted (CASCADE of journey children).
  * Handledare: keep the student's journey ledger, but unlink every remaining
  * product FK/id that pointed at the deleted user so history cannot be joined
- * back through `users`.
+ * back through `users`. Unlink sets the user-id to NULL *and* the matching
+ * `*_deleted` flag so a missing actor cannot be confused with a bad insert.
  *
  * Waitlist (`interest_signups`) is a separate PII store and is not touched.
  */
@@ -135,19 +136,22 @@ export async function deleteProductAccount(
 
     await client.query(
       `UPDATE drives
-       SET supervisor_user_id = NULL
+       SET supervisor_user_id = NULL,
+           supervisor_deleted = true
        WHERE supervisor_user_id = $1`,
       [userId],
     );
     await client.query(
       `UPDATE drives
-       SET started_by_user_id = NULL
+       SET started_by_user_id = NULL,
+           started_by_deleted = true
        WHERE started_by_user_id = $1`,
       [userId],
     );
     await client.query(
       `UPDATE drive_observations
-       SET observer_user_id = NULL
+       SET observer_user_id = NULL,
+           observer_deleted = true
        WHERE observer_user_id = $1`,
       [userId],
     );

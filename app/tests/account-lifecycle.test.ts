@@ -90,17 +90,81 @@ describe("account lifecycle / tombstoning invariants", () => {
     assert.equal(observations.rows[0].count, 1);
   });
 
-  it("allows SET NULL on supervisor observer_user_id so history can be detached", async () => {
+  it("rejects a new supervisor or student observation without an actor id", async () => {
+    const seeded = await seedRatedDrive();
+    const skill = await getPool().query(
+      `SELECT id FROM skills ORDER BY skill_key LIMIT 1`,
+    );
+    const skillId = skill.rows[0].id as string;
+
+    await assert.rejects(
+      () =>
+        getPool().query(
+          `INSERT INTO drive_observations (
+             journey_id, drive_id, skill_id, source_type, assessment
+           )
+           VALUES ($1, $2, $3, 'supervisor', 'with_support')`,
+          [seeded.journeyId, seeded.driveId, skillId],
+        ),
+      (error: Error) => /check constraint/i.test(error.message),
+    );
+    await assert.rejects(
+      () =>
+        getPool().query(
+          `INSERT INTO drive_observations (
+             journey_id, drive_id, skill_id, observer_user_id, source_type, assessment
+           )
+           VALUES ($1, $2, $3, NULL, 'student', 'with_support')`,
+          [seeded.journeyId, seeded.driveId, skillId],
+        ),
+      (error: Error) => /check constraint/i.test(error.message),
+    );
+    await assert.rejects(
+      () =>
+        getPool().query(
+          `INSERT INTO drives (journey_id, started_by_user_id, supervisor_user_id)
+           VALUES ($1, $2, NULL)`,
+          [seeded.journeyId, seeded.studentId],
+        ),
+      (error: Error) => /check constraint|not-null/i.test(error.message),
+    );
+  });
+
+  it("rejects nulling a living observer without the deleted marker", async () => {
+    const seeded = await seedRatedDrive();
+    await assert.rejects(
+      () =>
+        getPool().query(
+          `UPDATE drive_observations SET observer_user_id = NULL WHERE id = $1`,
+          [seeded.observationId],
+        ),
+      (error: Error) => /check constraint/i.test(error.message),
+    );
+    const observation = await getPool().query(
+      `SELECT observer_user_id, observer_deleted, assessment
+       FROM drive_observations WHERE id = $1`,
+      [seeded.observationId],
+    );
+    assert.equal(observation.rows[0].observer_user_id, seeded.supervisorId);
+    assert.equal(observation.rows[0].observer_deleted, false);
+    assert.equal(observation.rows[0].assessment, "with_support");
+  });
+
+  it("allows unlinking historical attribution only with the deleted marker", async () => {
     const seeded = await seedRatedDrive();
     await getPool().query(
-      `UPDATE drive_observations SET observer_user_id = NULL WHERE id = $1`,
+      `UPDATE drive_observations
+       SET observer_user_id = NULL, observer_deleted = true
+       WHERE id = $1`,
       [seeded.observationId],
     );
     const observation = await getPool().query(
-      `SELECT observer_user_id, assessment FROM drive_observations WHERE id = $1`,
+      `SELECT observer_user_id, observer_deleted, assessment
+       FROM drive_observations WHERE id = $1`,
       [seeded.observationId],
     );
     assert.equal(observation.rows[0].observer_user_id, null);
+    assert.equal(observation.rows[0].observer_deleted, true);
     assert.equal(observation.rows[0].assessment, "with_support");
   });
 
@@ -308,18 +372,24 @@ describe("account lifecycle / tombstoning invariants", () => {
     assert.ok(await getJourneyAccess(seeded.journeyId, seeded.studentId));
 
     const observation = await getPool().query(
-      `SELECT observer_user_id, assessment FROM drive_observations WHERE id = $1`,
+      `SELECT observer_user_id, observer_deleted, assessment
+       FROM drive_observations WHERE id = $1`,
       [seeded.observationId],
     );
     assert.equal(observation.rows[0].observer_user_id, null);
+    assert.equal(observation.rows[0].observer_deleted, true);
     assert.equal(observation.rows[0].assessment, "with_support");
 
     const drive = await getPool().query(
-      `SELECT supervisor_user_id, started_by_user_id FROM drives WHERE id = $1`,
+      `SELECT supervisor_user_id, supervisor_deleted,
+              started_by_user_id, started_by_deleted
+       FROM drives WHERE id = $1`,
       [seeded.driveId],
     );
     assert.equal(drive.rows[0].supervisor_user_id, null);
+    assert.equal(drive.rows[0].supervisor_deleted, true);
     assert.equal(drive.rows[0].started_by_user_id, seeded.studentId);
+    assert.equal(drive.rows[0].started_by_deleted, false);
 
     const collab = await getPool().query(
       `SELECT count(*)::int AS n FROM journey_collaborators WHERE user_id = $1`,

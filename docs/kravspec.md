@@ -775,10 +775,10 @@ Ett helt område ska inte reduceras till en påstådd sannolikhet eller officiel
 
 | Source | Krav |
 | --- | --- |
-| `supervisor`, `student` | `observer_user_id` krävs |
+| `supervisor`, `student` | `observer_user_id` krävs för levande rader. `NULL` är giltigt bara tillsammans med `observer_deleted = true` efter kontoradering. |
 | `system` | Ingen actor krävs |
 | `external` | `external_source_ref` krävs |
-| `driving_school` | `observer_user_id` ELLER `external_source_ref` krävs |
+| `driving_school` | `observer_user_id` ELLER `external_source_ref` krävs. Saknad actor efter radering markeras med `observer_deleted`. |
 
 Authorization: `observer_user_id`, `started_by_user_id` och accepterande user vid invitation hämtas från serverns actor/session.
 
@@ -832,7 +832,7 @@ Fullständig kontoradering är **inte** ett produktflöde i vertical slice. Befi
 - `users.account_state` inkluderar redan `deleted` (oanvänd i produktkod före denna delta).
 - Hard `DELETE` av en handledare **blockeras** av default RESTRICT/NO ACTION på `drives.supervisor_user_id`, `drives.started_by_user_id`, `drive_observations.observer_user_id`, `journey_collaborators.user_id` och invitation-FK:er.
 - Hard `DELETE` av en elev **blockeras** av `driving_journeys.student_user_id` (RESTRICT). Om journeyn raderas först CASCADE:ar journey-barn (drives, observations, m.m.) — det är en privileged process, inte handledar-delete.
-- Historiska `observer_user_id` / `supervisor_user_id` / `started_by_user_id` nollas vid privileged kontoradering så att ledger-rader inte kan joinas tillbaka till `users`.
+- Historiska `observer_user_id` / `supervisor_user_id` / `started_by_user_id` nollas vid privileged kontoradering, och motsvarande `observer_deleted` / `supervisor_deleted` / `started_by_deleted` sätts, så att ledger-rader inte kan joinas tillbaka till `users` och så att en saknad actor inte kan förväxlas med en ogiltig rad.
 - Enda direkta identifieraren på `users` är `display_name`. E-post och provider-subject ligger i `auth_identities` (oanvänd i slice).
 - Sessioner är signerade cookies; det finns ingen session-tabell att återkalla mot.
 - Återstår som separat implementation: privileged delete-account-API, radering av `auth_identities`, nollning av `display_name`, `account_state = deleted`, collaborator `removed`, server-side session revoke, och historisk UI-etikett där observer-namn visas.

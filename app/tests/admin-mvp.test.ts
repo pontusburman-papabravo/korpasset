@@ -395,10 +395,12 @@ describe("admin MVP v1", () => {
     assert.equal(waitlist.rows[0].n, 1);
 
     const observation = await getPool().query(
-      `SELECT observer_user_id, note FROM drive_observations WHERE drive_id = $1`,
+      `SELECT observer_user_id, observer_deleted, note
+       FROM drive_observations WHERE drive_id = $1`,
       [seeded.firstDriveId],
     );
     assert.equal(observation.rows[0].observer_user_id, null);
+    assert.equal(observation.rows[0].observer_deleted, true);
     assert.equal(observation.rows[0].note, "privat anteckning");
 
     const audit = await getPool().query(

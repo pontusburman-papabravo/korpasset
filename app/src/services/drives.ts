@@ -38,7 +38,7 @@ export async function getLatestEndedDrive(
 ): Promise<EndedDriveSummary | null> {
   const db = client ?? getPool();
   const result = await db.query(
-    `SELECT d.id, d.ended_at, d.supervisor_user_id,
+    `SELECT d.id, d.ended_at, d.supervisor_user_id, d.supervisor_deleted,
             u.display_name, u.account_state,
             NOT EXISTS (
               SELECT 1
@@ -72,9 +72,10 @@ export async function getLatestEndedDrive(
     id: String(row.id),
     endedAt: new Date(row.ended_at),
     supervisorUserId,
-    supervisorLabel: supervisorUserId
-      ? actorDisplayName(row.display_name, row.account_state, "supervisor")
-      : "Tidigare handledare",
+    supervisorLabel:
+      Boolean(row.supervisor_deleted) || !supervisorUserId
+        ? "Tidigare handledare"
+        : actorDisplayName(row.display_name, row.account_state, "supervisor"),
     rated: Boolean(row.rated),
   };
 }

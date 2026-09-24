@@ -23,7 +23,7 @@ Motivering: kolumnspecifik `ON DELETE SET NULL` på composite foreign keys, som 
 | [`db/migrations/0011_practice_stage.sql`](../../db/migrations/0011_practice_stage.sql) | Var familjen är i övningskörningen (`practice_stage`) |
 | [`db/migrations/0012_product_event_observation.sql`](../../db/migrations/0012_product_event_observation.sql) | Handoff/stale-dimensioner på `product_events` |
 | [`db/migrations/0013_user_contact_email.sql`](../../db/migrations/0013_user_contact_email.sql) | Kontakt-e-post på users och auth_identities |
-| [`db/migrations/0014_unlink_deleted_account_history.sql`](../../db/migrations/0014_unlink_deleted_account_history.sql) | Frikoppla raderade konton från körhistorik |
+| [`db/migrations/0014_unlink_deleted_account_history.sql`](../../db/migrations/0014_unlink_deleted_account_history.sql) | Frikoppla raderade konton från körhistorik med explicit `*_deleted`-markör |
 
 Runtime-applikationen tillämpar samma filer via [`app/src/db/migrate.ts`](../../app/src/db/migrate.ts) och tabellen `schema_migrations`. Redan migrerade databaser stämplas, SQL körs inte om. Deploy: [Production](../operations/production.md).
 
