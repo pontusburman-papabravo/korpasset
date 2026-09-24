@@ -57,7 +57,7 @@ function accountPage(options: {
      </form>
      <section class="card account-providers">
        <h2>Inloggning</h2>
-       <p>Du loggar in med Apple eller Google. Identitetsnyckel är provider <code>sub</code>, inte e-post. Du kan koppla båda till samma konto, men bara en Apple och en Google.</p>
+       <p>Du kan koppla både Apple och Google till samma Körpasset-konto och använda båda för att logga in.</p>
        <p id="oauth-error" class="banner banner-error" hidden></p>
        <ul class="account-providers__list">
          ${providerRow("apple", hasApple)}
@@ -67,7 +67,7 @@ function accountPage(options: {
      <form method="post" action="/logout">
        <button type="submit" class="btn btn-secondary">Logga ut</button>
      </form>
-     <p class="muted">För att byta Apple- eller Google-konto: logga ut först. Elev och handledare är roller i en körkortsresa, inte olika inloggningar.</p>
+     <p class="muted">För att byta till ett annat Körpasset-konto behöver du logga ut. Elev och handledare är roller i en körkortsresa, inte olika inloggningar.</p>
      <p class="muted"><a href="/integritet">Integritetspolicy</a> · <a href="/cookies">Cookies</a> · <button type="button" class="consent-footer-link" data-consent-open>Cookieinställningar</button> · <a href="/villkor">Villkor</a> · <a href="/radera-konto">Radera konto</a></p>
      <section class="card account-delete">
        <h2>Radera konto</h2>

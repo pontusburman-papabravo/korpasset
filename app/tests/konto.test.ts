@@ -65,7 +65,10 @@ describe("konto UI", () => {
     assert.match(page.body, /data-provider="google" data-linked="false"/);
     assert.match(page.body, /Koppla Apple/);
     assert.match(page.body, /Koppla Google/);
-    assert.match(page.body, /provider <code>sub<\/code>/);
+    assert.match(page.body, /koppla både Apple och Google till samma Körpasset-konto/);
+    assert.match(page.body, /För att byta till ett annat Körpasset-konto behöver du logga ut/);
+    assert.doesNotMatch(page.body, /Identitetsnyckel|provider <code>sub<\/code>/);
+    assert.doesNotMatch(page.body, /byta Apple- eller Google-konto/);
     assert.match(page.body, /Logga ut/);
     assert.match(page.body, /Radera mitt konto/);
     assert.match(page.body, /href="\/integritet"/);
