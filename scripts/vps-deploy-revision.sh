@@ -66,6 +66,9 @@ require_env_nonempty SESSION_SECRET
 require_env_nonempty RESEND_API_KEY
 require_env_nonempty RESEND_WEBHOOK_SECRET
 
+PREVIOUS_SHA="$(git rev-parse HEAD)"
+COMPOSE=(docker compose --project-directory "$APP_PATH/deploy" -f "$APP_PATH/deploy/docker-compose.yml")
+
 git checkout --force "$DEPLOY_SHA"
 
 if [[ ! -f deploy/docker-compose.yml ]]; then
@@ -73,19 +76,48 @@ if [[ ! -f deploy/docker-compose.yml ]]; then
   exit 1
 fi
 
-COMPOSE=(docker compose --project-directory "$APP_PATH/deploy" -f "$APP_PATH/deploy/docker-compose.yml")
-"${COMPOSE[@]}" up -d --build
+wait_for_health() {
+  local _i
+  for _i in $(seq 1 45); do
+    if curl -fsS http://127.0.0.1:3000/health >/dev/null; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
 
-for _ in $(seq 1 45); do
-  if curl -fsS http://127.0.0.1:3000/health >/dev/null; then
-    bash "$APP_PATH/scripts/vps-install-backup-timer.sh"
-    echo "Deployed $DEPLOY_SHA"
-    exit 0
+restore_previous() {
+  if [[ -z "$PREVIOUS_SHA" || "$PREVIOUS_SHA" == "$DEPLOY_SHA" ]]; then
+    echo "No previous revision to restore" >&2
+    return 1
   fi
-  sleep 2
-done
+  echo "Restoring previous revision $PREVIOUS_SHA" >&2
+  git checkout --force "$PREVIOUS_SHA"
+  "${COMPOSE[@]}" up -d --build --no-deps app
+  "${COMPOSE[@]}" up -d --no-deps caddy
+  if wait_for_health; then
+    echo "Restored $PREVIOUS_SHA after failed deploy of $DEPLOY_SHA" >&2
+    return 0
+  fi
+  echo "Rollback of $PREVIOUS_SHA also failed health" >&2
+  return 1
+}
+
+if ! "${COMPOSE[@]}" up -d --build; then
+  echo "Compose up failed for $DEPLOY_SHA" >&2
+  restore_previous || true
+  exit 1
+fi
+
+if wait_for_health; then
+  bash "$APP_PATH/scripts/vps-install-backup-timer.sh"
+  echo "Deployed $DEPLOY_SHA"
+  exit 0
+fi
 
 echo "Health check failed after deploy of $DEPLOY_SHA" >&2
-"${COMPOSE[@]}" ps >&2
-"${COMPOSE[@]}" logs --tail=80 app >&2
+"${COMPOSE[@]}" ps >&2 || true
+"${COMPOSE[@]}" logs --tail=80 app >&2 || true
+restore_previous || true
 exit 1
