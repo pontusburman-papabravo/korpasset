@@ -2,7 +2,7 @@ import {
   listAccessibleActiveJourneys,
   type AccessibleJourney,
 } from "../services/journeys.js";
-import { escapeHtml, layout } from "./layout.js";
+import { escapeHtml, layout, successBanner } from "./layout.js";
 import {
   journeyIdentityForRole,
   pickerRoleLine,
@@ -65,15 +65,20 @@ export function renderJourneyPickerPage(
 export function renderMorePage(options: {
   identity: ReturnType<typeof journeyIdentityForRole> | null;
   journeyCount: number;
+  sentNotice?: boolean;
 }): string {
   const identity = options.identity
     ? renderJourneyIdentity(options.identity)
     : `<h1>Mer</h1>`;
+  const thanks = options.sentNotice
+    ? successBanner("Tack — vi har tagit emot det.")
+    : "";
   const switcher =
     options.journeyCount > 1
       ? `<p><a class="btn btn-secondary" href="/app">Byt körkortsresa</a></p>`
       : "";
-  return `${identity}
+  return `${thanks}
+    ${identity}
     ${switcher}
     <nav class="more-menu" aria-label="Mer">
       <a href="/konto">Konto</a>

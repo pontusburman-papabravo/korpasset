@@ -6,7 +6,6 @@ import { getReusableSessionUserId, getUserById } from "../services/users.js";
 import {
   escapeHtml,
   errorBanner,
-  layout,
   primaryButton,
   successBanner,
 } from "./layout.js";
@@ -17,6 +16,17 @@ import { redactRequestPath } from "./log.js";
 
 export const FEEDBACK_RATE_LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 };
 export const CLIENT_ERROR_RATE_LIMIT = { limit: 20, windowMs: 10 * 60 * 1000 };
+export const FEEDBACK_SENT_QUERY = "skickat=1";
+
+export function isFeedbackSentQuery(query: unknown): boolean {
+  const value = (query as { skickat?: string | string[] } | undefined)?.skickat;
+  return (Array.isArray(value) ? value[0] : value) === "1";
+}
+
+function helpThanks(backHref: string): string {
+  return `${successBanner("Tack — vi har tagit emot det.")}
+    <p><a class="btn btn-secondary" href="${escapeHtml(backHref)}">Tillbaka</a></p>`;
+}
 
 function helpForm(errorMessage?: string, values: { topic?: string; message?: string } = {}): string {
   const options = FEEDBACK_TOPICS.map(
@@ -43,6 +53,11 @@ function helpForm(errorMessage?: string, values: { topic?: string; message?: str
 
 export async function registerHelpRoutes(app: FastifyInstance): Promise<void> {
   app.get("/hjalp", async (request, reply) => {
+    if (isFeedbackSentQuery(request.query)) {
+      return reply.type("text/html").send(
+        layoutForRequest(request, "Tack", helpThanks("/app")),
+      );
+    }
     return reply.type("text/html").send(layoutForRequest(request, "Hjälp", helpForm()));
   });
 
@@ -107,14 +122,10 @@ export async function registerHelpRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
-    return reply.type("text/html").send(
-      layoutForRequest(
-        request,
-        "Tack",
-        `${successBanner("Tack — vi har tagit emot det.")}
-         <p><a class="btn btn-secondary" href="/mer">Tillbaka</a></p>`,
-      ),
-    );
+    // PRG: never leave a POST document in history. iOS WKWebView shows a
+    // blank white page when going back from a POST response.
+    const dest = userId ? `/mer?${FEEDBACK_SENT_QUERY}` : `/hjalp?${FEEDBACK_SENT_QUERY}`;
+    return reply.redirect(dest, 303);
   });
 
   app.post("/api/client-error", async (request, reply) => {
