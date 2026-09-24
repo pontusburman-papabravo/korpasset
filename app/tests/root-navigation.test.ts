@@ -131,7 +131,8 @@ describe("app navigation (GET /app)", () => {
     assert.equal(response.statusCode, 200);
     assert.match(response.body, /Vilken körkortsresa vill du öppna/);
     assert.match(response.body, /Min körkortsresa/);
-    assert.match(response.body, /mer än en körkortsresa/);
+    assert.match(response.body, /Varje körkortsresa är separat/);
+    assert.match(response.body, /Du är elev/);
     assert.match(response.body, /Clara/);
     assert.doesNotMatch(response.body, /<h1>Välj elev<\/h1>/);
     await app.close();
@@ -248,10 +249,7 @@ describe("app navigation (GET /app)", () => {
     const journeys = await listAccessibleActiveJourneys(accepted.userId);
     const claraRow = journeys.find((row) => row.id === clara.journey.id);
     assert.ok(claraRow);
-    assert.match(
-      formatAccessibleJourneyLabel(claraRow),
-      /Clara — senast körd 14 sep/i,
-    );
+    assert.match(formatAccessibleJourneyLabel(claraRow), /Claras körkortsresa/);
 
     const response = await injectWithSession(app, {
       bilklar_session: createSessionToken(accepted.userId),
@@ -260,7 +258,8 @@ describe("app navigation (GET /app)", () => {
       url: "/app",
     });
     assert.equal(response.statusCode, 200);
-    assert.match(response.body, /Clara — senast körd 14 sep/i);
+    assert.match(response.body, /Claras körkortsresa/);
+    assert.match(response.body, /Du är handledare · senast körd 14 sep/i);
     await app.close();
   });
 });

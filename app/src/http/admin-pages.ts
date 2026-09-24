@@ -60,7 +60,7 @@ function signupDeleteForm(id: string, variant: "row" | "detail"): string {
     </form>`;
   }
   return `<form method="post" action="${action}" class="admin-form admin-form--danger" onsubmit="return confirm('Radera anmälan? Det går inte att ångra.');">
-      <p>Radering tar bort waitlist-raden. Används vid begäran eller manuell radering före 18 månader. Anmälningar äldre än 18 månader tas bort automatiskt. Detta är separat från produktanvändarens account lifecycle.</p>
+      <p>Radering tar bort waitlist-raden. Används vid begäran eller manuell radering före 18 månader. Anmälningar som är 18 månader gamla eller äldre tas bort automatiskt. Detta är separat från produktanvändarens account lifecycle.</p>
       <label class="consent">
         <input type="checkbox" name="confirm" value="yes" required>
         <span>Jag vill radera den här anmälan.</span>

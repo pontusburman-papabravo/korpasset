@@ -41,7 +41,8 @@ describe("HTTP happy path (two isolated sessions)", () => {
       url: `/journey/${journeyId}`,
     });
     assert.equal(journeyGet.statusCode, 200, "journey page loads");
-    assert.match(journeyGet.body, /Ella/);
+    assert.match(journeyGet.body, /Min körkortsresa/);
+    assert.match(journeyGet.body, /Elev · B-körkort/);
 
     // A4–A5: create invitation and extract invite URL/token
     const inviteResponse = await injectWithSession(app, studentCookies, {

@@ -89,14 +89,16 @@ describe("public legal pages", () => {
     assert.match(privacy.body, /användarraden raderas inte/);
     assert.match(privacy.body, /intresseanmälan till betan raderas inte automatiskt/i);
     assert.match(privacy.body, /automatiskt jobb/);
-    assert.match(privacy.body, /äldre än 18 månader/);
+    assert.match(privacy.body, /18 månader gamla eller äldre/);
     assert.doesNotMatch(privacy.body, /inget automatiskt retention-jobb/);
     assert.match(privacy.body, /utan koppling till ditt konto/);
     assert.match(privacy.body, /Interna produkthändelser kopplas loss/);
     assert.doesNotMatch(privacy.body, /internt användar-id/);
-    assert.match(privacy.body, /Säkerhetskopior av databasen kan innehålla personuppgifter en begränsad tid/);
+    assert.match(privacy.body, /Säkerhetskopior av databasen kan innehålla personuppgifter i högst 14 dagar/);
     assert.match(privacy.body, /bara för att återställa tjänsten/);
     assert.match(privacy.body, /inte för vanlig behandling/);
+    assert.match(privacy.body, /14 dagar gamla eller äldre/);
+    assert.doesNotMatch(privacy.body, /ännu inte fastställt/);
     assert.doesNotMatch(privacy.body, /ingen automatisk rensning av backuper/);
     assert.match(privacy.body, /ber om samtycke innan vi använder analyscookies/);
     assert.match(privacy.body, /Google Analytics/);

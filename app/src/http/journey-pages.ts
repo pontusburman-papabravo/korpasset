@@ -3,7 +3,6 @@ import type { DrivingJourney } from "../services/journeys.js";
 import {
   PRACTICE_STAGES,
   practiceStageLabel,
-  transmissionLabel,
 } from "../services/journeys.js";
 import type { EndedDriveSummary } from "../services/drives.js";
 import type { RecommendedSkill } from "../services/recommendations.js";
@@ -17,8 +16,110 @@ import {
   supervisorGuideForSkillKey,
 } from "../domain/supervisor-guide.js";
 import { coachingStepsForSkillKey } from "../domain/coaching-steps.js";
+import type { NextDrivePlan } from "../services/next-drive-plan.js";
 import { escapeHtml, primaryButton } from "./layout.js";
 import { TRANSPORTSTYRELSEN_LINKS } from "./landing.js";
+import {
+  journeyIdentityForRole,
+  renderJourneyIdentity,
+} from "./journey-identity.js";
+
+export function renderPracticeSkillRows(
+  journeyId: string,
+  skills: { skillKey: string; title: string }[],
+): string {
+  return skills
+    .map(
+      (skill) => `<li class="practice-item">
+        <span class="practice-item__title">${escapeHtml(skill.title)}</span>
+        <a class="practice-item__guide" href="/journey/${escapeHtml(journeyId)}/guide/${escapeHtml(skill.skillKey)}">Så övar ni</a>
+      </li>`,
+    )
+    .join("");
+}
+
+export function renderNextDrivePlanCard(options: {
+  journeyId: string;
+  plan: NextDrivePlan;
+  editHref: string;
+}): string {
+  const planner = options.plan.plannedByName
+    ? `<p>Planerat av ${escapeHtml(options.plan.plannedByName)}</p>`
+    : "";
+  return `<section class="card card--action">
+    <h2>Nästa körpass</h2>
+    ${planner}
+    <p>${options.plan.skills.length} saker att träna</p>
+    <ul class="recommendation-list">
+      ${renderPracticeSkillRows(options.journeyId, options.plan.skills)}
+    </ul>
+    <a class="btn btn-secondary" href="${escapeHtml(options.editHref)}">Ändra plan</a>
+  </section>`;
+}
+
+export function renderNextWorkspacePage(options: {
+  journeyId: string;
+  identityTitle: string;
+  identityRole: string;
+  isStudent: boolean;
+  plan: NextDrivePlan | null;
+  supervisors: { userId: string; displayName: string | null }[];
+}): string {
+  const identity = renderJourneyIdentity({
+    title: options.identityTitle,
+    roleLine: options.identityRole,
+    role: options.isStudent ? "student" : "supervisor",
+  });
+  const planCta = options.isStudent ? "Planera körpass" : "Välj dagens fokus";
+  const emptyBody = options.isStudent
+    ? "Välj 2–3 saker ni vill träna."
+    : "Välj 2–3 saker att fokusera på.";
+  if (!options.plan) {
+    return `${identity}
+      <section class="card card--action">
+        <h2>Nästa körpass</h2>
+        <p>${escapeHtml(emptyBody)}</p>
+        <a class="btn btn-primary" href="/journey/${escapeHtml(options.journeyId)}/drive/new">${escapeHtml(planCta)}</a>
+      </section>`;
+  }
+
+  const supervisorPicker =
+    options.isStudent && options.supervisors.length > 1
+      ? `<div>
+           <label for="supervisor">Vilken handledare kör med er?</label>
+           <select id="supervisor" name="supervisor_user_id" required class="supervisor-select">
+             ${options.supervisors
+               .map(
+                 (supervisor) =>
+                   `<option value="${escapeHtml(supervisor.userId)}">${escapeHtml(supervisor.displayName ?? "Handledare")}</option>`,
+               )
+               .join("")}
+           </select>
+         </div>`
+      : "";
+  const hiddenSkills = options.plan.skills
+    .map(
+      (skill) =>
+        `<input type="hidden" name="skill_ids" value="${escapeHtml(skill.skillId)}">`,
+    )
+    .join("");
+  const startForm =
+    options.supervisors.length > 0
+      ? `<form method="post" action="/journey/${escapeHtml(options.journeyId)}/drives" class="stack">
+           ${hiddenSkills}
+           ${supervisorPicker}
+           ${primaryButton("Starta körpass")}
+         </form>`
+      : "";
+
+  return `${identity}
+    ${renderNextDrivePlanCard({
+      journeyId: options.journeyId,
+      plan: options.plan,
+      editHref: `/journey/${options.journeyId}/drive/new`,
+    })}
+    ${startForm}`;
+}
 
 export function staleDriveNudge(
   latestEnded: EndedDriveSummary | null,
@@ -38,19 +139,19 @@ export function renderJourneyHome(options: {
   recommendations: RecommendedSkill[];
   areas: AreaProgress[];
   readiness: JourneyReadiness;
+  plan: NextDrivePlan | null;
 }): string {
   const { journey, access, supervisors, activeDriveId, latestEnded, pendingRating } =
     options;
   const journeyId = escapeHtml(journey.id);
   const isStudent = access.role === "student";
   const hasSupervisor = supervisors.length > 0;
-  const studentName = escapeHtml(journey.studentName ?? "Körkortsresa");
-
-  const heading = isStudent
-    ? `<h1>Min körkortsresa</h1>
-       <p class="muted">${studentName} · B-körkort · ${escapeHtml(transmissionLabel(journey.transmissionScope))}</p>`
-    : `<h1>${studentName}</h1>
-       <p class="muted">Du är handledare</p>`;
+  const identity = journeyIdentityForRole(
+    access.role,
+    journey.studentName,
+    journey.licenceType,
+  );
+  const heading = renderJourneyIdentity(identity);
 
   const pendingSection =
     pendingRating && latestEnded
@@ -77,27 +178,28 @@ export function renderJourneyHome(options: {
   const firstDrive = hasSupervisor && !activeDriveId && !latestEnded;
   const beginnerStart =
     journey.practiceStage === "just_started" || journey.practiceStage === "unknown";
-  let startEyebrow = isStudent ? "Planera" : "I bilen";
-  let startTitle = isStudent ? "Nästa körpass" : "Dagens fokus";
-  let startBody = "Välj 2–3 moment att träna på idag.";
+  let startBody = isStudent
+    ? "Välj 2–3 saker ni vill träna."
+    : "Välj 2–3 saker att fokusera på.";
   if (staleDrive) {
-    startEyebrow = "Senaste körpasset";
-    startTitle = `Det är ${formatDaysSince(staleDays)} sedan ni körde`;
-    startBody = "En kort runda räcker. Välj 2–3 moment när ni har en lucka.";
+    startBody = `Det är ${formatDaysSince(staleDays)} sedan ni körde. En kort runda räcker.`;
   } else if (firstDrive && beginnerStart) {
-    startEyebrow = isStudent ? "Första passet" : "I bilen";
-    startTitle = isStudent ? "Ett första kort pass" : "Dagens fokus";
-    startBody = "Ett kort pass i lugn trafik räcker. Välj 2–3 moment att börja med.";
+    startBody = "Ett kort pass i lugn trafik räcker. Välj 2–3 saker att börja med.";
   }
-  const startSection =
-    hasSupervisor && !activeDriveId
-      ? `<section class="card card--action">
-           <p class="eyebrow">${escapeHtml(startEyebrow)}</p>
-           <h2>${escapeHtml(startTitle)}</h2>
+  const planCta = isStudent ? "Planera körpass" : "Välj dagens fokus";
+  const startSection = !activeDriveId
+    ? options.plan
+      ? renderNextDrivePlanCard({
+          journeyId,
+          plan: options.plan,
+          editHref: `/journey/${journeyId}/drive/new`,
+        })
+      : `<section class="card card--action">
+           <h2>Nästa körpass</h2>
            <p>${escapeHtml(startBody)}</p>
-           <a class="btn btn-primary" href="/journey/${journeyId}/drive/new">Vad tränar ni på idag?</a>
+           <a class="btn btn-primary" href="/journey/${journeyId}/drive/new">${escapeHtml(planCta)}</a>
          </section>`
-      : "";
+    : "";
 
   const inviteHero =
     isStudent && !hasSupervisor
@@ -111,24 +213,31 @@ export function renderJourneyHome(options: {
          </section>`
       : "";
 
+  const plannedIds = new Set(options.plan?.skills.map((skill) => skill.skillId) ?? []);
+  const continueSkills = options.recommendations.filter(
+    (rec) => !plannedIds.has(rec.skillId),
+  );
   const recList =
-    options.recommendations.length > 0
+    continueSkills.length > 0
       ? `<ul class="recommendation-list">
-           ${options.recommendations
+           ${continueSkills
              .map(
-               (rec) => `<li>
-                 <span class="recommendation-title">${escapeHtml(rec.title)}</span>
-                 <span class="recommendation-message">${escapeHtml(rec.message)}</span>
+               (rec) => `<li class="practice-item">
+                 <span class="practice-item__title">${escapeHtml(rec.title)}</span>
+                 <a class="practice-item__guide" href="/journey/${journeyId}/guide/${escapeHtml(rec.skillKey)}">Så övar ni</a>
                </li>`,
              )
              .join("")}
          </ul>`
       : `<p class="muted">${escapeHtml(emptyFocusCopy(journey.practiceStage))}</p>`;
 
-  const nextSection = `<section class="card">
-    <h2>Nästa gång</h2>
-    ${recList}
-  </section>`;
+  const nextSection =
+    continueSkills.length > 0 || !options.plan
+      ? `<section class="card">
+           <h2>Fortsätt träna på</h2>
+           ${recList}
+         </section>`
+      : "";
 
   const latestSection = latestEnded
     ? `<section class="card">
@@ -258,6 +367,8 @@ export function renderJourneyHome(options: {
 export function renderDevelopmentPage(options: {
   journeyId: string;
   studentName: string;
+  identityTitle: string;
+  identityRole: string;
   readiness: JourneyReadiness;
   skills: {
     skillId: string;
@@ -300,7 +411,12 @@ export function renderDevelopmentPage(options: {
     })
     .join("");
 
-  return `<h1>Så här ligger ni till</h1>
+  return `${renderJourneyIdentity({
+      title: options.identityTitle,
+      roleLine: options.identityRole,
+      role: options.identityRole === "Du är handledare" ? "supervisor" : "student",
+    })}
+    <h2>Så här ligger ni till</h2>
     <div class="readiness-total">
       <div class="readiness-total__head">
         <span class="readiness-total__value">${options.readiness.percent}%</span>
@@ -408,7 +524,7 @@ export function renderSupervisorGuideSkill(options: {
     ${
       lookFor
         ? `<section class="card">
-             <h2>Titta efter</h2>
+             <h2>Att vara uppmärksam på</h2>
              <ul>${lookFor}</ul>
            </section>`
         : ""
@@ -416,7 +532,7 @@ export function renderSupervisorGuideSkill(options: {
     ${
       tips
         ? `<section class="card">
-             <h2>Så coachar du</h2>
+             <h2>Som handledare</h2>
              <ul>${tips}</ul>
            </section>`
         : ""
@@ -436,7 +552,7 @@ export function renderSupervisorGuideSkill(options: {
     ${
       stepItems
         ? `<section class="card">
-             <h2>Steg att öva</h2>
+             <h2>Så övar ni</h2>
              <ol class="guide-steps">${stepItems}</ol>
            </section>`
         : ""

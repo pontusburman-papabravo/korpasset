@@ -83,7 +83,7 @@ export function privacyPage(): string {
 
      <h2>Lagring</h2>
      <p>Personuppgifter från en intresseanmälan raderas senast 18 månader efter anmälan, tidigare om du begär det eller när betakön inte längre behövs.</p>
-     <p>Ett automatiskt jobb i tjänsten tar bort intresseanmälningar som är äldre än 18 månader. Administratör kan radera en anmälan tidigare om du begär det.</p>
+     <p>Ett automatiskt jobb i tjänsten tar bort intresseanmälningar som är 18 månader gamla eller äldre. Administratör kan radera en anmälan tidigare om du begär det.</p>
      <p>Uppgifter i ett Körpasset-konto och en körkortsresa sparas så länge de behövs för att tillhandahålla tjänsten. Det finns inget automatiskt jobb som raderar inaktiva konton.</p>
 
      <h2>Säkerhet</h2>
@@ -122,7 +122,7 @@ export function privacyPage(): string {
        <li>En intresseanmälan till betan raderas inte automatiskt med produktkontot.</li>
      </ul>
      <p>Interna produkthändelser kopplas loss från ditt användar-id. De behåller inte en koppling som går att följa tillbaka till kontot.</p>
-     <p>Säkerhetskopior av databasen kan innehålla personuppgifter en begränsad tid efter att de raderats i tjänsten. De används bara för att återställa tjänsten, inte för vanlig behandling. Hur länge kopiorna behålls är ännu inte fastställt som en automatisk rutin.</p>
+     <p>Säkerhetskopior av databasen kan innehålla personuppgifter i högst 14 dagar efter att de raderats i tjänsten. De används bara för att återställa tjänsten, inte för vanlig behandling. Ett automatiskt jobb tar en kopia varje dygn och tar bort kopior som är 14 dagar gamla eller äldre.</p>
 
      <h2>Cookies och lokal teknik</h2>
      <p>Vi ber om samtycke innan vi använder analyscookies eller andra tredjepartsverktyg. Nödvändiga cookies sätts utan det valet, eftersom webbplatsen och inloggningen inte fungerar utan dem. Reglerna följer dataskyddsförordningen (GDPR) och reglerna om kakor i lagen om elektronisk kommunikation.</p>

@@ -40,23 +40,35 @@ function faviconLink(): string {
   return `<link rel="icon" href="${BRAND_ASSETS.favicon}" type="image/svg+xml">`;
 }
 
+export type AppTab = "resa" | "nasta" | "utveckling" | "mer";
+
 export interface AppLayoutOptions {
   journeyId?: string;
   role?: "student" | "supervisor";
+  activeTab?: AppTab | null;
+}
+
+function tabIcon(name: AppTab): string {
+  const icons: Record<AppTab, string> = {
+    resa: `<path d="M4 16.5c2.2-3 4.2-4.5 8-4.5s5.8 1.5 8 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 7.5h8M10 4.5h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/>`,
+    nasta: `<circle cx="12" cy="12" r="7.25" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10.2 8.6 16 12l-5.8 3.4V8.6z" fill="currentColor"/>`,
+    utveckling: `<path d="M5 16.5 9.2 11l3.3 3.2L19 7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 7.5H19V12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+    mer: `<circle cx="6.5" cy="12" r="1.45" fill="currentColor"/><circle cx="12" cy="12" r="1.45" fill="currentColor"/><circle cx="17.5" cy="12" r="1.45" fill="currentColor"/>`,
+  };
+  return `<svg class="app-tabbar__icon" viewBox="0 0 24 24" aria-hidden="true">${icons[name]}</svg>`;
+}
+
+function tabLink(tab: AppTab, label: string, href: string, activeTab?: AppTab | null): string {
+  const current = activeTab === tab ? ` aria-current="page"` : "";
+  return `<a href="${href}"${current}>${tabIcon(tab)}<span>${label}</span></a>`;
 }
 
 function appNav(options: AppLayoutOptions = {}): string {
-  const journeyId = options.journeyId ? escapeHtml(options.journeyId) : "";
-  const homeHref = journeyId ? `/journey/${journeyId}` : "/app";
-  const nextHref = journeyId ? `/journey/${journeyId}/drive/new` : "/app";
-  const progressHref = journeyId ? `/journey/${journeyId}/utveckling` : "/konto";
-  const nextLabel = options.role === "supervisor" ? "Fokus" : "Nästa";
   return `<nav class="app-tabbar" aria-label="Huvudmeny">
-    <a href="${homeHref}">Resa</a>
-    <a href="${nextHref}">${nextLabel}</a>
-    <a href="${progressHref}">Utveckling</a>
-    <a href="/hjalp">Hjälp</a>
-    <a href="/konto">Konto</a>
+    ${tabLink("resa", "Resa", "/resa", options.activeTab)}
+    ${tabLink("nasta", "Nästa", "/nasta", options.activeTab)}
+    ${tabLink("utveckling", "Utveckling", "/utveckling", options.activeTab)}
+    ${tabLink("mer", "Mer", "/mer", options.activeTab)}
   </nav>`;
 }
 
@@ -74,13 +86,9 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
 </head>
 <body class="app">
   <header class="app-bar">
-    <a class="app-bar__brand" href="/app">
+    <a class="app-bar__brand" href="/resa">
       <img src="${BRAND_ASSETS.logo}" alt="Körpasset">
     </a>
-    <nav class="app-bar__nav" aria-label="Konto">
-      <a href="/hjalp">Hjälp</a>
-      <a href="/konto">Konto</a>
-    </nav>
   </header>
   <main class="container">
     ${body}

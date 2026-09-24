@@ -15,7 +15,9 @@ import {
   errorBanner,
   layout,
   primaryButton,
+  type AppLayoutOptions,
 } from "./layout.js";
+import { clearActiveJourneyCookie } from "./active-journey.js";
 
 function providerRow(provider: OAuthProvider, linked: boolean): string {
   const label = providerLabel(provider);
@@ -33,6 +35,7 @@ function accountPage(options: {
   displayName: string;
   linked: OAuthProvider[];
   errorMessage?: string;
+  nav?: AppLayoutOptions;
 }): string {
   const hasApple = options.linked.includes("apple");
   const hasGoogle = options.linked.includes("google");
@@ -70,6 +73,7 @@ function accountPage(options: {
          ${primaryButton("Radera mitt konto")}
        </form>
      </section>`,
+    { ...options.nav, activeTab: "mer" },
   );
 }
 
@@ -92,6 +96,7 @@ export async function registerAccountRoutes(app: FastifyInstance): Promise<void>
     const reusable = await getReusableSessionUserId(userId);
     if (!reusable) {
       clearSessionCookie(reply);
+      clearActiveJourneyCookie(reply);
       return reply.redirect("/app");
     }
     return reply.type("text/html").send(await renderAccountPage(reusable));
@@ -132,6 +137,7 @@ export async function registerAccountRoutes(app: FastifyInstance): Promise<void>
     }
     await deleteProductAccount(reusable);
     clearSessionCookie(reply);
+    clearActiveJourneyCookie(reply);
     return reply.type("text/html").send(
       layout(
         "Kontot raderat",
@@ -144,6 +150,7 @@ export async function registerAccountRoutes(app: FastifyInstance): Promise<void>
 
   app.post("/logout", async (_request, reply) => {
     clearSessionCookie(reply);
+    clearActiveJourneyCookie(reply);
     return reply.redirect("/app");
   });
 }

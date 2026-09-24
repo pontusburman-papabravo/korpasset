@@ -9,6 +9,7 @@ import { UnauthorizedError } from "../errors.js";
 import { config, isProduction } from "../config.js";
 import { getPool } from "../db/pool.js";
 import { clearSessionCookie, getSessionUserId } from "../auth/session.js";
+import { rememberActiveJourney } from "./active-journey.js";
 import { getReusableSessionUserId } from "../services/users.js";
 import { redactRequestPath } from "./log.js";
 import { missingSessionPage } from "./layout.js";
@@ -99,9 +100,18 @@ export async function buildServer() {
     const userId = getSessionUserId(request);
     if (!userId) return;
     const reusable = await getReusableSessionUserId(userId);
-    if (reusable) return;
-    delete request.cookies[config.sessionCookieName];
-    clearSessionCookie(reply);
+    if (!reusable) {
+      delete request.cookies[config.sessionCookieName];
+      clearSessionCookie(reply);
+      return;
+    }
+    const path = (request.url ?? "").split("?")[0];
+    const match = path.match(
+      /^\/journey\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i,
+    );
+    if (match) {
+      await rememberActiveJourney(request, reply, reusable, match[1]);
+    }
   });
 
   app.addHook("onSend", async (request, reply, payload) => {
