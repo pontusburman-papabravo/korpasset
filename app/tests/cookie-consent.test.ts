@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { createTestApp } from "./helpers.js";
 import { resetDatabaseData } from "./setup.js";
@@ -68,6 +69,11 @@ describe("cookie consent", () => {
     const second = await again.inject({ method: "GET", url: "/" });
     assert.match(second.body, /"gaMeasurementId":""/);
     await again.close();
+  });
+
+  it("wires the production GA4 id through Compose without putting the tag in the HTML", () => {
+    const compose = fs.readFileSync(new URL("../../deploy/docker-compose.yml", import.meta.url), "utf8");
+    assert.match(compose, /GA_MEASUREMENT_ID: \$\{GA_MEASUREMENT_ID:-G-7YNVJ8F9EL\}/);
   });
 
   it("allows the Google tag to run after consent without opening the rest of the web", () => {
