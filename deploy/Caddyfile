@@ -3,7 +3,8 @@
 }
 
 korpasset.se, www.korpasset.se {
-	encode gzip zstd
+	@compressible not path /.well-known/apple-app-site-association /.well-known/assetlinks.json
+	encode @compressible gzip zstd
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options nosniff

@@ -117,6 +117,13 @@ describe("production foundation", () => {
       SESSION_SECRET: process.env.SESSION_SECRET,
       APP_BASE_URL: process.env.APP_BASE_URL,
       ALLOW_HTTP: process.env.ALLOW_HTTP,
+      APPLE_TEAM_ID: process.env.APPLE_TEAM_ID,
+      APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID,
+      APPLE_CLIENT_IDS: process.env.APPLE_CLIENT_IDS,
+      GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+      GOOGLE_CLIENT_IDS: process.env.GOOGLE_CLIENT_IDS,
+      GOOGLE_WEB_CLIENT_ID: process.env.GOOGLE_WEB_CLIENT_ID,
+      GOOGLE_IOS_CLIENT_ID: process.env.GOOGLE_IOS_CLIENT_ID,
     };
 
     try {
@@ -144,6 +151,19 @@ describe("production foundation", () => {
       assert.throws(() => assertProductionConfig(), /must be https/);
 
       process.env.APP_BASE_URL = "https://korpasset.se";
+      delete process.env.APPLE_TEAM_ID;
+      delete process.env.APPLE_CLIENT_ID;
+      delete process.env.APPLE_CLIENT_IDS;
+      delete process.env.GOOGLE_CLIENT_ID;
+      delete process.env.GOOGLE_CLIENT_IDS;
+      delete process.env.GOOGLE_WEB_CLIENT_ID;
+      delete process.env.GOOGLE_IOS_CLIENT_ID;
+      assert.throws(() => assertProductionConfig(), /APPLE_TEAM_ID/);
+
+      process.env.APPLE_TEAM_ID = "PQ7M3B7VW5";
+      process.env.APPLE_CLIENT_ID = "se.korpasset.app";
+      process.env.GOOGLE_WEB_CLIENT_ID = "web.apps.googleusercontent.com";
+      process.env.GOOGLE_IOS_CLIENT_ID = "ios.apps.googleusercontent.com";
       assert.doesNotThrow(() => assertProductionConfig());
     } finally {
       restoreEnv(snapshot);

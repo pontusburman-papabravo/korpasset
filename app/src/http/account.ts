@@ -141,7 +141,12 @@ export async function registerAccountRoutes(app: FastifyInstance): Promise<void>
         }),
       );
     }
-    await deleteProductAccount(reusable);
+    try {
+      await deleteProductAccount(reusable);
+    } catch (error) {
+      request.log.error({ err: error }, "account deletion failed");
+      throw error;
+    }
     clearSessionCookie(reply);
     clearActiveJourneyCookie(reply);
     return reply.type("text/html").send(

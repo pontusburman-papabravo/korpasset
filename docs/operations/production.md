@@ -134,6 +134,7 @@ Befintliga databaser där `0001_initial.sql` redan körts stämplas i `schema_mi
 - `GET /health` → `200 { status: "ok" }` om `SELECT 1` mot Postgres lyckas, annars `503`.
 - Svaret innehåller `x-request-id`. Klienten kan skicka samma header.
 - Produktion loggar JSON via Fastify. Cookies, `Authorization` och invitation-tokens i `/invite/...` redakteras.
+- Beta-fel som går att skilja åt: `oauth failed`, `oauth continue failed`, `oauth not configured`, `invite invalid`, `invite expired`, `invite acceptance failed`, `start drive failed`, `complete drive failed`, `account deletion failed`. Identity token och session skrivs inte.
 - `uncaughtException` / `unhandledRejection` loggas och processen avslutas.
 
 Inga hemligheter, invitation-tokens eller personnamn ska läggas till i loggar.

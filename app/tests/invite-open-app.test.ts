@@ -91,11 +91,11 @@ function load(pathname: string, native: boolean, panelHidden = true) {
 }
 
 describe("invitation link opens the app", () => {
-  it("points a browser at korpasset://invite and hides the web form", () => {
+  it("points a browser at korpasset://invite and keeps the web form", () => {
     const page = load("/invite/abc_DEF-123", false);
     assert.equal(page.panel.hidden, false);
     assert.equal(page.link.attrs.href, "korpasset://invite/abc_DEF-123");
-    assert.equal(page.form.hidden, true);
+    assert.equal(page.form.hidden, false);
   });
 
   it("keeps the accept form inside the native app and hides Öppna i Körpasset", () => {

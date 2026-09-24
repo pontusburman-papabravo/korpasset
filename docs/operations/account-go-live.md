@@ -1,6 +1,6 @@
 # Account go-live (Fas 8)
 
-Checklista innan extern beta med Apple/Google i appen. Waitlist och `/admin` får fortsätta utan OAuth-env — processen ska starta — men **produktinloggning** är 503 tills client-id är satta.
+Checklista innan extern beta med Apple/Google i appen. Produktionsprocessen startar inte utan Apple-audience, Google-audience, `GOOGLE_IOS_CLIENT_ID` och `APPLE_TEAM_ID`. Waitlist och `/admin` påverkas inte när de värdena finns. `ANDROID_SHA256_CERT_FINGERPRINTS` får saknas: då är `assetlinks.json` tom.
 
 Ingen paywall. Ingen e-post/lösenord. Identity-nyckel är `(provider, provider_subject)`.
 

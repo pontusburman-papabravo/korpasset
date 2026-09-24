@@ -835,6 +835,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     const invitation = await getInvitationByToken(token);
 
     if (!invitation) {
+      request.log.warn({ invite: "invalid" }, "invite invalid");
       return reply.status(404).type("text/html").send(
         layout("Inbjudan", errorBanner("Inbjudan hittades inte")),
       );
@@ -850,16 +851,19 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         ) {
           return reply.redirect(`/journey/${invitation.journeyId}`);
         }
+        request.log.warn({ invite: "already_used" }, "invite invalid");
         return reply.status(410).type("text/html").send(
           invitationAlreadyUsedPage(invitation.studentName),
         );
       }
+      request.log.warn({ invite: invitation.status }, "invite invalid");
       return reply.status(410).type("text/html").send(
         layout("Inbjudan", errorBanner("Inbjudan är inte längre giltig")),
       );
     }
 
     if (new Date(invitation.expiresAt) <= new Date()) {
+      request.log.warn({ invite: "expired" }, "invite expired");
       return reply.status(410).type("text/html").send(
         layout("Inbjudan", errorBanner("Inbjudan har gått ut")),
       );
@@ -884,8 +888,9 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         `<h1>Du ska övningsköra med ${escapeHtml(invitation.studentName)}</h1>
          <p>Länken är till Körpasset-appen. Den skapar inget webbkonto och ingen waitlist-anmälan.</p>
          <div id="invite-open-app" class="stack" hidden>
-           <p>Öppna inbjudan i Körpasset och logga in där med Apple eller Google.</p>
+           <p>Har du appen installerad öppnas inbjudan där. Annars stannar den här sidan kvar.</p>
            <a class="btn btn-primary" id="invite-open-app-link" href="korpasset://invite/${escapeHtml(token)}">Öppna i Körpasset</a>
+           <p id="invite-install-fallback">Om appen inte öppnas: installera Körpasset och öppna samma länk igen. Inbjudan ligger kvar på <strong>korpasset.se/invite/…</strong> och försvinner inte om du loggar in.</p>
          </div>
          ${
            sessionUser && sessionName
@@ -929,12 +934,21 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       return reply.redirect(`/journey/${result.journeyId}`);
     } catch (error) {
       if (error instanceof AppError && error.code === "already_accepted") {
+        request.log.warn({ invite: "acceptance_failed", code: error.code }, "invite acceptance failed");
         const invitation = await getInvitationByToken(token);
         return reply.status(409).type("text/html").send(
           invitationAlreadyUsedPage(invitation?.studentName ?? "Eleven"),
         );
       }
       const { status, message } = handleError(error);
+      request.log.warn(
+        {
+          invite: "acceptance_failed",
+          status,
+          code: error instanceof AppError ? error.code : undefined,
+        },
+        "invite acceptance failed",
+      );
       return reply.status(status).type("text/html").send(
         layout("Anslut", errorBanner(message)),
       );
@@ -1068,6 +1082,10 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       return reply.redirect(`/journey/${journeyId}/drive/${drive.id}`);
     } catch (error) {
       const { status, message } = handleError(error);
+      request.log.warn(
+        { drive: "start_failed", journeyId, status },
+        "start drive failed",
+      );
       return reply.status(status).type("text/html").send(
         layout("Fel", errorBanner(message)),
       );
@@ -1222,6 +1240,10 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       return reply.redirect(`/journey/${journeyId}/drive/${driveId}`);
     } catch (error) {
       const { status, message } = handleError(error);
+      request.log.warn(
+        { drive: "complete_failed", journeyId, status },
+        "complete drive failed",
+      );
       return reply.status(status).type("text/html").send(
         layout("Fel", errorBanner(message)),
       );
