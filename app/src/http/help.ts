@@ -3,6 +3,7 @@ import { config } from "../config.js";
 import { EmailSendError, getMailer } from "../services/email.js";
 import { getSessionUserId } from "../auth/session.js";
 import { getReusableSessionUserId, getUserById } from "../services/users.js";
+import { getFeedbackReplyContact } from "../services/oauth-accounts.js";
 import {
   escapeHtml,
   errorBanner,
@@ -81,13 +82,22 @@ export async function registerHelpRoutes(app: FastifyInstance): Promise<void> {
 
     const userId = await getReusableSessionUserId(getSessionUserId(request));
     const user = userId ? await getUserById(userId) : null;
+    const contact = userId ? await getFeedbackReplyContact(userId) : null;
+    const adminUrl = userId
+      ? `${config.appBaseUrl.replace(/\/$/, "")}/admin/support/users/${userId}`
+      : null;
     const text = [
       `Ämne: ${topic.label}`,
-      `Användare: ${userId ?? "ej inloggad"}`,
       `Namn: ${user?.displayName ?? "-"}`,
+      `E-post: ${contact?.replyTo ?? "saknas"}`,
+      `Inloggning: ${contact?.identityLines.join(", ") || "-"}`,
+      `Användare: ${userId ?? "ej inloggad"}`,
+      adminUrl ? `Konto: ${adminUrl}` : null,
       "",
       message.slice(0, 2000),
-    ].join("\n");
+    ]
+      .filter((line): line is string => line != null)
+      .join("\n");
 
     try {
       if (config.resendApiKey) {
@@ -95,6 +105,7 @@ export async function registerHelpRoutes(app: FastifyInstance): Promise<void> {
           to: "support@korpasset.se",
           subject: `Beta-feedback: ${topic.label}`,
           text,
+          replyTo: contact?.replyTo ?? undefined,
         });
       } else {
         request.log.info({ topic: topic.value }, "feedback received without mailer");

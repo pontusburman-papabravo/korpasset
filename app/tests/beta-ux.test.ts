@@ -27,6 +27,7 @@ import {
   skillProgressLabel,
 } from "../src/services/progression.js";
 import { recommendNextFocus } from "../src/services/recommendations.js";
+import { continueWithOAuth } from "../src/services/oauth-accounts.js";
 import {
   type OutboundEmail,
   setMailerForTests,
@@ -470,6 +471,9 @@ describe("beta UX HTTP", () => {
     assert.equal(sent.length, 1);
     assert.match(sent[0].subject, /Välja dagens fokus/);
     assert.match(sent[0].text, new RegExp(userId));
+    assert.match(sent[0].text, /E-post: saknas/);
+    assert.match(sent[0].text, new RegExp(`/admin/support/users/${userId}`));
+    assert.equal(sent[0].replyTo, undefined);
 
     const invalid = await app.inject({
       method: "POST",
@@ -502,6 +506,40 @@ describe("beta UX HTTP", () => {
       lastStatus = response.statusCode;
     }
     assert.equal(lastStatus, 429);
+    await app.close();
+  });
+
+  it("puts a reply address on help mail so support can answer", async () => {
+    resetRateLimitsForTests();
+    const sent: OutboundEmail[] = [];
+    setMailerForTests({
+      async send(email) {
+        sent.push(email);
+      },
+    });
+    process.env.RESEND_API_KEY = "test-resend";
+    const google = await continueWithOAuth({
+      provider: "google",
+      subject: "google-feedback-reply",
+      displayName: "Pontus",
+      email: "pontus@example.com",
+    });
+    const app = await createTestApp();
+    const posted = await injectWithSession(app, session(google.userId), {
+      method: "POST",
+      url: "/hjalp",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({
+        topic: "drive_focus",
+        message: "Hur gör jag så här?",
+      }),
+    });
+    assert.equal(posted.statusCode, 200);
+    assert.equal(sent.length, 1);
+    assert.equal(sent[0].replyTo, "pontus@example.com");
+    assert.match(sent[0].text, /E-post: pontus@example.com/);
+    assert.match(sent[0].text, /Inloggning: Google <pontus@example.com>/);
+    assert.match(sent[0].text, /Konto: .*\/admin\/support\/users\//);
     await app.close();
   });
 

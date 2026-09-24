@@ -18,6 +18,7 @@ export interface OutboundEmail {
   to: string;
   subject: string;
   text: string;
+  replyTo?: string;
 }
 
 export interface Mailer {
@@ -51,6 +52,7 @@ function resendMailer(): Mailer {
           to: [email.to],
           subject: email.subject,
           text: email.text,
+          ...(email.replyTo ? { reply_to: [email.replyTo] } : {}),
         }),
       });
       if (!response.ok) {
