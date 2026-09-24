@@ -156,7 +156,7 @@ describe("waitlist-driven product updates", () => {
       },
       owned.userId,
     );
-    assert.equal(otherLabel, "Clara");
+    assert.equal(otherLabel, "Claras körkortsresa");
   });
 
   it("counts calendar days since the last drive", () => {

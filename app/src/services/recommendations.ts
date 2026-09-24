@@ -14,7 +14,7 @@ const REASON_MESSAGES: Record<RecommendedSkill["reason"], string> = {
   training_focus: "Valt fokus",
   needs_help: "Behöver mer träning",
   with_support: "Träna vidare",
-  core_unobserved: "Värt att ta nästa gång",
+  core_unobserved: "Fortsätt träna",
 };
 
 const EMPTY_FOCUS_COPY: Record<PracticeStage, string> = {

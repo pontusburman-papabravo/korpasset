@@ -22,6 +22,7 @@ export const config = {
     return env("SESSION_SECRET", DEV_SESSION_SECRET);
   },
   sessionCookieName: "bilklar_session",
+  activeJourneyCookieName: "korpasset_active_journey",
   invitationExpiryDays: 7,
   get appBaseUrl() {
     return env("APP_BASE_URL", DEV_APP_BASE_URL);

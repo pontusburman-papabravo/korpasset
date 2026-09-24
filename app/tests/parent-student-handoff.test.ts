@@ -173,7 +173,8 @@ describe("parent initiates, student owns the journey", () => {
       method: "GET",
       url: `/journey/${journey.id}`,
     });
-    assert.match(home.body, /Ett första kort pass/);
+    assert.match(home.body, /Nästa körpass/);
+    assert.match(home.body, /Ett kort pass i lugn trafik/);
     assert.match(home.body, /lugn trafik/);
     assert.doesNotMatch(home.body, /Dags att komma ut/);
     assert.doesNotMatch(home.body, /Bjud in den som kör med dig/);

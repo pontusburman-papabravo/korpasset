@@ -1,9 +1,14 @@
 import {
-  formatAccessibleJourneyLabel,
   listAccessibleActiveJourneys,
   type AccessibleJourney,
 } from "../services/journeys.js";
 import { escapeHtml, layout } from "./layout.js";
+import {
+  journeyIdentityForRole,
+  pickerRoleLine,
+  renderJourneyIdentity,
+  supervisorJourneyTitle,
+} from "./journey-identity.js";
 
 export type SignedInHome =
   | { kind: "onboarding" }
@@ -34,18 +39,50 @@ export function renderJourneyPickerPage(
   const heading = hasOwnJourney ? "Vilken körkortsresa vill du öppna?" : "Välj elev";
   const choices = journeys
     .map((journey) => {
-      const label = formatAccessibleJourneyLabel(journey, viewerUserId);
-      return `<a class="card journey-choice" href="/journey/${escapeHtml(journey.id)}">${escapeHtml(label)}</a>`;
+      const owned = journey.studentUserId === viewerUserId;
+      const title = owned
+        ? "Min körkortsresa"
+        : supervisorJourneyTitle(journey.studentName);
+      return `<a class="card journey-choice" href="/journey/${escapeHtml(journey.id)}">
+        <span class="journey-choice__title">${escapeHtml(title)}</span>
+        <span class="journey-choice__meta">${escapeHtml(pickerRoleLine(owned, journey.lastDriveAt))}</span>
+      </a>`;
     })
     .join("");
   return layout(
     heading,
     `<h1>${escapeHtml(heading)}</h1>
-     <p>${
+     <p class="muted">${
        hasOwnJourney
-         ? "Du har mer än en körkortsresa. Varje resa är separat — access, utveckling och betalning blandas inte."
-         : "Du kan följa flera elever — till exempel två barn, eller partner och barn. Varje resa är separat."
+         ? "Varje körkortsresa är separat — access, utveckling och betalning blandas inte."
+         : "Du kan följa flera elever. Varje resa är separat."
      }</p>
      <div class="stack">${choices}</div>`,
+    { activeTab: "resa" },
   );
+}
+
+export function renderMorePage(options: {
+  identity: ReturnType<typeof journeyIdentityForRole> | null;
+  journeyCount: number;
+}): string {
+  const identity = options.identity
+    ? renderJourneyIdentity(options.identity)
+    : `<h1>Mer</h1>`;
+  const switcher =
+    options.journeyCount > 1
+      ? `<p><a class="btn btn-secondary" href="/app">Byt körkortsresa</a></p>`
+      : "";
+  return `${identity}
+    ${switcher}
+    <nav class="more-menu" aria-label="Mer">
+      <a href="/konto">Konto</a>
+      <a href="/hjalp">Hjälp</a>
+      <a href="/integritet">Integritet</a>
+      <a href="/villkor">Villkor</a>
+      <a href="/radera-konto">Radera konto</a>
+    </nav>
+    <form method="post" action="/logout">
+      <button type="submit" class="btn btn-secondary">Logga ut</button>
+    </form>`;
 }

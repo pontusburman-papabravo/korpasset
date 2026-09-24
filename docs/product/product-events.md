@@ -37,6 +37,19 @@ Historiska rader **skrivs inte om**. Nya kolumner är NULL på gamla events. Ana
 
 Återanvänds oförändrade: `supervisor_connected`, `drive_started`, `drive_completed`.
 
+## Events tillagda för journey-IA
+
+Inga befintliga eventnamn byttes. Tabbarna Konto/Hjälp finns inte längre som primära destinationer, så inga historiska events behöver mappas om.
+
+| Event | Semantik | Metadata |
+| --- | --- | --- |
+| `journey_switched` | Användaren öppnade en annan tillgänglig resa än den som cookien pekade på. | `journey_id` (den nya), `user_id`, `actor_role` |
+| `next_drive_plan_created` | Första aktiva 2–3-momentplanen sparades på resan. | `journey_id`, `user_id`, `actor_role`, `focus_skill_count` |
+| `next_drive_plan_updated` | En befintlig plan ersattes med en ny. | samma |
+| `training_guidance_opened` | Användaren öppnade “Så övar ni” / handledarguiden för ett moment. | `journey_id`, `user_id`, `actor_role` |
+
+Ingen PII i payload. Namn ligger inte i eventet.
+
 ## Handoff-cookie
 
 Handledarens länk är `/onboarding?som=elev&via=handledare`.

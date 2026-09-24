@@ -12,6 +12,7 @@ import {
   createJourneyForStudent,
   getJourneyById,
   isPracticeStage,
+  listAccessibleActiveJourneys,
   listActiveSupervisors,
   updatePracticeStage,
   updateTransmissionScope,
@@ -44,6 +45,10 @@ import {
 } from "../services/observations.js";
 import { emptyFocusCopy, recommendNextFocus } from "../services/recommendations.js";
 import {
+  getActiveNextDrivePlan,
+  saveNextDrivePlan,
+} from "../services/next-drive-plan.js";
+import {
   listJourneyReadiness,
   listSkillProgress,
   skillProgressLabel,
@@ -68,10 +73,23 @@ import {
   invitationAlreadyUsedPage,
   oauthContinuePanel,
 } from "./layout.js";
-import { renderJourneyPickerPage, signedInHome } from "./navigation.js";
+import {
+  layoutForRequest,
+  readActiveJourneyId,
+  redirectToActiveJourney,
+  resolveActiveJourney,
+  setActiveJourneyCookie,
+} from "./active-journey.js";
+import { journeyIdentityForRole } from "./journey-identity.js";
+import {
+  renderJourneyPickerPage,
+  renderMorePage,
+  signedInHome,
+} from "./navigation.js";
 import {
   renderDevelopmentPage,
   renderJourneyHome,
+  renderNextWorkspacePage,
   renderSupervisorGuideCues,
   renderSupervisorGuideIndex,
   renderSupervisorGuideSkill,
@@ -322,6 +340,48 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     );
   });
 
+  app.get("/resa", async (request, reply) => {
+    await redirectToActiveJourney(request, reply, "");
+  });
+
+  app.get("/nasta", async (request, reply) => {
+    await redirectToActiveJourney(request, reply, "/nasta");
+  });
+
+  app.get("/utveckling", async (request, reply) => {
+    await redirectToActiveJourney(request, reply, "/utveckling");
+  });
+
+  app.get("/mer", async (request, reply) => {
+    const userId = requireSessionUserId(request);
+    const resolved = await resolveActiveJourney(userId, readActiveJourneyId(request));
+    if (resolved) {
+      setActiveJourneyCookie(reply, resolved.journey.id);
+    }
+    const journeys = await listAccessibleActiveJourneys(userId);
+    const identity = resolved
+      ? journeyIdentityForRole(
+          resolved.role,
+          resolved.journey.studentName,
+          "B",
+        )
+      : null;
+    return reply.type("text/html").send(
+      layoutForRequest(
+        request,
+        "Mer",
+        renderMorePage({
+          identity,
+          journeyCount: journeys.length,
+        }),
+        {
+          journeyId: resolved?.journey.id,
+          role: resolved?.role,
+        },
+      ),
+    );
+  });
+
   app.get("/onboarding", async (request, reply) => {
     const userId = getSessionUserId(request);
     if (userId) {
@@ -443,6 +503,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       );
       const recommendations = await recommendNextFocus(journeyId);
       const readiness = await listJourneyReadiness(journeyId);
+      const plan = await getActiveNextDrivePlan(journeyId);
       const nudge = staleDriveNudge(latestEnded, activeDrive?.id ?? null);
       if (nudge.shown) {
         await recordProductEventSafe({
@@ -455,11 +516,15 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
+      const identity = journeyIdentityForRole(
+        access.role,
+        journey.studentName,
+        journey.licenceType,
+      );
       reply.type("text/html").send(
-        layout(
-          access.role === "student"
-            ? "Min körkortsresa"
-            : (journey.studentName ?? "Körkortsresa"),
+        layoutForRequest(
+          request,
+          identity.title,
           renderJourneyHome({
             journey,
             access,
@@ -470,6 +535,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
             recommendations,
             areas: readiness.areas,
             readiness,
+            plan,
           }),
           { journeyId, role: access.role },
         ),
@@ -579,12 +645,20 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       }
       const progress = await listSkillProgress(journeyId);
       const readiness = await listJourneyReadiness(journeyId);
+      const identity = journeyIdentityForRole(
+        access.role,
+        journey.studentName,
+        journey.licenceType,
+      );
       reply.type("text/html").send(
-        layout(
+        layoutForRequest(
+          request,
           "Utveckling",
           renderDevelopmentPage({
             journeyId,
             studentName: journey.studentName ?? "Körkortsresa",
+            identityTitle: identity.title,
+            identityRole: identity.roleLine,
             readiness,
             skills: progress.map((skill) => ({
               skillId: skill.skillId,
@@ -598,6 +672,67 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
           { journeyId, role: access.role },
         ),
       );
+    } catch (error) {
+      const { status, message } = handleError(error);
+      return reply.status(status).type("text/html").send(
+        layout("Fel", errorBanner(message)),
+      );
+    }
+  });
+
+  app.get("/journey/:journeyId/nasta", async (request, reply) => {
+    const { journeyId } = request.params as { journeyId: string };
+    const userId = requireSessionUserId(request);
+
+    try {
+      const access = await requireJourneyAccess(journeyId, userId);
+      const journey = await getJourneyById(journeyId);
+      if (!journey) {
+        return reply.status(404).send("Not found");
+      }
+      const identity = journeyIdentityForRole(
+        access.role,
+        journey.studentName,
+        journey.licenceType,
+      );
+      const plan = await getActiveNextDrivePlan(journeyId);
+      const supervisors = await listActiveSupervisors(journeyId);
+      return reply.type("text/html").send(
+        layoutForRequest(
+          request,
+          "Nästa körpass",
+          renderNextWorkspacePage({
+            journeyId,
+            identityTitle: identity.title,
+            identityRole: identity.roleLine,
+            isStudent: access.role === "student",
+            plan,
+            supervisors,
+          }),
+          { journeyId, role: access.role },
+        ),
+      );
+    } catch (error) {
+      const { status, message } = handleError(error);
+      return reply.status(status).type("text/html").send(
+        layout("Fel", errorBanner(message)),
+      );
+    }
+  });
+
+  app.post("/journey/:journeyId/plan", async (request, reply) => {
+    const { journeyId } = request.params as { journeyId: string };
+    const userId = requireSessionUserId(request);
+    const body = request.body as { skill_ids?: string | string[] };
+    const skillIds = Array.isArray(body.skill_ids)
+      ? body.skill_ids
+      : body.skill_ids
+        ? [body.skill_ids]
+        : [];
+
+    try {
+      await saveNextDrivePlan(journeyId, userId, skillIds);
+      return reply.redirect(`/journey/${journeyId}/nasta`);
     } catch (error) {
       const { status, message } = handleError(error);
       return reply.status(status).type("text/html").send(
@@ -654,8 +789,15 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       if (!skill) {
         throw new AppError("Momentet finns inte i handledarguiden", 404);
       }
+      await recordProductEventSafe({
+        name: "training_guidance_opened",
+        journeyId,
+        userId,
+        actorRole: access.role,
+      });
       reply.type("text/html").send(
-        layout(
+        layoutForRequest(
+          request,
           skill.title,
           renderSupervisorGuideSkill({ journeyId, skill }),
           { journeyId, role: access.role },
@@ -792,23 +934,14 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         return reply.redirect(`/journey/${journeyId}/drive/${activeDrive.id}`);
       }
 
-      const supervisors = await listActiveSupervisors(journeyId);
-      const supervisorPicker =
-        access.role === "student" && supervisors.length > 1
-          ? `<div>
-               <label for="supervisor">Vilken handledare kör med er?</label>
-               <select id="supervisor" name="supervisor_user_id" required class="supervisor-select">
-                 ${supervisors
-                   .map(
-                     (s) =>
-                       `<option value="${escapeHtml(s.userId)}">${escapeHtml(s.displayName ?? "Handledare")}</option>`,
-                   )
-                   .join("")}
-               </select>
-             </div>`
-          : "";
-
       const journey = await getJourneyById(journeyId);
+      const plan = await getActiveNextDrivePlan(journeyId);
+      const selected = new Set(plan?.skills.map((skill) => skill.skillId) ?? []);
+      const identity = journeyIdentityForRole(
+        access.role,
+        journey?.studentName,
+        journey?.licenceType ?? "B",
+      );
       const skills = (await listSkillsForTaxonomy()).filter(
         (skill) => !isSkillNotApplicable(skill.skillKey, access.transmissionScope),
       );
@@ -823,10 +956,10 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
                 .map(
                   (skill) => `<div class="skill-option-row">
                     <label class="skill-option">
-                      <input type="checkbox" name="skill_ids" value="${escapeHtml(skill.skillId)}">
+                      <input type="checkbox" name="skill_ids" value="${escapeHtml(skill.skillId)}"${selected.has(skill.skillId) ? " checked" : ""}>
                       <span>${escapeHtml(skill.title)}</span>
                     </label>
-                    <a class="skill-option__guide" href="/journey/${escapeHtml(journeyId)}/guide/${escapeHtml(skill.skillKey)}">Så tränar ni</a>
+                    <a class="skill-option__guide" href="/journey/${escapeHtml(journeyId)}/guide/${escapeHtml(skill.skillKey)}">Så övar ni</a>
                   </div>`,
                 )
                 .join("")}
@@ -836,16 +969,17 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         .join("");
 
       reply.type("text/html").send(
-        layout(
-          "Välj fokus",
+        layoutForRequest(
+          request,
+          "Vad tränar ni på idag?",
           `<h1>Vad tränar ni på idag?</h1>
+           <p class="muted">${escapeHtml(identity.title)} · ${escapeHtml(identity.roleLine)}</p>
            <p>Välj 2–3 moment.</p>
            <p class="muted">${escapeHtml(emptyFocusCopy(journey?.practiceStage ?? "unknown"))}</p>
-           <p class="focus-count" id="focus-count" aria-live="polite">0 av 3 valda</p>
-           <form method="post" action="/journey/${escapeHtml(journeyId)}/drives" class="stack" id="focus-form">
-             ${supervisorPicker}
+           <p class="focus-count" id="focus-count" aria-live="polite">${selected.size} av 3 valda</p>
+           <form method="post" action="/journey/${escapeHtml(journeyId)}/plan" class="stack" id="focus-form">
              ${areaHtml}
-             ${primaryButton("Starta körpass")}
+             ${primaryButton("Spara plan")}
            </form>
            <script>
              (function () {
