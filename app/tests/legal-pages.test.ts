@@ -95,9 +95,10 @@ describe("public legal pages", () => {
     assert.match(privacy.body, /Interna produkthändelser kopplas loss/);
     assert.doesNotMatch(privacy.body, /internt användar-id/);
     assert.match(privacy.body, /Säkerhetskopior av databasen kan innehålla personuppgifter i högst 14 dagar/);
+    assert.match(privacy.body, /automatiskt jobb tar en kopia varje dygn/);
+    assert.match(privacy.body, /14 dagar gamla eller äldre/);
     assert.match(privacy.body, /bara för att återställa tjänsten/);
     assert.match(privacy.body, /inte för vanlig behandling/);
-    assert.match(privacy.body, /14 dagar gamla eller äldre/);
     assert.doesNotMatch(privacy.body, /ännu inte fastställt/);
     assert.doesNotMatch(privacy.body, /ingen automatisk rensning av backuper/);
     assert.match(privacy.body, /ber om samtycke innan vi använder analyscookies/);

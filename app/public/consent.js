@@ -21,12 +21,14 @@
     var match = /^v(\d+)\.a([01])\.m([01])\.(\d+)$/.exec(raw);
     if (!match) return null;
     if (Number(match[1]) !== VERSION) return null;
+    var at = Number(match[4]);
+    if (!at || Math.floor(Date.now() / 1000) - at > MAX_AGE) return null;
     return {
       necessary: true,
       analytics: match[2] === "1",
       marketing: match[3] === "1",
       decided: true,
-      at: Number(match[4]),
+      at: at,
     };
   }
 
@@ -74,9 +76,25 @@
       secure;
   }
 
+  function cookieDomains(hostname) {
+    var domains = [""];
+    if (!hostname || hostname === "localhost" || /^[\d.]+$/.test(hostname)) {
+      if (hostname) domains.push(hostname);
+      return domains;
+    }
+    var parts = hostname.split(".").filter(Boolean);
+    domains.push(hostname);
+    domains.push("." + hostname);
+    for (var i = 1; i <= parts.length - 2; i += 1) {
+      var parent = parts.slice(i).join(".");
+      domains.push(parent);
+      domains.push("." + parent);
+    }
+    return domains;
+  }
+
   function deleteCookie(name) {
-    var host = location.hostname;
-    var domains = ["", host, "." + host];
+    var domains = cookieDomains(location.hostname);
     for (var i = 0; i < domains.length; i += 1) {
       var domain = domains[i] ? "; Domain=" + domains[i] : "";
       document.cookie = name + "=; Path=/; Max-Age=0; SameSite=Lax" + domain;
@@ -139,14 +157,24 @@
     });
   }
 
+  function setGaDisabled(disabled) {
+    if (!GA_ID) return;
+    window["ga-disable-" + GA_ID] = disabled;
+  }
+
   function syncGoogle(choice) {
     if (!GA_ID) return;
+    if (!choice.analytics) {
+      setGaDisabled(true);
+      return;
+    }
+    setGaDisabled(false);
     if (!gaLoaded) {
-      if (choice.analytics) loadGoogleAnalytics(choice);
+      loadGoogleAnalytics(choice);
       return;
     }
     window.gtag("consent", "update", {
-      analytics_storage: choice.analytics ? "granted" : "denied",
+      analytics_storage: "granted",
       ad_storage: choice.marketing ? "granted" : "denied",
       ad_user_data: choice.marketing ? "granted" : "denied",
       ad_personalization: choice.marketing ? "granted" : "denied",
@@ -154,10 +182,10 @@
   }
 
   function apply(choice) {
-    syncGoogle(choice);
     if (!choice.analytics) clearMatching(/^(_ga|_gid|_gat)/);
+    if (!choice.marketing) clearMatching(/^_gcl_/);
+    syncGoogle(choice);
     if (choice.marketing) runMarketingTools(choice);
-    else clearMatching(/^_gcl_/);
     notify();
   }
 
@@ -239,8 +267,12 @@
   });
 
   var existing = current();
-  if (!existing.decided) openBanner();
-  else {
+  if (!existing.decided) {
+    setGaDisabled(true);
+    clearMatching(/^(_ga|_gid|_gat)/);
+    clearMatching(/^_gcl_/);
+    openBanner();
+  } else {
     root.hidden = true;
     banner.hidden = true;
     panel.hidden = true;
