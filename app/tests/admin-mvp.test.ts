@@ -414,7 +414,7 @@ describe("admin MVP v1", () => {
       url: `/admin/support/users/${seeded.supervisorId}`,
       cookies: { korpasset_admin: token },
     });
-    assert.match(tombstoneView.body, /Tidigare handledare/);
+    assert.match(tombstoneView.body, /Tidigare användare/);
     assert.doesNotMatch(tombstoneView.body, />Pappa</);
 
     const leftover = await injectWithSession(
