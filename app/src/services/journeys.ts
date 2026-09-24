@@ -182,12 +182,10 @@ export function formatAccessibleJourneyLabel(
   viewerUserId?: string,
 ): string {
   const owned = Boolean(viewerUserId && journey.studentUserId === viewerUserId);
-  const name = owned ? "Min körkortsresa" : journey.studentName.trim() || "Eleven";
-  if (!journey.lastDriveAt) return name;
-  const formatted = journey.lastDriveAt
-    .toLocaleDateString("sv-SE", { day: "numeric", month: "short" })
-    .replaceAll(".", "");
-  return `${name} — senast körd ${formatted}`;
+  if (owned) return "Min körkortsresa";
+  const first = (journey.studentName.trim().split(/\s+/)[0] || "Eleven").trim();
+  if (/[sxzß]$/i.test(first)) return `${first} körkortsresa`;
+  return `${first}s körkortsresa`;
 }
 
 export async function listAccessibleActiveJourneys(

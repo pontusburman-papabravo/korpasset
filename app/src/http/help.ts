@@ -10,6 +10,7 @@ import {
   primaryButton,
   successBanner,
 } from "./layout.js";
+import { layoutForRequest } from "./active-journey.js";
 import { FEEDBACK_TOPICS } from "./journey-pages.js";
 import { allowRequest } from "./rate-limit.js";
 import { redactRequestPath } from "./log.js";
@@ -41,8 +42,8 @@ function helpForm(errorMessage?: string, values: { topic?: string; message?: str
 }
 
 export async function registerHelpRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/hjalp", async (_request, reply) => {
-    return reply.type("text/html").send(layout("Hjälp", helpForm()));
+  app.get("/hjalp", async (request, reply) => {
+    return reply.type("text/html").send(layoutForRequest(request, "Hjälp", helpForm()));
   });
 
   app.post("/hjalp", async (request, reply) => {
@@ -54,7 +55,11 @@ export async function registerHelpRoutes(app: FastifyInstance): Promise<void> {
       )
     ) {
       return reply.status(429).type("text/html").send(
-        layout("Hjälp", helpForm("För många försök. Vänta en stund och prova igen.")),
+        layoutForRequest(
+          request,
+          "Hjälp",
+          helpForm("För många försök. Vänta en stund och prova igen."),
+        ),
       );
     }
 
@@ -63,7 +68,8 @@ export async function registerHelpRoutes(app: FastifyInstance): Promise<void> {
     const message = body.message?.trim() ?? "";
     if (!topic || message.length < 4) {
       return reply.status(400).type("text/html").send(
-        layout(
+        layoutForRequest(
+          request,
           "Hjälp",
           helpForm("Välj ett ämne och skriv några rader.", {
             topic: body.topic,
@@ -102,10 +108,11 @@ export async function registerHelpRoutes(app: FastifyInstance): Promise<void> {
     }
 
     return reply.type("text/html").send(
-      layout(
+      layoutForRequest(
+        request,
         "Tack",
         `${successBanner("Tack — vi har tagit emot det.")}
-         <p><a class="btn btn-secondary" href="/">Tillbaka</a></p>`,
+         <p><a class="btn btn-secondary" href="/mer">Tillbaka</a></p>`,
       ),
     );
   });

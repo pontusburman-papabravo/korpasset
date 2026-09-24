@@ -13,6 +13,10 @@ export const PRODUCT_EVENTS = [
   "onboarding_role_selected",
   "student_handoff_started",
   "stale_drive_nudge_shown",
+  "journey_switched",
+  "next_drive_plan_created",
+  "next_drive_plan_updated",
+  "training_guidance_opened",
 ] as const;
 
 export type ProductEventName = (typeof PRODUCT_EVENTS)[number];
