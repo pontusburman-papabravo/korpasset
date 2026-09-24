@@ -1054,11 +1054,13 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     try {
       const drive = await endDrive(journeyId, driveId, userId);
       if (await isDriveFocusFullyObserved(journeyId, driveId)) {
-        await recordRatingEventsIfFullyObserved(
-          journeyId,
-          driveId,
-          drive.supervisorUserId,
-        );
+        if (drive.supervisorUserId) {
+          await recordRatingEventsIfFullyObserved(
+            journeyId,
+            driveId,
+            drive.supervisorUserId,
+          );
+        }
         if (drive.supervisorUserId === userId) {
           return reply.redirect(`/journey/${journeyId}/drive/${driveId}/done`);
         }

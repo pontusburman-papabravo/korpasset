@@ -204,6 +204,7 @@ describe("production foundation / fresh database migrate", () => {
       "0011_practice_stage.sql",
       "0012_product_event_observation.sql",
       "0013_user_contact_email.sql",
+      "0014_unlink_deleted_account_history.sql",
     ]);
     assert.deepEqual(first.stamped, []);
 
@@ -280,6 +281,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
       "0011_practice_stage.sql",
       "0012_product_event_observation.sql",
       "0013_user_contact_email.sql",
+      "0014_unlink_deleted_account_history.sql",
     ]);
     assert.deepEqual(first.skipped, []);
 
@@ -313,6 +315,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
         "0011_practice_stage.sql",
         "0012_product_event_observation.sql",
         "0013_user_contact_email.sql",
+        "0014_unlink_deleted_account_history.sql",
       ],
     );
 

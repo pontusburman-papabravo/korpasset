@@ -775,10 +775,10 @@ Ett helt område ska inte reduceras till en påstådd sannolikhet eller officiel
 
 | Source | Krav |
 | --- | --- |
-| `supervisor`, `student` | `observer_user_id` krävs |
+| `supervisor`, `student` | `observer_user_id` krävs för levande rader. `NULL` är giltigt bara tillsammans med `observer_deleted = true` efter kontoradering. |
 | `system` | Ingen actor krävs |
 | `external` | `external_source_ref` krävs |
-| `driving_school` | `observer_user_id` ELLER `external_source_ref` krävs |
+| `driving_school` | `observer_user_id` ELLER `external_source_ref` krävs. Saknad actor efter radering markeras med `observer_deleted`. |
 
 Authorization: `observer_user_id`, `started_by_user_id` och accepterande user vid invitation hämtas från serverns actor/session.
 
@@ -805,7 +805,7 @@ När en handledare begär kontoradering ska Körpasset:
 - radera eller nolla direkta profilidentifierare som inte längre behöver behandlas,
 - sätta `users.account_state = deleted`,
 - ta bort handledaren från fortsatt aktiv användning av berörda journeys,
-- bevara det stabila `user_id` i historiska `drives`, `drive_observations` och andra ledger-relationer endast i den utsträckning som det krävs för att bevara elevens dataintegritet och det finns ett giltigt ändamål och rättslig grund för fortsatt behandling.
+- bevara historiska `drives` och `drive_observations` på elevens resa, men frikoppla dem från den raderade användaren så att historiken inte kan återkopplas via `users`.
 
 Historiska observationer får inte försvinna enbart därför att den handledare som skapade dem raderar sitt konto.
 
@@ -832,7 +832,7 @@ Fullständig kontoradering är **inte** ett produktflöde i vertical slice. Befi
 - `users.account_state` inkluderar redan `deleted` (oanvänd i produktkod före denna delta).
 - Hard `DELETE` av en handledare **blockeras** av default RESTRICT/NO ACTION på `drives.supervisor_user_id`, `drives.started_by_user_id`, `drive_observations.observer_user_id`, `journey_collaborators.user_id` och invitation-FK:er.
 - Hard `DELETE` av en elev **blockeras** av `driving_journeys.student_user_id` (RESTRICT). Om journeyn raderas först CASCADE:ar journey-barn (drives, observations, m.m.) — det är en privileged process, inte handledar-delete.
-- `observer_user_id` är nullable på kolumnnivå, men CHECK kräver värdet för `source_type` supervisor/student. SET NULL skulle alltså bryta constraint:et; tombstone ska **behålla** `user_id`.
+- Historiska `observer_user_id` / `supervisor_user_id` / `started_by_user_id` nollas vid privileged kontoradering, och motsvarande `observer_deleted` / `supervisor_deleted` / `started_by_deleted` sätts, så att ledger-rader inte kan joinas tillbaka till `users` och så att en saknad actor inte kan förväxlas med en ogiltig rad.
 - Enda direkta identifieraren på `users` är `display_name`. E-post och provider-subject ligger i `auth_identities` (oanvänd i slice).
 - Sessioner är signerade cookies; det finns ingen session-tabell att återkalla mot.
 - Återstår som separat implementation: privileged delete-account-API, radering av `auth_identities`, nollning av `display_name`, `account_state = deleted`, collaborator `removed`, server-side session revoke, och historisk UI-etikett där observer-namn visas.

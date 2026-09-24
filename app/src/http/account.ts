@@ -63,7 +63,7 @@ function accountPage(options: {
      <p class="muted"><a href="/integritet">Integritetspolicy</a> · <a href="/villkor">Villkor</a> · <a href="/radera-konto">Radera konto</a></p>
      <section class="card account-delete">
        <h2>Radera konto</h2>
-       <p>Om du är elev raderas din körkortsresa. Om du är handledare behålls historiken hos eleven, utan ditt namn. Utan appen: <a href="/radera-konto">begär radering på webben</a>.</p>
+       <p>Om du är elev raderas din körkortsresa. Om du är handledare behålls historiken hos eleven, utan ditt namn och utan koppling till ditt konto. Utan appen: <a href="/radera-konto">begär radering på webben</a>.</p>
        <form method="post" action="/konto/radera" class="stack">
          <label for="confirm">Skriv RADERA för att bekräfta</label>
          <input id="confirm" name="confirm" type="text" autocomplete="off" required>

@@ -83,7 +83,9 @@ describe("public legal pages", () => {
     assert.match(privacy.body, /utanför EU\/EES/);
     assert.match(privacy.body, /användarraden raderas inte/);
     assert.match(privacy.body, /intresseanmälan till betan raderas inte automatiskt/i);
-    assert.match(privacy.body, /internt användar-id/);
+    assert.match(privacy.body, /utan koppling till ditt konto/);
+    assert.match(privacy.body, /Interna produkthändelser kopplas loss/);
+    assert.doesNotMatch(privacy.body, /internt användar-id/);
     assert.match(privacy.body, /Säkerhetskopior av databasen kan innehålla personuppgifter en begränsad tid/);
     assert.match(privacy.body, /bara för att återställa tjänsten/);
     assert.match(privacy.body, /inte för vanlig behandling/);

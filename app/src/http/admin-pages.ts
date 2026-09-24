@@ -775,7 +775,7 @@ export function supportUserPage(
     ? `<p class="muted">Kontot är redan tombstonat. Gamla produkt-sessioner kan inte återaktivera det.</p>`
     : `<form method="post" action="${deleteAction}" class="admin-form admin-form--danger">
          <h2>GDPR / kontoradering</h2>
-         <p>Följer account-lifecycle: ingen <code>DELETE FROM users</code>. Elevens journey raderas. Handledare tombstonas. Waitlist orörs.</p>
+         <p>Följer account-lifecycle: ingen <code>DELETE FROM users</code>. Elevens journey raderas. Handledarhistorik frikopplas från kontot. Waitlist orörs.</p>
          <label class="consent">
            <input type="checkbox" name="confirm_irreversible" value="yes" required>
            <span>Jag förstår att operationen är irreversibel.</span>

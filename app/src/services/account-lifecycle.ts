@@ -13,16 +13,20 @@ export interface AccountDeletionSummary {
     studentInvitations: number;
     studentCollaborators: number;
     studentFocusItems: number;
+    collaboratorRows: number;
+    acceptedInvitations: number;
   };
   tombstoned: {
     userRow: boolean;
-    collaboratorRemoved: number;
   };
-  retained: {
+  unlinked: {
     historicalDriveAttributions: number;
     historicalObservationAttributions: number;
+    productEvents: number;
+  };
+  retained: {
     waitlistUntouched: true;
-    userIdPseudonymized: boolean;
+    studentHistoryPreserved: boolean;
   };
 }
 
@@ -34,9 +38,10 @@ function num(value: unknown): number {
  * Privileged GDPR account-lifecycle. Never `DELETE FROM users`.
  *
  * Elev: owned `driving_journeys` are deleted (CASCADE of journey children).
- * Handledare: tombstone per kravspec §10.2 — keep historical user_id on
- * drives/observations, remove collaborator access, drop auth identities,
- * clear display_name, set account_state = deleted.
+ * Handledare: keep the student's journey ledger, but unlink every remaining
+ * product FK/id that pointed at the deleted user so history cannot be joined
+ * back through `users`. Unlink sets the user-id to NULL *and* the matching
+ * `*_deleted` flag so a missing actor cannot be confused with a bad insert.
  *
  * Waitlist (`interest_signups`) is a separate PII store and is not touched.
  */
@@ -103,9 +108,13 @@ export async function deleteProductAccount(
     );
 
     const removedCollabs = await client.query(
-      `UPDATE journey_collaborators
-       SET status = 'removed', updated_at = now()
-       WHERE user_id = $1 AND status = 'active'
+      `DELETE FROM journey_collaborators WHERE user_id = $1 RETURNING id`,
+      [userId],
+    );
+
+    const removedInvites = await client.query(
+      `DELETE FROM journey_invitations
+       WHERE accepted_by_user_id = $1 OR invited_by_user_id = $1
        RETURNING id`,
       [userId],
     );
@@ -120,6 +129,38 @@ export async function deleteProductAccount(
        WHERE observer_user_id = $1`,
       [userId],
     );
+    const remainingEvents = await client.query(
+      `SELECT count(*)::int AS count FROM product_events WHERE user_id = $1`,
+      [userId],
+    );
+
+    await client.query(
+      `UPDATE drives
+       SET supervisor_user_id = NULL,
+           supervisor_deleted = true
+       WHERE supervisor_user_id = $1`,
+      [userId],
+    );
+    await client.query(
+      `UPDATE drives
+       SET started_by_user_id = NULL,
+           started_by_deleted = true
+       WHERE started_by_user_id = $1`,
+      [userId],
+    );
+    await client.query(
+      `UPDATE drive_observations
+       SET observer_user_id = NULL,
+           observer_deleted = true
+       WHERE observer_user_id = $1`,
+      [userId],
+    );
+    await client.query(
+      `UPDATE product_events
+       SET user_id = NULL
+       WHERE user_id = $1`,
+      [userId],
+    );
 
     await client.query(
       `UPDATE users
@@ -131,6 +172,9 @@ export async function deleteProductAccount(
        WHERE id = $1`,
       [userId],
     );
+
+    const unlinkedDrives = num(remainingDrives.rows[0]?.count);
+    const unlinkedObservations = num(remainingObservations.rows[0]?.count);
 
     return {
       userId,
@@ -144,16 +188,20 @@ export async function deleteProductAccount(
         studentInvitations,
         studentCollaborators,
         studentFocusItems,
+        collaboratorRows: removedCollabs.rowCount ?? 0,
+        acceptedInvitations: removedInvites.rowCount ?? 0,
       },
       tombstoned: {
         userRow: true,
-        collaboratorRemoved: removedCollabs.rowCount ?? 0,
+      },
+      unlinked: {
+        historicalDriveAttributions: unlinkedDrives,
+        historicalObservationAttributions: unlinkedObservations,
+        productEvents: num(remainingEvents.rows[0]?.count),
       },
       retained: {
-        historicalDriveAttributions: num(remainingDrives.rows[0]?.count),
-        historicalObservationAttributions: num(remainingObservations.rows[0]?.count),
         waitlistUntouched: true,
-        userIdPseudonymized: true,
+        studentHistoryPreserved: unlinkedDrives > 0 || unlinkedObservations > 0,
       },
     };
   });
@@ -167,10 +215,12 @@ export function formatDeletionAuditSummary(summary: AccountDeletionSummary): str
     `elev-drives=${summary.deleted.studentDrives}`,
     `elev-observationer=${summary.deleted.studentObservations}`,
     `inbjudningar=${summary.deleted.studentInvitations}`,
-    `tombstone: user_row=true collaborators_removed=${summary.tombstoned.collaboratorRemoved}`,
-    `behållt: drive_attribution=${summary.retained.historicalDriveAttributions}`,
-    `observation_attribution=${summary.retained.historicalObservationAttributions}`,
+    `collaborators_removed=${summary.deleted.collaboratorRows}`,
+    `tombstone: user_row=true`,
+    `frikopplat: drive_attribution=${summary.unlinked.historicalDriveAttributions}`,
+    `observation_attribution=${summary.unlinked.historicalObservationAttributions}`,
+    `product_events=${summary.unlinked.productEvents}`,
     `waitlist_orörd=true`,
-    `user_id_pseudonymiserad=true`,
+    `historik_frikopplad=true`,
   ].join("; ");
 }

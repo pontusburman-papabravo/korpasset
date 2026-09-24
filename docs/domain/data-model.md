@@ -145,8 +145,10 @@ Elevägd resa. Studenten är **inte** collaborator.
 | --- | --- | --- |
 | `id` | `uuid` PK | |
 | `journey_id` | `uuid` FK | |
-| `started_by_user_id` | `uuid` FK → `users` | |
-| `supervisor_user_id` | `uuid` FK → `users` | |
+| `started_by_user_id` | `uuid` FK → `users` | Nullable bara tillsammans med `started_by_deleted` |
+| `supervisor_user_id` | `uuid` FK → `users` | Nullable bara tillsammans med `supervisor_deleted` |
+| `started_by_deleted` | `boolean` | `true` = actor fanns men kontot raderades |
+| `supervisor_deleted` | `boolean` | `true` = actor fanns men kontot raderades |
 | `started_at` | `timestamptz` | |
 | `ended_at` | `timestamptz` | Nullable |
 | `distance_meters` | `integer` | Nullable, ≥ 0 |
@@ -203,7 +205,8 @@ Append-only ledger.
 | `journey_id` | `uuid` FK | |
 | `drive_id` | `uuid` | Composite FK med journey |
 | `skill_id` | `uuid` FK → `skills` | |
-| `observer_user_id` | `uuid` FK → `users` | Nullable |
+| `observer_user_id` | `uuid` FK → `users` | Nullable för `system`/`external`/`driving_school`, eller efter radering |
+| `observer_deleted` | `boolean` | `true` = observer fanns men kontot raderades |
 | `source_type` | `observation_source` | |
 | `assessment` | `assessment_level` | |
 | `context_override` | `jsonb` | Nullable |
@@ -243,16 +246,16 @@ Append-only ledger.
 
 | Source | Krav |
 | --- | --- |
-| `supervisor`, `student` | `observer_user_id` krävs |
+| `supervisor`, `student` | `observer_user_id` krävs, utom när `observer_deleted` markerar frikopplad historik |
 | `system` | Ingen actor krävs |
 | `external` | `external_source_ref` krävs |
-| `driving_school` | `observer_user_id` ELLER `external_source_ref` krävs |
+| `driving_school` | `observer_user_id` ELLER `external_source_ref` krävs. Saknad actor efter radering markeras med `observer_deleted`. |
 
 Implementerat som **DB CHECK** på `drive_observations`.
 
 ## Observation provenance (service layer)
 
-DB säkerställer att `observer_user_id` finns för `supervisor`/`student`, men inte att personen har rätt roll. Följande gäller innan API byggs:
+DB säkerställer att `observer_user_id` finns för levande `supervisor`/`student`-rader. En saknad actor är giltig bara med `observer_deleted`. Det säger inte att personen har rätt roll. Följande gäller innan API byggs:
 
 | Source | Service-invariant |
 | --- | --- |

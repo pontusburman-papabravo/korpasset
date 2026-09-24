@@ -185,11 +185,66 @@ BEGIN
     VALUES ('33333333-3333-4333-8333-333333333333',
             'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
             '44444444-4444-4444-8444-444444444444',
-            'supervisor', 'needs_help');
-    RAISE EXCEPTION 'supervisor without observer_user_id should be rejected';
+            'external', 'needs_help');
+    RAISE EXCEPTION 'external without external_source_ref should be rejected';
   EXCEPTION WHEN check_violation THEN
     RAISE NOTICE 'observation source rule correctly enforced';
   END;
+
+  BEGIN
+    INSERT INTO drive_observations (journey_id, drive_id, skill_id, source_type, assessment)
+    VALUES ('33333333-3333-4333-8333-333333333333',
+            'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+            '44444444-4444-4444-8444-444444444444',
+            'supervisor', 'with_support');
+    RAISE EXCEPTION 'supervisor without observer_user_id should be rejected';
+  EXCEPTION WHEN check_violation THEN
+    RAISE NOTICE 'living supervisor observation still requires actor-id';
+  END;
+
+  BEGIN
+    INSERT INTO drive_observations (journey_id, drive_id, skill_id, source_type, assessment)
+    VALUES ('33333333-3333-4333-8333-333333333333',
+            'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+            '44444444-4444-4444-8444-444444444444',
+            'student', 'with_support');
+    RAISE EXCEPTION 'student without observer_user_id should be rejected';
+  EXCEPTION WHEN check_violation THEN
+    RAISE NOTICE 'living student observation still requires actor-id';
+  END;
+
+  BEGIN
+    INSERT INTO drives (journey_id, started_by_user_id, supervisor_user_id)
+    VALUES ('33333333-3333-4333-8333-333333333333',
+            '11111111-1111-4111-8111-111111111111',
+            NULL);
+    RAISE EXCEPTION 'drive without supervisor_user_id should be rejected';
+  EXCEPTION WHEN check_violation THEN
+    RAISE NOTICE 'living drive still requires supervisor actor-id';
+  END;
+
+  INSERT INTO drive_observations (id, journey_id, drive_id, skill_id, observer_user_id,
+                                  source_type, assessment)
+  VALUES ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+          '33333333-3333-4333-8333-333333333333',
+          'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+          '44444444-4444-4444-8444-444444444444',
+          '22222222-2222-4222-8222-222222222222',
+          'supervisor', 'with_support');
+
+  BEGIN
+    UPDATE drive_observations
+       SET observer_user_id = NULL
+     WHERE id = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+    RAISE EXCEPTION 'nulling observer without deleted marker should be rejected';
+  EXCEPTION WHEN check_violation THEN
+    RAISE NOTICE 'unlink without observer_deleted correctly rejected';
+  END;
+
+  UPDATE drive_observations
+     SET observer_user_id = NULL,
+         observer_deleted = true
+   WHERE id = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 END $$;
 SQL
 

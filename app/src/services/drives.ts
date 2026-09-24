@@ -14,8 +14,8 @@ import { recordProductEventSafe } from "./product-events.js";
 export interface Drive {
   id: string;
   journeyId: string;
-  startedByUserId: string;
-  supervisorUserId: string;
+  startedByUserId: string | null;
+  supervisorUserId: string | null;
   startedAt: Date;
   endedAt: Date | null;
 }
@@ -23,9 +23,13 @@ export interface Drive {
 export interface EndedDriveSummary {
   id: string;
   endedAt: Date;
-  supervisorUserId: string;
+  supervisorUserId: string | null;
   supervisorLabel: string;
   rated: boolean;
+}
+
+function optionalUserId(value: unknown): string | null {
+  return value == null ? null : String(value);
 }
 
 export async function getLatestEndedDrive(
@@ -34,7 +38,7 @@ export async function getLatestEndedDrive(
 ): Promise<EndedDriveSummary | null> {
   const db = client ?? getPool();
   const result = await db.query(
-    `SELECT d.id, d.ended_at, d.supervisor_user_id,
+    `SELECT d.id, d.ended_at, d.supervisor_user_id, d.supervisor_deleted,
             u.display_name, u.account_state,
             NOT EXISTS (
               SELECT 1
@@ -55,7 +59,7 @@ export async function getLatestEndedDrive(
                 )
             ) AS rated
      FROM drives d
-     JOIN users u ON u.id = d.supervisor_user_id
+     LEFT JOIN users u ON u.id = d.supervisor_user_id
      WHERE d.journey_id = $1 AND d.ended_at IS NOT NULL
      ORDER BY d.ended_at DESC
      LIMIT 1`,
@@ -63,11 +67,15 @@ export async function getLatestEndedDrive(
   );
   if (result.rowCount === 0) return null;
   const row = result.rows[0];
+  const supervisorUserId = optionalUserId(row.supervisor_user_id);
   return {
     id: String(row.id),
     endedAt: new Date(row.ended_at),
-    supervisorUserId: String(row.supervisor_user_id),
-    supervisorLabel: actorDisplayName(row.display_name, row.account_state, "supervisor"),
+    supervisorUserId,
+    supervisorLabel:
+      Boolean(row.supervisor_deleted) || !supervisorUserId
+        ? "Tidigare handledare"
+        : actorDisplayName(row.display_name, row.account_state, "supervisor"),
     rated: Boolean(row.rated),
   };
 }
@@ -90,8 +98,8 @@ export async function getActiveDrive(
   return {
     id: row.id,
     journeyId: row.journey_id,
-    startedByUserId: row.started_by_user_id,
-    supervisorUserId: row.supervisor_user_id,
+    startedByUserId: optionalUserId(row.started_by_user_id),
+    supervisorUserId: optionalUserId(row.supervisor_user_id),
     startedAt: row.started_at,
     endedAt: row.ended_at,
   };
@@ -237,8 +245,8 @@ export async function createDriveWithFocus(
       drive: {
         id: driveRow.id,
         journeyId: driveRow.journey_id,
-        startedByUserId: driveRow.started_by_user_id,
-        supervisorUserId: driveRow.supervisor_user_id,
+        startedByUserId: optionalUserId(driveRow.started_by_user_id),
+        supervisorUserId: optionalUserId(driveRow.supervisor_user_id),
         startedAt: driveRow.started_at,
         endedAt: driveRow.ended_at,
       },
@@ -278,8 +286,8 @@ export async function getDrive(
   return {
     id: row.id,
     journeyId: row.journey_id,
-    startedByUserId: row.started_by_user_id,
-    supervisorUserId: row.supervisor_user_id,
+    startedByUserId: optionalUserId(row.started_by_user_id),
+    supervisorUserId: optionalUserId(row.supervisor_user_id),
     startedAt: row.started_at,
     endedAt: row.ended_at,
   };
@@ -306,7 +314,7 @@ export async function getDriveFocusSkills(
 function canEndDrive(
   access: Awaited<ReturnType<typeof requireJourneyAccess>>,
   userId: string,
-  supervisorUserId: string,
+  supervisorUserId: string | null,
 ): boolean {
   return access.role === "student" || userId === supervisorUserId;
 }
@@ -339,8 +347,8 @@ export async function endDrive(
     return {
       id: existing.id,
       journeyId: existing.journey_id,
-      startedByUserId: existing.started_by_user_id,
-      supervisorUserId: existing.supervisor_user_id,
+      startedByUserId: optionalUserId(existing.started_by_user_id),
+      supervisorUserId: optionalUserId(existing.supervisor_user_id),
       startedAt: existing.started_at,
       endedAt: existing.ended_at,
     };
@@ -361,8 +369,8 @@ export async function endDrive(
   const ended = {
     id: row.id,
     journeyId: row.journey_id,
-    startedByUserId: row.started_by_user_id,
-    supervisorUserId: row.supervisor_user_id,
+    startedByUserId: optionalUserId(row.started_by_user_id),
+    supervisorUserId: optionalUserId(row.supervisor_user_id),
     startedAt: row.started_at,
     endedAt: row.ended_at,
   };

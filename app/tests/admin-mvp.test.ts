@@ -395,10 +395,12 @@ describe("admin MVP v1", () => {
     assert.equal(waitlist.rows[0].n, 1);
 
     const observation = await getPool().query(
-      `SELECT observer_user_id, note FROM drive_observations WHERE drive_id = $1`,
+      `SELECT observer_user_id, observer_deleted, note
+       FROM drive_observations WHERE drive_id = $1`,
       [seeded.firstDriveId],
     );
-    assert.equal(observation.rows[0].observer_user_id, seeded.supervisorId);
+    assert.equal(observation.rows[0].observer_user_id, null);
+    assert.equal(observation.rows[0].observer_deleted, true);
     assert.equal(observation.rows[0].note, "privat anteckning");
 
     const audit = await getPool().query(
@@ -407,14 +409,14 @@ describe("admin MVP v1", () => {
     assert.equal(audit.rows[0].operation, "gdpr_delete_account");
     assert.equal(audit.rows[0].target_id, seeded.supervisorId);
     assert.match(audit.rows[0].summary, /waitlist_orörd=true/);
-    assert.match(audit.rows[0].summary, /user_id_pseudonymiserad=true/);
+    assert.match(audit.rows[0].summary, /historik_frikopplad=true/);
 
     const tombstoneView = await app.inject({
       method: "GET",
       url: `/admin/support/users/${seeded.supervisorId}`,
       cookies: { korpasset_admin: token },
     });
-    assert.match(tombstoneView.body, /Tidigare handledare/);
+    assert.match(tombstoneView.body, /Tidigare användare/);
     assert.doesNotMatch(tombstoneView.body, />Pappa</);
 
     const leftover = await injectWithSession(
