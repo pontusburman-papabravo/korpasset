@@ -1,5 +1,7 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply } from "fastify";
+import { config } from "../config.js";
 import { AppError } from "../errors.js";
+import { META_LEAD_COOKIE_NAME } from "./consent.js";
 import { EmailSendError, notifyWaitlistSignup } from "../services/email.js";
 import { countBetaWaitlist, saveInterestSignup } from "../services/interest.js";
 import {
@@ -15,6 +17,17 @@ import {
 } from "./legal.js";
 import { robotsTxt, sitemapXml } from "./seo.js";
 import { INTEREST_RATE_LIMIT, allowRequest } from "./rate-limit.js";
+
+function markSavedLead(reply: FastifyReply): void {
+  reply.setCookie(META_LEAD_COOKIE_NAME, "1", {
+    path: "/interest/tack",
+    httpOnly: false,
+    sameSite: "lax",
+    secure: config.cookieSecure,
+    signed: false,
+    maxAge: 120,
+  });
+}
 
 function checkboxChecked(value: unknown): boolean {
   return value === "yes" || value === "on" || value === true;
@@ -108,6 +121,7 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
       if (!result) {
         return reply.redirect("/interest/tack");
       }
+      if (result.created) markSavedLead(reply);
       try {
         await notifyWaitlistSignup(result.signup, result.created);
       } catch (error) {

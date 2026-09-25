@@ -3,11 +3,11 @@ import { config } from "../config.js";
 
 export const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
+  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https://www.google-analytics.com https://www.googletagmanager.com",
+  "img-src 'self' data: https://www.google-analytics.com https://www.googletagmanager.com https://www.facebook.com",
   "font-src 'self'",
-  "connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
+  "connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://www.facebook.com https://connect.facebook.net",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

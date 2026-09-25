@@ -7,16 +7,20 @@ import { loginPage } from "../src/http/admin-pages.js";
 import { CONTENT_SECURITY_POLICY } from "../src/http/security-headers.js";
 
 const previousGa = process.env.GA_MEASUREMENT_ID;
+const previousMeta = process.env.META_PIXEL_ID;
 
 describe("cookie consent", () => {
   beforeEach(async () => {
     await resetDatabaseData();
     delete process.env.GA_MEASUREMENT_ID;
+    delete process.env.META_PIXEL_ID;
   });
 
   afterEach(() => {
     if (previousGa === undefined) delete process.env.GA_MEASUREMENT_ID;
     else process.env.GA_MEASUREMENT_ID = previousGa;
+    if (previousMeta === undefined) delete process.env.META_PIXEL_ID;
+    else process.env.META_PIXEL_ID = previousMeta;
   });
 
   it("asks for consent before any analytics tag and treats reject as a peer of accept", async () => {
@@ -31,7 +35,9 @@ describe("cookie consent", () => {
     assert.match(home.body, /consent__btn--primary/);
     assert.doesNotMatch(home.body, /googletagmanager\.com/);
     assert.doesNotMatch(home.body, /google-analytics\.com/);
+    assert.doesNotMatch(home.body, /facebook\.net|fbevents|fbq\(/);
     assert.match(home.body, /"gaMeasurementId":""/);
+    assert.match(home.body, /"metaPixelId":""/);
     await app.close();
   });
 
@@ -74,12 +80,31 @@ describe("cookie consent", () => {
   it("wires the production GA4 id through Compose without putting the tag in the HTML", () => {
     const compose = fs.readFileSync(new URL("../../deploy/docker-compose.yml", import.meta.url), "utf8");
     assert.match(compose, /GA_MEASUREMENT_ID: \$\{GA_MEASUREMENT_ID:-G-H275WSBLJ8\}/);
+    assert.match(compose, /META_PIXEL_ID: \$\{META_PIXEL_ID:-1358346629475279\}/);
+  });
+
+  it("passes a Meta Pixel id only when the env value is numeric and never embeds the pixel", async () => {
+    process.env.META_PIXEL_ID = "1358346629475279";
+    const app = await createTestApp();
+    const home = await app.inject({ method: "GET", url: "/" });
+    assert.match(home.body, /"metaPixelId":"1358346629475279"/);
+    assert.doesNotMatch(home.body, /connect\.facebook\.net|fbevents\.js|<noscript>/);
+    await app.close();
+
+    process.env.META_PIXEL_ID = "not-a-pixel";
+    const again = await createTestApp();
+    const second = await again.inject({ method: "GET", url: "/" });
+    assert.match(second.body, /"metaPixelId":""/);
+    await again.close();
   });
 
   it("allows the Google tag to run after consent without opening the rest of the web", () => {
     assert.match(CONTENT_SECURITY_POLICY, /https:\/\/www\.googletagmanager\.com/);
     assert.match(CONTENT_SECURITY_POLICY, /https:\/\/www\.google-analytics\.com/);
+    assert.match(CONTENT_SECURITY_POLICY, /https:\/\/connect\.facebook\.net/);
+    assert.match(CONTENT_SECURITY_POLICY, /https:\/\/www\.facebook\.com/);
     assert.doesNotMatch(CONTENT_SECURITY_POLICY, /\*\.google\.com/);
+    assert.doesNotMatch(CONTENT_SECURITY_POLICY, /\*\.facebook\.com/);
     assert.match(CONTENT_SECURITY_POLICY, /default-src 'self'/);
   });
 });

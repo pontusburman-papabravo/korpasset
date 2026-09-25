@@ -169,6 +169,9 @@ describe("landing and interest waitlist", () => {
     });
     assert.equal(response.statusCode, 302);
     assert.equal(response.headers.location, "/interest/tack");
+    const lead = response.cookies.find((cookie) => cookie.name === "korpasset_meta_lead");
+    assert.equal(lead?.value, "1");
+    assert.equal(lead?.path, "/interest/tack");
 
     const thanks = await app.inject({ method: "GET", url: "/interest/tack" });
     assert.match(thanks.body, /Tack — vi hör av oss/);
@@ -229,6 +232,11 @@ describe("landing and interest waitlist", () => {
     });
     assert.equal(missingPlatform.statusCode, 400);
     assert.match(missingPlatform.body, /Kryssa i minst en: iPhone, Android eller båda/);
+    assert.equal(
+      missingPlatform.cookies.some((cookie) => cookie.name === "korpasset_meta_lead"),
+      false,
+    );
+    assert.doesNotMatch(missingPlatform.body, /facebook\.net|fbq\(/);
 
     const count = await getPool().query(`SELECT count(*)::int AS n FROM interest_signups`);
     assert.equal(count.rows[0].n, 0);
@@ -300,6 +308,10 @@ describe("landing and interest waitlist", () => {
       }),
     });
     assert.equal(second.statusCode, 302);
+    assert.equal(
+      second.cookies.some((cookie) => cookie.name === "korpasset_meta_lead"),
+      false,
+    );
     const rows = await getPool().query(`SELECT name, role, city FROM interest_signups`);
     assert.equal(rows.rowCount, 1);
     assert.equal(rows.rows[0].name, "Anna A");
@@ -324,6 +336,10 @@ describe("landing and interest waitlist", () => {
       }),
     });
     assert.equal(response.statusCode, 302);
+    assert.equal(
+      response.cookies.some((cookie) => cookie.name === "korpasset_meta_lead"),
+      false,
+    );
     const count = await getPool().query(`SELECT count(*)::int AS n FROM interest_signups`);
     assert.equal(count.rows[0].n, 0);
     await app.close();
