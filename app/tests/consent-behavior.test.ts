@@ -416,6 +416,7 @@ describe("Meta Pixel consent", () => {
       fbqCalls(page).filter((call) => call[0] === "track" && call[1] === "PageView").length,
       1,
     );
+    assert.equal(cookieNames(page).includes("korpasset_meta_lead"), false);
   });
 
   it("does not send Lead or any Meta call without marketing consent", () => {
@@ -426,7 +427,7 @@ describe("Meta Pixel consent", () => {
     click(page, "[data-consent-reject]");
     assert.equal(scriptSrcs(page).some((src) => src.includes("facebook.net")), false);
     assert.equal(page.fbq, undefined);
-    assert.equal(cookieNames(page).includes("korpasset_meta_lead"), false);
+    assert.equal(cookieNames(page).includes("korpasset_meta_lead"), true);
 
     (page.__reopen as { click: () => void }).click();
     click(page, "[data-consent-customize]");
@@ -434,6 +435,38 @@ describe("Meta Pixel consent", () => {
     click(page, "[data-consent-save]");
     assert.equal(page.fbq, undefined);
     assert.equal(scriptSrcs(page).some((src) => src.includes("facebook.net")), false);
+  });
+
+  it("keeps a saved lead across a reload until marketing consent sends it once", () => {
+    const first = boot({
+      metaPixelId: META_PIXEL_ID,
+      cookies: [{ name: "korpasset_meta_lead", value: "1", domain: "" }],
+    });
+    assert.equal(first.fbq, undefined);
+    assert.equal(fbqCalls(first).length, 0);
+    assert.equal(cookieNames(first).includes("korpasset_meta_lead"), true);
+
+    const reloaded = boot({
+      metaPixelId: META_PIXEL_ID,
+      cookies: (first.__cookies as () => SeedCookie[])().map((cookie) => ({ ...cookie })),
+    });
+    assert.equal(reloaded.fbq, undefined);
+    assert.equal(fbqCalls(reloaded).length, 0);
+    assert.equal(cookieNames(reloaded).includes("korpasset_meta_lead"), true);
+
+    click(reloaded, "[data-consent-accept]");
+    assert.equal(
+      fbqCalls(reloaded).filter((call) => call[0] === "track" && call[1] === "Lead").length,
+      1,
+    );
+    assert.equal(cookieNames(reloaded).includes("korpasset_meta_lead"), false);
+
+    (reloaded.__reopen as { click: () => void }).click();
+    click(reloaded, "[data-consent-accept]");
+    assert.equal(
+      fbqCalls(reloaded).filter((call) => call[0] === "track" && call[1] === "Lead").length,
+      1,
+    );
   });
 
   it("does not send Lead when the signup was not saved", () => {

@@ -174,8 +174,10 @@
 
   function trackMetaLead() {
     if (!metaLoaded || leadSent || typeof window.fbq !== "function") return;
-    leadSent = true;
+    if (readNamedCookie(LEAD_COOKIE) !== "1") return;
     window.fbq("track", "Lead");
+    leadSent = true;
+    clearLeadCookie();
   }
 
   function readNamedCookie(name) {
@@ -188,8 +190,11 @@
     return "";
   }
 
-  function consumeLeadSignal() {
-    if (readNamedCookie(LEAD_COOKIE) !== "1") return false;
+  function hasPendingLead() {
+    return readNamedCookie(LEAD_COOKIE) === "1";
+  }
+
+  function clearLeadCookie() {
     var domains = cookieDomains(location.hostname);
     var paths = ["/", "/interest/tack"];
     for (var i = 0; i < domains.length; i += 1) {
@@ -199,7 +204,6 @@
           LEAD_COOKIE + "=; Path=" + paths[p] + "; Max-Age=0; SameSite=Lax" + domain;
       }
     }
-    return true;
   }
 
   function runMarketingTools(choice) {
@@ -361,7 +365,7 @@
   };
 
   window.korpassetConsent.when("marketing", loadMetaPixel);
-  if (consumeLeadSignal()) {
+  if (hasPendingLead()) {
     window.korpassetConsent.when("marketing", trackMetaLead);
   }
 })();
