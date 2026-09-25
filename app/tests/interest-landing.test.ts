@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { getPool } from "../src/db/pool.js";
 import {
@@ -437,6 +438,69 @@ describe("landing and interest waitlist", () => {
     });
     assert.equal(again.statusCode, 302);
     assert.equal(sent.length, 0);
+    await app.close();
+  });
+
+  it("keeps interest choices out of the cookie banner class and shows a validation error at the form", async () => {
+    const app = await createTestApp();
+    const home = await app.inject({ method: "GET", url: "/" });
+    assert.equal(home.statusCode, 200);
+
+    const form = home.body.match(/<form method="post" action="\/interest"[\s\S]*?<\/form>/)?.[0];
+    assert.ok(form);
+    assert.doesNotMatch(form, /class="consent"/);
+    assert.match(form, /class="interest-choice"[\s\S]*name="platform_ios"[\s\S]*iPhone/);
+    assert.match(form, /class="interest-choice"[\s\S]*name="platform_android"[\s\S]*Android/);
+    assert.match(form, /class="interest-choice"[\s\S]*name="consent"[\s\S]*Jag vill bli kontaktad om betan/);
+    assert.match(form, /Vi använder[\s\S]*iPhone[\s\S]*Android/);
+    assert.match(form, /Jag vill bli kontaktad om betan[\s\S]*Bli betatestare/);
+
+    assert.match(home.body, /<div class="consent" data-consent-root/);
+    const consentCss = fs.readFileSync(new URL("../public/consent.css", import.meta.url), "utf8");
+    assert.match(consentCss, /\.consent\s*\{[^}]*position:\s*fixed/);
+    assert.match(consentCss, /\.consent\s*\{[^}]*pointer-events:\s*none/);
+    const landingCss = fs.readFileSync(new URL("../public/landing.css", import.meta.url), "utf8");
+    assert.match(landingCss, /\.interest-choice\s*\{[^}]*position:\s*static/);
+    assert.match(landingCss, /\.interest-choice\s*\{[^}]*display:\s*grid/);
+    assert.match(landingCss, /\.interest-choice\s*\{[^}]*pointer-events:\s*auto/);
+    assert.doesNotMatch(landingCss, /\.consent\s*\{/);
+
+    const invalid = await app.inject({
+      method: "POST",
+      url: "/interest",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({
+        name: "Anna",
+        email: "anna@example.com",
+        role: "parent",
+        platform_ios: "yes",
+        consent: "",
+      }),
+    });
+    assert.equal(invalid.statusCode, 400);
+    const interest = invalid.body.match(/<section[^>]*id="intresse"[\s\S]*?<\/section>/)?.[0];
+    assert.ok(interest);
+    assert.match(interest, /role="alert"[\s\S]*Bekräfta att du vill bli kontaktad om betan/);
+    const errorAt = interest.indexOf("Bekräfta att du vill bli kontaktad om betan");
+    const formAt = interest.indexOf("<form");
+    assert.ok(errorAt >= 0 && formAt > errorAt);
+    assert.match(interest, /id="intresse"[\s\S]*scrollIntoView/);
+
+    const valid = await app.inject({
+      method: "POST",
+      url: "/interest",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({
+        name: "Anna",
+        email: "anna-choice@example.com",
+        role: "parent",
+        platform_ios: "yes",
+        platform_android: "yes",
+        consent: "yes",
+      }),
+    });
+    assert.equal(valid.statusCode, 302);
+    assert.match(String(valid.headers.location), /\/interest\/tack$/);
     await app.close();
   });
 });

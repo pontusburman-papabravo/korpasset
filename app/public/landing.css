@@ -414,15 +414,23 @@ a { color: inherit; }
   background: var(--white);
 }
 
-.consent {
+.interest-choice {
+  position: static;
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 0.65rem;
   align-items: start;
   font-weight: 500;
+  pointer-events: auto;
 }
 
-.consent input { width: auto; margin-top: 0.25rem; }
+.interest-choice input {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.2rem;
+  accent-color: var(--navy, #1a2b4c);
+  pointer-events: auto;
+}
 
 .platform-choice {
   border: 0;

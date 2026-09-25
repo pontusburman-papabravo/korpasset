@@ -127,7 +127,20 @@ export function renderLandingPage(options: {
   };
 } = {}): string {
   const values = options.values ?? {};
-  const formError = options.errorMessage ? errorBanner(options.errorMessage) : "";
+  const formError = options.errorMessage
+    ? `${errorBanner(options.errorMessage)}
+       <script>
+         document.addEventListener("DOMContentLoaded", function () {
+           var interest = document.getElementById("intresse");
+           var interestError = interest && interest.querySelector("[role='alert']");
+           if (interestError) {
+             interestError.setAttribute("tabindex", "-1");
+             interestError.focus({ preventScroll: true });
+           }
+           if (interest && interest.scrollIntoView) interest.scrollIntoView();
+         });
+       </script>`
+    : "";
   const betaFilled = options.betaFilled ?? 0;
 
   return siteLayout(
@@ -537,11 +550,11 @@ function interestSection(
         </div>
         <fieldset class="platform-choice">
           <legend>Vi använder <span class="optional">(minst en, båda går bra)</span></legend>
-          <label class="consent">
+          <label class="interest-choice">
             <input type="checkbox" name="platform_ios" value="yes"${values.platformIos ? " checked" : ""}>
             <span>iPhone</span>
           </label>
-          <label class="consent">
+          <label class="interest-choice">
             <input type="checkbox" name="platform_android" value="yes"${values.platformAndroid ? " checked" : ""}>
             <span>Android</span>
           </label>
@@ -555,7 +568,7 @@ function interestSection(
           <p class="muted field-hint" id="message-hint">Hur länge ni kört, vilka som handleder och vad ni vill ha hjälp med — till exempel tips på nästa steg.</p>
           <textarea id="message" name="message" maxlength="1000" rows="4" aria-describedby="message-hint" placeholder="T.ex. dotter 16, just börjat. Jag kör oftast, pappa ibland. Eller: son 17, kört ett år, vill ha nästa steg.">${escapeHtml(values.message ?? "")}</textarea>
         </div>
-        <label class="consent">
+        <label class="interest-choice">
           <input type="checkbox" name="consent" value="yes" required>
           <span>Jag vill bli kontaktad om betan. Vi använder uppgifterna bara för det. Läs mer i <a href="/integritet">integritetspolicyn</a>.</span>
         </label>
