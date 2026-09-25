@@ -414,7 +414,7 @@ a { color: inherit; }
   background: var(--white);
 }
 
-.interest-choice {
+label.interest-choice {
   position: static;
   display: grid;
   grid-template-columns: auto 1fr;
