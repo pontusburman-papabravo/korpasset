@@ -61,7 +61,7 @@ function signupDeleteForm(id: string, variant: "row" | "detail"): string {
   }
   return `<form method="post" action="${action}" class="admin-form admin-form--danger" onsubmit="return confirm('Radera anmälan? Det går inte att ångra.');">
       <p>Radering tar bort waitlist-raden. Används vid begäran eller manuell radering före 18 månader. Anmälningar som är 18 månader gamla eller äldre tas bort automatiskt. Detta är separat från produktanvändarens account lifecycle.</p>
-      <label class="consent">
+      <label class="interest-choice">
         <input type="checkbox" name="confirm" value="yes" required>
         <span>Jag vill radera den här anmälan.</span>
       </label>
@@ -776,7 +776,7 @@ export function supportUserPage(
     : `<form method="post" action="${deleteAction}" class="admin-form admin-form--danger">
          <h2>GDPR / kontoradering</h2>
          <p>Följer account-lifecycle: ingen <code>DELETE FROM users</code>. Elevens journey raderas. Handledarhistorik frikopplas från kontot. Waitlist orörs.</p>
-         <label class="consent">
+         <label class="interest-choice">
            <input type="checkbox" name="confirm_irreversible" value="yes" required>
            <span>Jag förstår att operationen är irreversibel.</span>
          </label>
