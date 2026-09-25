@@ -44,6 +44,7 @@ services:
       ANDROID_PACKAGE_NAME: ${ANDROID_PACKAGE_NAME:-se.korpasset.app}
       ANDROID_SHA256_CERT_FINGERPRINTS: "${ANDROID_SHA256_CERT_FINGERPRINTS:-}"
       GA_MEASUREMENT_ID: ${GA_MEASUREMENT_ID:-G-H275WSBLJ8}
+      META_PIXEL_ID: ${META_PIXEL_ID:-1358346629475279}
     depends_on:
       postgres:
         condition: service_healthy

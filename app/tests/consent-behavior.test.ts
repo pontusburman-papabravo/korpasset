@@ -20,6 +20,7 @@ interface BootOptions {
   version?: number;
   maxAge?: number;
   gaId?: string;
+  metaPixelId?: string;
   cookies?: SeedCookie[];
 }
 
@@ -195,7 +196,9 @@ function boot(options: BootOptions = {}) {
       version: ${options.version ?? CONSENT_VERSION},
       cookieName: "korpasset_consent",
       maxAgeSeconds: ${options.maxAge ?? CONSENT_MAX_AGE_SECONDS},
-      gaMeasurementId: ${JSON.stringify(options.gaId ?? "G-TEST123")}
+      gaMeasurementId: ${JSON.stringify(options.gaId ?? "G-TEST123")},
+      metaPixelId: ${JSON.stringify(options.metaPixelId ?? "")},
+      leadCookieName: "korpasset_meta_lead"
     };
     globalThis.__root = root;
     globalThis.__reopen = reopen;
@@ -220,6 +223,12 @@ function scriptSrcs(context: Record<string, unknown>): string[] {
 
 function cookieNames(context: Record<string, unknown>): string[] {
   return (context.__cookies as () => SeedCookie[])().map((cookie) => cookie.name);
+}
+
+function fbqCalls(context: Record<string, unknown>): string[][] {
+  const fbq = context.fbq as { queue?: ArrayLike<ArrayLike<unknown>> } | undefined;
+  if (!fbq?.queue) return [];
+  return Array.from(fbq.queue).map((args) => Array.from(args).map((item) => String(item)));
 }
 
 function click(context: Record<string, unknown>, selector: string): void {
@@ -337,5 +346,144 @@ describe("consent runtime", () => {
     assert.equal(names.includes("_ga"), false);
     assert.equal(names.includes("_gcl_au"), false);
     assert.equal(names.includes("bilklar_session"), true);
+  });
+});
+
+const META_PIXEL_ID = "1358346629475279";
+
+describe("Meta Pixel consent", () => {
+  it("does not load the Meta script before marketing consent", () => {
+    const page = boot({ metaPixelId: META_PIXEL_ID });
+    assert.equal(scriptSrcs(page).some((src) => src.includes("facebook.net")), false);
+    assert.equal(page.fbq, undefined);
+    assert.equal(fbqCalls(page).length, 0);
+  });
+
+  it("sends one PageView after marketing consent and does not repeat it", () => {
+    const page = boot({ metaPixelId: META_PIXEL_ID });
+    click(page, "[data-consent-accept]");
+    const facebook = scriptSrcs(page).filter((src) => src.includes("fbevents.js"));
+    assert.equal(facebook.length, 1);
+    assert.equal(String(facebook[0]), "https://connect.facebook.net/en_US/fbevents.js");
+    const pageViews = fbqCalls(page).filter((call) => call[0] === "track" && call[1] === "PageView");
+    const inits = fbqCalls(page).filter((call) => call[0] === "init");
+    assert.equal(pageViews.length, 1);
+    assert.deepEqual(inits, [["init", META_PIXEL_ID]]);
+    assert.equal(fbqCalls(page).some((call) => call[1] === "Lead"), false);
+
+    (page.__reopen as { click: () => void }).click();
+    click(page, "[data-consent-accept]");
+    assert.equal(scriptSrcs(page).filter((src) => src.includes("fbevents.js")).length, 1);
+    assert.equal(
+      fbqCalls(page).filter((call) => call[0] === "track" && call[1] === "PageView").length,
+      1,
+    );
+  });
+
+  it("sends Lead once after a saved signup when marketing consent is already granted", () => {
+    const page = boot({
+      metaPixelId: META_PIXEL_ID,
+      cookies: [
+        {
+          name: "korpasset_consent",
+          value: `v${CONSENT_VERSION}.a0.m1.${now}`,
+          domain: "",
+        },
+        { name: "korpasset_meta_lead", value: "1", domain: "" },
+      ],
+    });
+    const leads = fbqCalls(page).filter((call) => call[0] === "track" && call[1] === "Lead");
+    assert.equal(leads.length, 1);
+    assert.equal(
+      fbqCalls(page).filter((call) => call[0] === "track" && call[1] === "PageView").length,
+      1,
+    );
+    assert.equal(cookieNames(page).includes("korpasset_meta_lead"), false);
+  });
+
+  it("sends Lead when marketing consent is granted after the saved signup", () => {
+    const page = boot({
+      metaPixelId: META_PIXEL_ID,
+      cookies: [{ name: "korpasset_meta_lead", value: "1", domain: "" }],
+    });
+    assert.equal(fbqCalls(page).length, 0);
+    click(page, "[data-consent-accept]");
+    assert.equal(
+      fbqCalls(page).filter((call) => call[0] === "track" && call[1] === "Lead").length,
+      1,
+    );
+    assert.equal(
+      fbqCalls(page).filter((call) => call[0] === "track" && call[1] === "PageView").length,
+      1,
+    );
+    assert.equal(cookieNames(page).includes("korpasset_meta_lead"), false);
+  });
+
+  it("does not send Lead or any Meta call without marketing consent", () => {
+    const page = boot({
+      metaPixelId: META_PIXEL_ID,
+      cookies: [{ name: "korpasset_meta_lead", value: "1", domain: "" }],
+    });
+    click(page, "[data-consent-reject]");
+    assert.equal(scriptSrcs(page).some((src) => src.includes("facebook.net")), false);
+    assert.equal(page.fbq, undefined);
+    assert.equal(cookieNames(page).includes("korpasset_meta_lead"), true);
+
+    (page.__reopen as { click: () => void }).click();
+    click(page, "[data-consent-customize]");
+    (page.__analytics as { checked: boolean }).checked = true;
+    click(page, "[data-consent-save]");
+    assert.equal(page.fbq, undefined);
+    assert.equal(scriptSrcs(page).some((src) => src.includes("facebook.net")), false);
+  });
+
+  it("keeps a saved lead across a reload until marketing consent sends it once", () => {
+    const first = boot({
+      metaPixelId: META_PIXEL_ID,
+      cookies: [{ name: "korpasset_meta_lead", value: "1", domain: "" }],
+    });
+    assert.equal(first.fbq, undefined);
+    assert.equal(fbqCalls(first).length, 0);
+    assert.equal(cookieNames(first).includes("korpasset_meta_lead"), true);
+
+    const reloaded = boot({
+      metaPixelId: META_PIXEL_ID,
+      cookies: (first.__cookies as () => SeedCookie[])().map((cookie) => ({ ...cookie })),
+    });
+    assert.equal(reloaded.fbq, undefined);
+    assert.equal(fbqCalls(reloaded).length, 0);
+    assert.equal(cookieNames(reloaded).includes("korpasset_meta_lead"), true);
+
+    click(reloaded, "[data-consent-accept]");
+    assert.equal(
+      fbqCalls(reloaded).filter((call) => call[0] === "track" && call[1] === "Lead").length,
+      1,
+    );
+    assert.equal(cookieNames(reloaded).includes("korpasset_meta_lead"), false);
+
+    (reloaded.__reopen as { click: () => void }).click();
+    click(reloaded, "[data-consent-accept]");
+    assert.equal(
+      fbqCalls(reloaded).filter((call) => call[0] === "track" && call[1] === "Lead").length,
+      1,
+    );
+  });
+
+  it("does not send Lead when the signup was not saved", () => {
+    const page = boot({
+      metaPixelId: META_PIXEL_ID,
+      cookies: [
+        {
+          name: "korpasset_consent",
+          value: `v${CONSENT_VERSION}.a1.m1.${now}`,
+          domain: "",
+        },
+      ],
+    });
+    assert.equal(fbqCalls(page).some((call) => call[1] === "Lead"), false);
+    assert.equal(
+      fbqCalls(page).filter((call) => call[1] === "PageView").length,
+      1,
+    );
   });
 });

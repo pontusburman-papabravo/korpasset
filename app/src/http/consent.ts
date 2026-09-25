@@ -1,7 +1,10 @@
 import { config } from "../config.js";
 
 /** Bump when purposes or vendors change so earlier choices are asked again. */
-export const CONSENT_VERSION = 1;
+export const CONSENT_VERSION = 2;
+
+/** One-shot signal that a new waitlist row was stored. Not a tracking cookie. */
+export const META_LEAD_COOKIE_NAME = "korpasset_meta_lead";
 
 export const CONSENT_COOKIE_NAME = "korpasset_consent";
 
@@ -14,6 +17,8 @@ export function consentConfigJson(): string {
     cookieName: CONSENT_COOKIE_NAME,
     maxAgeSeconds: CONSENT_MAX_AGE_SECONDS,
     gaMeasurementId: config.gaMeasurementId,
+    metaPixelId: config.metaPixelId,
+    leadCookieName: META_LEAD_COOKIE_NAME,
   });
 }
 
@@ -55,7 +60,7 @@ export function consentBody(): string {
       <input type="checkbox" id="consent-marketing" data-consent-marketing>
       <span>
         <strong>Marknadsföring och andra tredjepart</strong>
-        <span class="consent__choice-text">Verktyg för marknadsföring eller annat inbäddat innehåll. Inget sådant verktyg körs utan samtycke.</span>
+        <span class="consent__choice-text">Meta Pixel, om det är aktiverat för webbplatsen. Mäter annonsresultat, till exempel att en intresseanmälan sparats. Meta kan behandla uppgifter utanför EU/EES. Skriptet laddas bara efter samtycke.</span>
       </span>
     </label>
     <div class="consent__actions">

@@ -96,6 +96,14 @@ export const config = {
     const value = (process.env.GA_MEASUREMENT_ID ?? "").trim();
     return /^G-[A-Z0-9]+$/.test(value) ? value : "";
   },
+  /**
+   * Meta Pixel id. Empty unless the value is numeric, so a placeholder
+   * never reaches the page. The pixel is not loaded until marketing consent.
+   */
+  get metaPixelId() {
+    const value = (process.env.META_PIXEL_ID ?? "").trim();
+    return /^\d{8,20}$/.test(value) ? value : "";
+  },
   /** Guest-elev via /onboarding. Off in production unless explicitly enabled. */
   get allowGuestStudentOnboarding() {
     if (process.env.ALLOW_GUEST_STUDENT_ONBOARDING === "true") return true;

@@ -4,9 +4,9 @@ export function privacyPage(): string {
   return renderLegalPage(
     "Integritetspolicy",
     `<h1>Integritetspolicy</h1>
-     <p>Senast uppdaterad: 24 september 2026</p>
+     <p>Senast uppdaterad: 25 september 2026</p>
      <p>Papa Bravo AB är personuppgiftsansvarig för Körpasset, en digital tjänst för privat övningskörning mot svenskt B-körkort.</p>
-     <p>Vi samlar in så lite personuppgifter som möjligt. Vi säljer inte dina personuppgifter och använder dem inte för riktad annonsmarknadsföring.</p>
+     <p>Vi samlar in så lite personuppgifter som möjligt. Vi säljer inte dina personuppgifter. Annonsmätning via Meta Pixel sker bara om du samtycker till marknadsföringscookies.</p>
      <p>Du kan kontakta oss på:</p>
      <ul>
        <li>Allmänt: <a href="mailto:info@korpasset.se">info@korpasset.se</a></li>
@@ -79,7 +79,7 @@ export function privacyPage(): string {
      <p>Sign in with Apple och Sign in with Google innebär att Apple respektive Google behandlar uppgifter i samband med inloggningen. De kan behandla uppgifter utanför EU/EES.</p>
      <p>Resend kan behandla e-postuppgifter utanför EU/EES när bekräftelsemejl skickas.</p>
      <p>Vi har ingen betalningsleverantör i betan.</p>
-     <p>Google Analytics och andra tredjepartsverktyg används bara om du har samtyckt till det. Utan samtycke laddas de inte. Mer står i avsnittet om cookies och i <a href="/cookies">cookiepolicyn</a>.</p>
+     <p>Google Analytics och Meta Pixel används bara om du har samtyckt till respektive kategori. Utan samtycke laddas de inte. Mer står i avsnittet om cookies och i <a href="/cookies">cookiepolicyn</a>.</p>
 
      <h2>Lagring</h2>
      <p>Personuppgifter från en intresseanmälan raderas senast 18 månader efter anmälan, tidigare om du begär det eller när betakön inte längre behövs.</p>
@@ -129,7 +129,7 @@ export function privacyPage(): string {
      <p>Valfria kategorier är avstängda tills du själv godkänner dem. Du kan godkänna alla, avvisa alla valfria eller anpassa valet. Samma val kan ändras eller återkallas via Cookieinställningar, lika enkelt som det gavs. Att återkalla samtycket påverkar inte behandling som redan har skett.</p>
      <p>Själva valet sparas i en nödvändig förstapartscookie i upp till sex månader. Den innehåller kategorierna du valt, en versionsmarkering och en tidpunkt. Den innehåller inte namn eller e-postadress.</p>
      <p>Analys, om du samtycker, är Google Analytics 4 från Google. Mätningen startar bara när ett mät-id är konfigurerat och du har godkänt analys. Google kan behandla uppgifter utanför EU/EES. Vi använder inte uppgifterna för riktad annonsmarknadsföring från vår sida.</p>
-     <p>Marknadsföring och andra tredjepartsverktyg körs bara om du samtycker till den kategorin. Inget sådant verktyg laddas utan samtycke.</p>
+     <p>Marknadsföring, om du samtycker, är Meta Pixel från Meta Platforms. Det mäter annonsresultat, till exempel att en intresseanmälan har sparats. Skriptet laddas bara efter samtycke till marknadsföring. Meta kan behandla uppgifter utanför EU/EES. Utan det samtycket skickas ingen händelse.</p>
      <p>Publika sidor gör inga anrop till typsnitt, analys eller reklam innan du har gjort ett val. En fullständig förteckning finns i <a href="/cookies">cookiepolicyn</a>.</p>
      <p>När du loggar in i produkten sätts en nödvändig HttpOnly-cookie som håller dig inloggad i upp till ett år. Cookien innehåller en signerad hänvisning till ditt användar-id, inte namn eller e-postadress.</p>
      <p>När en elev öppnar handledarens startlänk kan en HttpOnly-cookie sättas i upp till sju dagar. Den används för att hålla reda på den tekniska händelsen att länken öppnats. Värdet är en teknisk flagga, inte namn eller e-postadress. Cookien sätts inte av en vanlig inbjudningslänk.</p>
@@ -275,7 +275,7 @@ export function cookiesPage(): string {
   return renderLegalPage(
     "Cookies",
     `<h1>Cookiepolicy</h1>
-     <p>Senast uppdaterad: 24 september 2026</p>
+     <p>Senast uppdaterad: 25 september 2026</p>
      <p>Papa Bravo AB använder cookies och liknande lagring på korpasset.se. Den här sidan beskriver vilka, varför och hur du väljer.</p>
      <p>En cookie är en liten textfil som webbplatsen sparar i din webbläsare. Liknande teknik, till exempel localStorage, behandlas på samma sätt.</p>
 
@@ -308,7 +308,8 @@ export function cookiesPage(): string {
 
      <h2>Marknadsföring och andra tredjepartsverktyg</h2>
      <p>Används bara om du godkänner den kategorin. Rättslig grund är ditt samtycke.</p>
-     <p>Kategorin är till för marknadsföring och annat inbäddat innehåll från tredje part. Inget sådant verktyg körs utan samtycke. När ett verktyg kopplas in beskrivs leverantör, syfte och lagringstid här, och du får frågan igen om syftet är nytt.</p>
+     <p>Verktyget är Meta Pixel (Meta Platforms Ireland Limited och Meta Platforms, Inc.). Det används för att mäta annonsresultat, till exempel att en intresseanmälan har sparats. Meta kan behandla uppgifter utanför EU/EES enligt Metas egna villkor.</p>
+     <p>Skriptet laddas inte, och ingen PageView eller Lead skickas, förrän du har samtyckt till marknadsföring och ett pixel-id är konfigurerat hos oss. En sparad anmälan fungerar även utan det samtycket. Om du senare återkallar samtycket laddas inte skriptet vid nästa sidvisning, och cookies som <strong>_fbp</strong> och <strong>_fbc</strong> som vi kan radera från webbläsaren tas bort. De används för att skilja webbläsare åt och gäller vanligtvis upp till 90 dagar, enligt Metas inställning.</p>
 
      <h2>Kontakt</h2>
      <p>Frågor om cookies och personuppgifter: <a href="mailto:support@korpasset.se">support@korpasset.se</a>.</p>
