@@ -76,14 +76,26 @@
     return Boolean(oauth.googleWebClientId);
   }
 
-  async function initialize(SocialLogin) {
+  // Android @capgo/capacitor-social-login 8.5.10 rejects the whole
+  // initialize() when Apple is included without redirectUrl, before Google
+  // is registered. Google on Android must be initialized alone.
+  function shouldInitializeApple(provider) {
+    return provider === "apple" || platform() !== "android";
+  }
+
+  function shouldInitializeGoogle(provider) {
+    return googleReady() && (provider === "google" || platform() !== "android");
+  }
+
+  async function initialize(SocialLogin, provider) {
     if (!SocialLogin || typeof SocialLogin.initialize !== "function") return;
-    const payload = {
-      apple: {
+    const payload = {};
+    if (shouldInitializeApple(provider)) {
+      payload.apple = {
         clientId: oauth.appleClientId || "se.korpasset.app",
-      },
-    };
-    if (googleReady()) {
+      };
+    }
+    if (shouldInitializeGoogle(provider)) {
       const google = { mode: "online" };
       if (oauth.googleWebClientId) {
         google.webClientId = oauth.googleWebClientId;
@@ -95,6 +107,23 @@
       payload.google = google;
     }
     await SocialLogin.initialize(payload);
+  }
+
+  // Any scopes array makes that Android build reject Google login unless
+  // MainActivity implements ModifiedMainActivityForSocialLoginPlugin.
+  // The plugin already requests email, profile, and openid by default.
+  function loginOptions(provider, nonce) {
+    const options = { nonce: nonce };
+    if (provider === "google" && platform() === "android") return options;
+    options.scopes = provider === "google" ? ["email", "profile"] : ["email", "name"];
+    return options;
+  }
+
+  function loginWasCancelled(error) {
+    const code = error && typeof error.code === "string" ? error.code : "";
+    if (code === "USER_CANCELLED") return true;
+    const message = error && typeof error.message === "string" ? error.message : "";
+    return /cancel/i.test(message);
   }
 
   async function continueWith(provider) {
@@ -119,12 +148,11 @@
     }
 
     try {
-      await initialize(SocialLogin);
+      await initialize(SocialLogin, provider);
       const nonce = randomNonce();
-      const scopes = provider === "google" ? ["email", "profile"] : ["email", "name"];
       const result = await SocialLogin.login({
         provider,
-        options: { scopes: scopes, nonce: nonce },
+        options: loginOptions(provider, nonce),
       });
       const identityToken = idTokenFrom(result);
       if (!identityToken) {
@@ -156,7 +184,11 @@
       }
       window.location.assign(body.redirectTo || "/app");
     } catch (error) {
-      showError("Inloggningen avbröts. Försök igen.");
+      showError(
+        loginWasCancelled(error)
+          ? "Inloggningen avbröts. Försök igen."
+          : "Kunde inte logga in. Försök igen.",
+      );
     }
   }
 

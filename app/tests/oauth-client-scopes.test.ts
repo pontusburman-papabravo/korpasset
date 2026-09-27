@@ -12,7 +12,12 @@ const script = readFileSync(
 
 type LoginCall = {
   provider: string;
-  options: { scopes: string[]; nonce: string };
+  options: { scopes?: string[]; nonce: string };
+};
+
+type InitPayload = {
+  apple?: { clientId: string };
+  google?: { mode: string; webClientId?: string; iOSServerClientId?: string; iOSClientId?: string };
 };
 
 type PostedBody = {
@@ -25,9 +30,13 @@ type PostedBody = {
 function installClient(
   profile: Record<string, string | null>,
   resultExtra: Record<string, unknown> = {},
+  platformName = "ios",
+  loginImpl?: (call: LoginCall) => Promise<unknown>,
 ) {
   const logins: LoginCall[] = [];
+  const inits: InitPayload[] = [];
   const posts: PostedBody[] = [];
+  const errors: string[] = [];
   let click: (event: {
     target: { closest: (selector: string) => { getAttribute: () => string } | null };
     preventDefault: () => void;
@@ -37,8 +46,14 @@ function installClient(
     URL,
     console,
     document: {
-      getElementById() {
-        return null;
+      getElementById(id: string) {
+        if (id !== "oauth-error") return null;
+        return {
+          hidden: true,
+          set textContent(value: string) {
+            errors.push(value);
+          },
+        };
       },
       querySelector() {
         return { getAttribute: () => "/app" };
@@ -73,12 +88,15 @@ function installClient(
         googleIosClientId: "ios.apps.googleusercontent.com",
       },
       Capacitor: {
-        getPlatform: () => "ios",
+        getPlatform: () => platformName,
         Plugins: {
           SocialLogin: {
-            async initialize() {},
+            async initialize(payload: InitPayload) {
+              inits.push(payload);
+            },
             async login(call: LoginCall) {
               logins.push(call);
+              if (loginImpl) return loginImpl(call);
               return {
                 result: {
                   idToken: "identity-token",
@@ -107,7 +125,7 @@ function installClient(
   };
 
   runInContext(script, createContext(sandbox));
-  return { logins, posts, click };
+  return { logins, inits, posts, errors, click };
 }
 
 async function clickProvider(
@@ -195,6 +213,51 @@ describe("native OAuth login scopes", () => {
     await clickProvider(client.click, "google");
     assert.equal(client.posts[0].authorizationCode, undefined);
     assert.equal(JSON.stringify(client.posts[0]).includes("google-access-token"), false);
+  });
+
+  it("starts Android Google login without Apple init or custom scopes", async () => {
+    const client = installClient({ name: "Ada Lovelace" }, {}, "android");
+    await clickProvider(client.click, "google");
+
+    assert.equal(client.inits.length, 1);
+    assert.equal(client.inits[0].apple, undefined);
+    assert.equal(client.inits[0].google?.mode, "online");
+    assert.equal(client.inits[0].google?.webClientId, "web.apps.googleusercontent.com");
+    assert.equal(client.logins.length, 1);
+    assert.equal(client.logins[0].provider, "google");
+    assert.equal(client.logins[0].options.scopes, undefined);
+    assert.equal(typeof client.logins[0].options.nonce, "string");
+    assert.equal(client.posts.length, 1);
+    assert.equal(client.posts[0].identityToken, "identity-token");
+    assert.equal(client.posts[0].nonce, client.logins[0].options.nonce);
+    assert.equal(client.errors.length, 0);
+  });
+
+  it("keeps Apple and Google together when iOS starts Google login", async () => {
+    const client = installClient({ name: "Ada Lovelace" });
+    await clickProvider(client.click, "google");
+
+    assert.equal(client.inits[0].apple?.clientId, "se.korpasset.app");
+    assert.equal(client.inits[0].google?.webClientId, "web.apps.googleusercontent.com");
+    assert.deepEqual(Array.from(client.logins[0].options.scopes ?? []), ["email", "profile"]);
+  });
+
+  it("shows cancellation only when the native login was actually cancelled", async () => {
+    const cancelled = installClient({ name: "Ada" }, {}, "android", async () => {
+      const error = new Error("Google Sign-In cancelled by user");
+      (error as Error & { code?: string }).code = "USER_CANCELLED";
+      throw error;
+    });
+    await clickProvider(cancelled.click, "google");
+    assert.deepEqual(cancelled.errors, ["Inloggningen avbröts. Försök igen."]);
+    assert.equal(cancelled.posts.length, 0);
+
+    const rejected = installClient({ name: "Ada" }, {}, "android", async () => {
+      throw new Error("apple.android.redirectUrl is null or empty");
+    });
+    await clickProvider(rejected.click, "google");
+    assert.deepEqual(rejected.errors, ["Kunde inte logga in. Försök igen."]);
+    assert.equal(rejected.posts.length, 0);
   });
 
   it("still builds a Google display name from the profile name", async () => {
