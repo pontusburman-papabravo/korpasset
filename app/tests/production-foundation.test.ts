@@ -25,6 +25,21 @@ const INITIAL_MIGRATION_SQL = readFileSync(
   "utf8",
 );
 
+describe("compose apple credentials", () => {
+  it("passes the Sign in with Apple key into the app container from deploy/.env", () => {
+    const compose = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../../deploy/docker-compose.yml"),
+      "utf8",
+    );
+    assert.match(compose, /APPLE_TEAM_ID: \$\{APPLE_TEAM_ID:-\}/);
+    assert.match(compose, /APPLE_KEY_ID: \$\{APPLE_KEY_ID:-\}/);
+    assert.match(compose, /APPLE_PRIVATE_KEY: "\$\{APPLE_PRIVATE_KEY:-\}"/);
+    assert.match(compose, /APPLE_BUNDLE_ID: \$\{APPLE_BUNDLE_ID:-se\.korpasset\.app\}/);
+    assert.match(compose, /APPLE_CLIENT_ID: "\$\{APPLE_CLIENT_ID:-\}"/);
+    assert.doesNotMatch(compose, /BEGIN PRIVATE KEY/);
+  });
+});
+
 describe("production foundation", () => {
   beforeEach(async () => {
     await resetDatabaseData();
