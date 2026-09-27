@@ -1,10 +1,56 @@
 (function () {
   var config = window.KORPASSET_CONSENT_CONFIG || {};
+
+  function readCapacitorNative() {
+    var cap = window.Capacitor;
+    if (!cap) {
+      return { isNativeApp: false, nativePlatform: "" };
+    }
+    var platform = "";
+    if (typeof cap.getPlatform === "function") {
+      var name = String(cap.getPlatform() || "").toLowerCase();
+      if (name === "ios" || name === "android") platform = name;
+      else if (name && name !== "web") platform = "unknown";
+    }
+    var isNativeApp = false;
+    if (typeof cap.isNativePlatform === "function") {
+      isNativeApp = Boolean(cap.isNativePlatform());
+    } else {
+      isNativeApp = platform === "ios" || platform === "android";
+    }
+    if (isNativeApp && !platform) platform = "unknown";
+    if (!isNativeApp) platform = "";
+    return { isNativeApp: isNativeApp, nativePlatform: platform };
+  }
+
+  function trackingPolicy(detected) {
+    var isNativeApp = Boolean(detected && detected.isNativeApp);
+    var nativePlatform = isNativeApp ? detected.nativePlatform || "unknown" : "";
+    var nativeIos = isNativeApp && nativePlatform === "ios";
+    return {
+      isNativeApp: isNativeApp,
+      nativePlatform: nativePlatform,
+      allowMarketingTracking: !nativeIos,
+      allowAnalyticsTracking: !nativeIos,
+      showConsentBanner: !nativeIos,
+      showMarketingConsent: !nativeIos,
+    };
+  }
+
+  var runtime = trackingPolicy(readCapacitorNative());
+  window.KORPASSET_RUNTIME = runtime;
+
   var VERSION = Number(config.version) || 1;
   var COOKIE_NAME = config.cookieName || "korpasset_consent";
   var MAX_AGE = Number(config.maxAgeSeconds) || 15552000;
-  var GA_ID = typeof config.gaMeasurementId === "string" ? config.gaMeasurementId : "";
-  var META_PIXEL_ID = typeof config.metaPixelId === "string" ? config.metaPixelId : "";
+  var GA_ID =
+    runtime.allowAnalyticsTracking && typeof config.gaMeasurementId === "string"
+      ? config.gaMeasurementId
+      : "";
+  var META_PIXEL_ID =
+    runtime.allowMarketingTracking && typeof config.metaPixelId === "string"
+      ? config.metaPixelId
+      : "";
   var LEAD_COOKIE = config.leadCookieName || "korpasset_meta_lead";
   var listeners = [];
   var marketingTools = [];
@@ -48,15 +94,17 @@
   }
 
   function current() {
-    return (
+    var choice =
       parse(readCookie()) || {
         necessary: true,
         analytics: false,
         marketing: false,
         decided: false,
         at: 0,
-      }
-    );
+      };
+    if (!runtime.allowAnalyticsTracking) choice.analytics = false;
+    if (!runtime.allowMarketingTracking) choice.marketing = false;
+    return choice;
   }
 
   function writeCookie(choice) {
@@ -121,6 +169,7 @@
   }
 
   function loadGoogleAnalytics(choice) {
+    if (!runtime.allowAnalyticsTracking) return;
     if (!GA_ID || gaLoaded || !choice.analytics) return;
     gaLoaded = true;
     window.dataLayer = window.dataLayer || [];
@@ -153,7 +202,9 @@
   }
 
   function loadMetaPixel() {
-    if (!META_PIXEL_ID || metaLoaded || window.fbq) return;
+    if (!runtime.allowMarketingTracking || !META_PIXEL_ID || metaLoaded || window.fbq) {
+      return;
+    }
     metaLoaded = true;
     var fbq = function () {
       fbq.callMethod ? fbq.callMethod.apply(fbq, arguments) : fbq.queue.push(arguments);
@@ -173,6 +224,7 @@
   }
 
   function trackMetaLead() {
+    if (!runtime.allowMarketingTracking) return;
     if (!metaLoaded || leadSent || typeof window.fbq !== "function") return;
     if (readNamedCookie(LEAD_COOKIE) !== "1") return;
     window.fbq("track", "Lead");
@@ -207,7 +259,7 @@
   }
 
   function runMarketingTools(choice) {
-    if (!choice.marketing) return;
+    if (!runtime.allowMarketingTracking || !choice.marketing) return;
     marketingTools.splice(0).forEach(function (tool) {
       try {
         tool();
@@ -221,7 +273,7 @@
   }
 
   function syncGoogle(choice) {
-    if (!GA_ID) return;
+    if (!runtime.allowAnalyticsTracking || !GA_ID) return;
     if (!choice.analytics) {
       setGaDisabled(true);
       return;
@@ -240,20 +292,27 @@
   }
 
   function apply(choice) {
-    if (!choice.analytics) clearMatching(/^(_ga|_gid|_gat)/);
-    if (!choice.marketing) {
+    var next = {
+      necessary: true,
+      analytics: runtime.allowAnalyticsTracking && Boolean(choice.analytics),
+      marketing: runtime.allowMarketingTracking && Boolean(choice.marketing),
+      decided: Boolean(choice.decided),
+      at: choice.at || 0,
+    };
+    if (!next.analytics) clearMatching(/^(_ga|_gid|_gat)/);
+    if (!next.marketing) {
       clearMatching(/^_gcl_/);
       clearMatching(/^_fb[pc]$/);
     }
-    syncGoogle(choice);
-    if (choice.marketing) runMarketingTools(choice);
+    syncGoogle(next);
+    if (next.marketing) runMarketingTools(next);
     notify();
   }
 
   function save(partial) {
     writeCookie({
-      analytics: Boolean(partial.analytics),
-      marketing: Boolean(partial.marketing),
+      analytics: runtime.allowAnalyticsTracking && Boolean(partial.analytics),
+      marketing: runtime.allowMarketingTracking && Boolean(partial.marketing),
     });
     apply(current());
   }
@@ -262,7 +321,8 @@
     banner.hidden = true;
     panel.hidden = true;
     root.hidden = true;
-    reopen.hidden = false;
+    reopen.hidden = !runtime.showConsentBanner;
+    if (!runtime.showConsentBanner) hideOptionalConsentUi();
   }
 
   function syncChecks() {
@@ -271,7 +331,36 @@
     marketingInput.checked = choice.marketing;
   }
 
+  function hideOptionalConsentUi() {
+    if (runtime.showConsentBanner && runtime.showMarketingConsent) return;
+    banner.hidden = true;
+    panel.hidden = true;
+    root.hidden = true;
+    reopen.hidden = true;
+    if (!runtime.showMarketingConsent && marketingInput) {
+      marketingInput.checked = false;
+      marketingInput.disabled = true;
+      var marketingChoice =
+        marketingInput.closest("[data-consent-marketing-choice]") ||
+        marketingInput.closest("label");
+      if (marketingChoice) marketingChoice.hidden = true;
+    }
+    if (!runtime.allowAnalyticsTracking && analyticsInput) {
+      analyticsInput.checked = false;
+      analyticsInput.disabled = true;
+      var analyticsChoice =
+        analyticsInput.closest("[data-consent-analytics-choice]") ||
+        analyticsInput.closest("label");
+      if (analyticsChoice) analyticsChoice.hidden = true;
+    }
+    if (document.querySelectorAll) {
+      var opens = document.querySelectorAll("[data-consent-open]");
+      for (var i = 0; i < opens.length; i += 1) opens[i].hidden = true;
+    }
+  }
+
   function openBanner() {
+    if (!runtime.showConsentBanner) return;
     syncChecks();
     panel.hidden = true;
     banner.hidden = false;
@@ -282,6 +371,7 @@
   }
 
   function openPanel() {
+    if (!runtime.showConsentBanner) return;
     syncChecks();
     banner.hidden = true;
     panel.hidden = false;
@@ -291,7 +381,10 @@
   }
 
   function acceptAll() {
-    save({ analytics: true, marketing: true });
+    save({
+      analytics: runtime.allowAnalyticsTracking,
+      marketing: runtime.allowMarketingTracking,
+    });
     closeBanner();
   }
 
@@ -327,8 +420,21 @@
     else if (control.hasAttribute("data-consent-save")) saveCustom();
   });
 
+  hideOptionalConsentUi();
   var existing = current();
-  if (!existing.decided) {
+  if (!runtime.showConsentBanner) {
+    setGaDisabled(true);
+    clearMatching(/^(_ga|_gid|_gat)/);
+    clearMatching(/^_gcl_/);
+    clearMatching(/^_fb[pc]$/);
+    apply({
+      necessary: true,
+      analytics: false,
+      marketing: false,
+      decided: true,
+      at: 0,
+    });
+  } else if (!existing.decided) {
     setGaDisabled(true);
     clearMatching(/^(_ga|_gid|_gat)/);
     clearMatching(/^_gcl_/);
@@ -354,6 +460,8 @@
       };
     },
     when: function (category, tool) {
+      if (category === "marketing" && !runtime.allowMarketingTracking) return;
+      if (category === "analytics" && !runtime.allowAnalyticsTracking) return;
       var choice = current();
       if (category === "marketing") {
         if (choice.marketing) tool();
@@ -364,8 +472,10 @@
     },
   };
 
-  window.korpassetConsent.when("marketing", loadMetaPixel);
-  if (hasPendingLead()) {
-    window.korpassetConsent.when("marketing", trackMetaLead);
+  if (runtime.allowMarketingTracking) {
+    window.korpassetConsent.when("marketing", loadMetaPixel);
+    if (hasPendingLead()) {
+      window.korpassetConsent.when("marketing", trackMetaLead);
+    }
   }
 })();

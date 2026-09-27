@@ -4,9 +4,9 @@ export function privacyPage(): string {
   return renderLegalPage(
     "Integritetspolicy",
     `<h1>Integritetspolicy</h1>
-     <p>Senast uppdaterad: 25 september 2026</p>
+     <p>Senast uppdaterad: 27 september 2026</p>
      <p>Papa Bravo AB är personuppgiftsansvarig för Körpasset, en digital tjänst för privat övningskörning mot svenskt B-körkort.</p>
-     <p>Vi samlar in så lite personuppgifter som möjligt. Vi säljer inte dina personuppgifter. Annonsmätning via Meta Pixel sker bara om du samtycker till marknadsföringscookies.</p>
+     <p>Vi samlar in så lite personuppgifter som möjligt. Vi säljer inte dina personuppgifter. På den publika webbplatsen korpasset.se kan annonsmätning via Meta Pixel ske bara om du samtycker till marknadsföringscookies. iOS-appen Körpasset använder inte reklam- eller marknadsföringsspårning och laddar inte Meta Pixel.</p>
      <p>Du kan kontakta oss på:</p>
      <ul>
        <li>Allmänt: <a href="mailto:info@korpasset.se">info@korpasset.se</a></li>
@@ -79,7 +79,7 @@ export function privacyPage(): string {
      <p>Sign in with Apple och Sign in with Google innebär att Apple respektive Google behandlar uppgifter i samband med inloggningen. De kan behandla uppgifter utanför EU/EES.</p>
      <p>Resend kan behandla e-postuppgifter utanför EU/EES när bekräftelsemejl skickas.</p>
      <p>Vi har ingen betalningsleverantör i betan.</p>
-     <p>Google Analytics och Meta Pixel används bara om du har samtyckt till respektive kategori. Utan samtycke laddas de inte. Mer står i avsnittet om cookies och i <a href="/cookies">cookiepolicyn</a>.</p>
+     <p>På den publika webbplatsen används Google Analytics och Meta Pixel bara om du har samtyckt till respektive kategori. Utan samtycke laddas de inte. iOS-appen laddar varken Google Analytics eller Meta Pixel. Mer står i avsnittet om cookies och i <a href="/cookies">cookiepolicyn</a>.</p>
 
      <h2>Lagring</h2>
      <p>Personuppgifter från en intresseanmälan raderas senast 18 månader efter anmälan, tidigare om du begär det eller när betakön inte längre behövs.</p>
@@ -128,8 +128,8 @@ export function privacyPage(): string {
      <p>Vi ber om samtycke innan vi använder analyscookies eller andra tredjepartsverktyg. Nödvändiga cookies sätts utan det valet, eftersom webbplatsen och inloggningen inte fungerar utan dem. Reglerna följer dataskyddsförordningen (GDPR) och reglerna om kakor i lagen om elektronisk kommunikation.</p>
      <p>Valfria kategorier är avstängda tills du själv godkänner dem. Du kan godkänna alla, avvisa alla valfria eller anpassa valet. Samma val kan ändras eller återkallas via Cookieinställningar, lika enkelt som det gavs. Att återkalla samtycket påverkar inte behandling som redan har skett.</p>
      <p>Själva valet sparas i en nödvändig förstapartscookie i upp till sex månader. Den innehåller kategorierna du valt, en versionsmarkering och en tidpunkt. Den innehåller inte namn eller e-postadress.</p>
-     <p>Analys, om du samtycker, är Google Analytics 4 från Google. Mätningen startar bara när ett mät-id är konfigurerat och du har godkänt analys. Google kan behandla uppgifter utanför EU/EES. Vi använder inte uppgifterna för riktad annonsmarknadsföring från vår sida.</p>
-     <p>Marknadsföring, om du samtycker, är Meta Pixel från Meta Platforms. Det mäter annonsresultat, till exempel att en intresseanmälan har sparats. Skriptet laddas bara efter samtycke till marknadsföring. Meta kan behandla uppgifter utanför EU/EES. Utan det samtycket skickas ingen händelse.</p>
+     <p>Analys, om du samtycker i en vanlig webbläsare, är Google Analytics 4 från Google. Mätningen startar bara när ett mät-id är konfigurerat och du har godkänt analys. Google kan behandla uppgifter utanför EU/EES. Vi använder inte uppgifterna för riktad annonsmarknadsföring från vår sida. iOS-appen använder inte Google Analytics.</p>
+     <p>Marknadsföring, om du samtycker i en vanlig webbläsare, är Meta Pixel från Meta Platforms. Det mäter annonsresultat, till exempel att en intresseanmälan har sparats. Skriptet laddas bara efter samtycke till marknadsföring. Meta kan behandla uppgifter utanför EU/EES. Utan det samtycket skickas ingen händelse. iOS-appen laddar inte Meta Pixel och skickar ingen PageView eller Lead.</p>
      <p>Publika sidor gör inga anrop till typsnitt, analys eller reklam innan du har gjort ett val. En fullständig förteckning finns i <a href="/cookies">cookiepolicyn</a>.</p>
      <p>När du loggar in i produkten sätts en nödvändig HttpOnly-cookie som håller dig inloggad i upp till ett år. Cookien innehåller en signerad hänvisning till ditt användar-id, inte namn eller e-postadress.</p>
      <p>När en elev öppnar handledarens startlänk kan en HttpOnly-cookie sättas i upp till sju dagar. Den används för att hålla reda på den tekniska händelsen att länken öppnats. Värdet är en teknisk flagga, inte namn eller e-postadress. Cookien sätts inte av en vanlig inbjudningslänk.</p>
@@ -275,8 +275,9 @@ export function cookiesPage(): string {
   return renderLegalPage(
     "Cookies",
     `<h1>Cookiepolicy</h1>
-     <p>Senast uppdaterad: 25 september 2026</p>
+     <p>Senast uppdaterad: 27 september 2026</p>
      <p>Papa Bravo AB använder cookies och liknande lagring på korpasset.se. Den här sidan beskriver vilka, varför och hur du väljer.</p>
+     <p>Den publika webbplatsen kan använda valfria analys- och marknadsföringscookies efter samtycke i webbläsaren. iOS-appen Körpasset använder inte reklam- eller marknadsföringsspårning, inte Meta Pixel och inte Google Analytics.</p>
      <p>En cookie är en liten textfil som webbplatsen sparar i din webbläsare. Liknande teknik, till exempel localStorage, behandlas på samma sätt.</p>
 
      <h2>Så väljer du</h2>
@@ -300,14 +301,17 @@ export function cookiesPage(): string {
        <li><strong>korpasset_admin</strong> — inloggning i administrationsdelen. HttpOnly. Upp till 12 timmar. Bara under /admin.</li>
      </ul>
 
+     <h2>iOS-appen</h2>
+     <p>När Körpasset körs i iOS-appen laddas inte Google Analytics, inte Meta Pixel och inte andra reklam- eller marknadsföringsverktyg. Cookiebannern som erbjuder analys- och marknadsföringsval visas inte där. Nödvändiga förstapartscookies för inloggning och appen kan fortfarande användas.</p>
+
      <h2>Analys</h2>
-     <p>Används bara om du godkänner analys. Rättslig grund är ditt samtycke.</p>
+     <p>Används bara på den publika webbplatsen om du godkänner analys. Rättslig grund är ditt samtycke. Gäller inte iOS-appen.</p>
      <p>Verktyget är Google Analytics 4 (Google Ireland Limited och Google LLC). Det hjälper oss att se hur webbplatsen används, till exempel vilka sidor som besöks. Google kan behandla uppgifter utanför EU/EES enligt Googles egna villkor.</p>
      <p>Skriptet från Google laddas inte, och inga analyscookies sätts, förrän du har samtyckt och ett mät-id är konfigurerat hos oss. Om du senare återkallar samtycket laddas inte skriptet vid nästa sidvisning, och analyscookies som vi kan radera från webbläsaren tas bort.</p>
      <p>Google kan då sätta cookies som <strong>_ga</strong> och <strong>_ga_…</strong>. De används för att skilja webbläsare åt och gäller vanligtvis upp till 24 månader, enligt Googles inställning.</p>
 
      <h2>Marknadsföring och andra tredjepartsverktyg</h2>
-     <p>Används bara om du godkänner den kategorin. Rättslig grund är ditt samtycke.</p>
+     <p>Används bara på den publika webbplatsen om du godkänner den kategorin. Rättslig grund är ditt samtycke. Gäller inte iOS-appen.</p>
      <p>Verktyget är Meta Pixel (Meta Platforms Ireland Limited och Meta Platforms, Inc.). Det används för att mäta annonsresultat, till exempel att en intresseanmälan har sparats. Meta kan behandla uppgifter utanför EU/EES enligt Metas egna villkor.</p>
      <p>Skriptet laddas inte, och ingen PageView eller Lead skickas, förrän du har samtyckt till marknadsföring och ett pixel-id är konfigurerat hos oss. En sparad anmälan fungerar även utan det samtycket. Om du senare återkallar samtycket laddas inte skriptet vid nästa sidvisning, och cookies som <strong>_fbp</strong> och <strong>_fbc</strong> som vi kan radera från webbläsaren tas bort. De används för att skilja webbläsare åt och gäller vanligtvis upp till 90 dagar, enligt Metas inställning.</p>
 

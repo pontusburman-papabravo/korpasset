@@ -103,6 +103,8 @@ describe("public legal pages", () => {
     assert.doesNotMatch(privacy.body, /ingen automatisk rensning av backuper/);
     assert.match(privacy.body, /ber om samtycke innan vi använder analyscookies/);
     assert.match(privacy.body, /Google Analytics/);
+    assert.match(privacy.body, /iOS-appen Körpasset använder inte reklam- eller marknadsföringsspårning/);
+    assert.match(privacy.body, /iOS-appen använder inte Google Analytics/);
     assert.match(privacy.body, /inte ifyllda i förväg|Valfria kategorier är avstängda/);
     assert.doesNotMatch(privacy.body, /sätter vi inga cookies/);
     assert.match(privacy.body, /Cookien sätts inte av en vanlig inbjudningslänk/);
