@@ -80,6 +80,34 @@ describe("konto UI", () => {
     await app.close();
   });
 
+  it("opens in-app deletion from Mer and keeps the public deletion page", async () => {
+    const guest = await createGuestUser("Ella");
+    const app = await createTestApp();
+    const mer = await injectWithSession(app, session(guest.id), {
+      method: "GET",
+      url: "/mer",
+    });
+    assert.equal(mer.statusCode, 200);
+    const menu = mer.body.match(/<nav class="more-menu"[\s\S]*?<\/nav>/)?.[0] ?? "";
+    assert.match(menu, /href="\/konto#radera-konto">Radera konto</);
+    assert.doesNotMatch(menu, /href="\/radera-konto"/);
+
+    const konto = await injectWithSession(app, session(guest.id), {
+      method: "GET",
+      url: "/konto",
+    });
+    assert.match(konto.body, /id="radera-konto"/);
+    assert.match(konto.body, /Skriv RADERA för att bekräfta/);
+    assert.match(konto.body, /Radera mitt konto/);
+    assert.match(konto.body, /action="\/konto\/radera"/);
+
+    const web = await app.inject({ method: "GET", url: "/radera-konto" });
+    assert.equal(web.statusCode, 200);
+    assert.match(web.body, /Du behöver inte ha appen installerad/);
+    assert.match(web.body, /Mer<\/strong> → <strong>Radera konto/);
+    await app.close();
+  });
+
   it("shows the active login as email and provider, not as a role", async () => {
     const google = await continueWithOAuth({
       provider: "google",
