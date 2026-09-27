@@ -555,14 +555,12 @@ describe("native iOS disables advertising tracking", () => {
       showConsentBanner: boolean;
       showMarketingConsent: boolean;
     };
-    assert.deepEqual(runtime, {
-      isNativeApp: true,
-      nativePlatform: "ios",
-      allowMarketingTracking: false,
-      allowAnalyticsTracking: false,
-      showConsentBanner: false,
-      showMarketingConsent: false,
-    });
+    assert.equal(runtime.isNativeApp, true);
+    assert.equal(runtime.nativePlatform, "ios");
+    assert.equal(runtime.allowMarketingTracking, false);
+    assert.equal(runtime.allowAnalyticsTracking, false);
+    assert.equal(runtime.showConsentBanner, false);
+    assert.equal(runtime.showMarketingConsent, false);
     assert.equal((page.__root as { hidden: boolean }).hidden, true);
     assert.equal((page.__banner as { hidden: boolean }).hidden, true);
     assert.equal((page.__reopen as { hidden: boolean }).hidden, true);
@@ -570,7 +568,7 @@ describe("native iOS disables advertising tracking", () => {
     assert.equal((page.__analyticsChoice as { hidden: boolean }).hidden, true);
     assert.equal(page.fbq, undefined);
     assert.equal(fbqCalls(page).length, 0);
-    assert.deepEqual(metaRequests(page), []);
+    assert.equal(metaRequests(page).length, 0);
     assert.equal(scriptSrcs(page).some((src) => src.includes("googletagmanager")), false);
     assert.equal(cookieNames(page).includes("_fbp"), false);
     assert.equal(cookieNames(page).includes("korpasset_meta_lead"), true);
@@ -580,7 +578,7 @@ describe("native iOS disables advertising tracking", () => {
     (page.__reopen as { click: () => void }).click();
     assert.equal((page.__root as { hidden: boolean }).hidden, true);
     assert.equal(page.fbq, undefined);
-    assert.deepEqual(metaRequests(page), []);
+    assert.equal(metaRequests(page).length, 0);
     assert.equal(fbqCalls(page).some((call) => call[1] === "Lead"), false);
     assert.equal(fbqCalls(page).some((call) => call[1] === "PageView"), false);
   });
@@ -595,7 +593,7 @@ describe("native iOS disables advertising tracking", () => {
     (page.__marketing as { checked: boolean }).checked = true;
     click(page, "[data-consent-save]");
     assert.equal(page.fbq, undefined);
-    assert.deepEqual(metaRequests(page), []);
+    assert.equal(metaRequests(page).length, 0);
     assert.equal(fbqCalls(page).length, 0);
     assert.equal((page.korpassetConsent as { get: () => { marketing: boolean } }).get().marketing, false);
   });
