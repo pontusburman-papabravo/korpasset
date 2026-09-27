@@ -67,6 +67,7 @@ Sätt att autentisera en `user`. En user kan ha flera identities.
 | `provider_subject` | `text` | Unik per provider. Apple/Google `sub`, aldrig e-post som nyckel. Högst en `apple` och en `google` per user (Apple + Google på samma user är tillåtet) |
 | `created_at` | `timestamptz` | |
 | `verified_at` | `timestamptz` | Nullable |
+| `apple_refresh_token` | `text` | Nullable. Bara Apple. Credential. Får inte loggas eller lämna backend. Saknas för Google och för Apple-konton skapade innan token sparades |
 
 ### `driving_journeys`
 

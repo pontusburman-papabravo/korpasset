@@ -11,6 +11,7 @@ export const CONSENT_COOKIE_NAME = "korpasset_consent";
 /** Six months. Visitors can change or withdraw the choice at any time before that. */
 export const CONSENT_MAX_AGE_SECONDS = 60 * 60 * 24 * 180;
 
+/** Pixel/GA ids may be present in page config; native iOS still cannot start them. */
 export function consentConfigJson(): string {
   return JSON.stringify({
     version: CONSENT_VERSION,
@@ -49,14 +50,14 @@ export function consentBody(): string {
         <span class="consent__choice-text">Alltid aktiva. Session, säkerhet och att spara det här valet. Inget samtycke krävs.</span>
       </span>
     </label>
-    <label class="consent__choice">
+    <label class="consent__choice" data-consent-analytics-choice>
       <input type="checkbox" id="consent-analytics" data-consent-analytics>
       <span>
         <strong>Analys</strong>
         <span class="consent__choice-text">Google Analytics 4, om det är aktiverat för webbplatsen. Visar hur sidor används. Google kan behandla uppgifter utanför EU/EES. Skriptet laddas bara efter samtycke.</span>
       </span>
     </label>
-    <label class="consent__choice">
+    <label class="consent__choice" data-consent-marketing-choice>
       <input type="checkbox" id="consent-marketing" data-consent-marketing>
       <span>
         <strong>Marknadsföring och andra tredjepart</strong>

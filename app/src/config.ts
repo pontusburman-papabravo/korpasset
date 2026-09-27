@@ -54,6 +54,20 @@ export const config = {
   get appleTeamId() {
     return (process.env.APPLE_TEAM_ID ?? "").trim();
   },
+  get appleKeyId() {
+    return (process.env.APPLE_KEY_ID ?? "").trim();
+  },
+  /** PKCS#8 PEM from the Sign in with Apple .p8. Never log this value. */
+  get applePrivateKey() {
+    return normalizePem(process.env.APPLE_PRIVATE_KEY);
+  },
+  /**
+   * client_id for Apple's token and revoke endpoints.
+   * Native Sign in with Apple authorizes the App ID (bundle id), not a Services ID.
+   */
+  get appleTokenClientId() {
+    return config.appleBundleId;
+  },
   get appleAudiences() {
     return uniqueCsv(process.env.APPLE_CLIENT_ID, process.env.APPLE_CLIENT_IDS);
   },
@@ -89,6 +103,20 @@ export const config = {
       : config.googleAudiences.length > 0;
   },
   /**
+   * Team, key id, private key, and bundle id. Required to exchange an
+   * authorization code or revoke a refresh token. Login via the identity
+   * token still works without this. Account deletion that already holds a
+   * refresh token fails closed until it is set.
+   */
+  isAppleTokenApiConfigured(): boolean {
+    return Boolean(
+      config.appleTeamId &&
+        config.appleKeyId &&
+        config.applePrivateKey &&
+        config.appleTokenClientId,
+    );
+  },
+  /**
    * GA4 measurement id (G-…). Empty unless the value matches Google's format,
    * so a placeholder never reaches the page.
    */
@@ -98,7 +126,8 @@ export const config = {
   },
   /**
    * Meta Pixel id. Empty unless the value is numeric, so a placeholder
-   * never reaches the page. The pixel is not loaded until marketing consent.
+   * never reaches the page. The pixel is not loaded until marketing consent
+   * on the public website or native Android. Native iOS never loads it.
    */
   get metaPixelId() {
     const value = (process.env.META_PIXEL_ID ?? "").trim();
@@ -111,6 +140,13 @@ export const config = {
     return !isProduction();
   },
 };
+
+function normalizePem(value: string | undefined): string {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) return "";
+  const unquoted = trimmed.replace(/^["']|["']$/g, "");
+  return unquoted.replace(/\\n/g, "\n");
+}
 
 function uniqueCsv(...values: Array<string | undefined>): string[] {
   const items = values

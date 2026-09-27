@@ -17,11 +17,15 @@ type LoginCall = {
 
 type PostedBody = {
   identityToken?: string;
+  authorizationCode?: string;
   displayName?: string;
   nonce?: string;
 };
 
-function installClient(profile: Record<string, string | null>) {
+function installClient(
+  profile: Record<string, string | null>,
+  resultExtra: Record<string, unknown> = {},
+) {
   const logins: LoginCall[] = [];
   const posts: PostedBody[] = [];
   let click: (event: {
@@ -79,6 +83,7 @@ function installClient(profile: Record<string, string | null>) {
                 result: {
                   idToken: "identity-token",
                   profile,
+                  ...resultExtra,
                 },
               };
             },
@@ -132,6 +137,32 @@ describe("native OAuth login scopes", () => {
     assert.equal(client.posts.length, 1);
     assert.equal(client.posts[0].nonce, client.logins[0].options.nonce);
     assert.equal(client.posts[0].displayName, "Ada Lovelace");
+    assert.equal(client.posts[0].authorizationCode, undefined);
+  });
+
+  it("sends the Apple authorization code from the legacy accessToken field", async () => {
+    const client = installClient(
+      { givenName: null, familyName: null },
+      { accessToken: { token: "apple-auth-code" } },
+    );
+    await clickProvider(client.click, "apple");
+
+    assert.equal(client.posts.length, 1);
+    assert.equal(client.posts[0].identityToken, "identity-token");
+    assert.equal(client.posts[0].authorizationCode, "apple-auth-code");
+    assert.equal(client.posts[0].displayName, "");
+  });
+
+  it("prefers an explicit Apple authorizationCode over accessToken.token", async () => {
+    const client = installClient(
+      {},
+      {
+        authorizationCode: "explicit-code",
+        accessToken: { token: "legacy-code" },
+      },
+    );
+    await clickProvider(client.click, "apple");
+    assert.equal(client.posts[0].authorizationCode, "explicit-code");
   });
 
   it("asks Google for email and profile, never name", async () => {
@@ -153,6 +184,17 @@ describe("native OAuth login scopes", () => {
     assert.equal(client.posts.length, 1);
     assert.equal(client.posts[0].nonce, client.logins[0].options.nonce);
     assert.equal(client.posts[0].displayName, "Ada Lovelace");
+    assert.equal(client.posts[0].authorizationCode, undefined);
+  });
+
+  it("does not send a Google access token as an Apple authorization code", async () => {
+    const client = installClient(
+      { name: "Ada Lovelace" },
+      { accessToken: { token: "google-access-token" } },
+    );
+    await clickProvider(client.click, "google");
+    assert.equal(client.posts[0].authorizationCode, undefined);
+    assert.equal(JSON.stringify(client.posts[0]).includes("google-access-token"), false);
   });
 
   it("still builds a Google display name from the profile name", async () => {
@@ -165,5 +207,6 @@ describe("native OAuth login scopes", () => {
 
     assert.deepEqual(Array.from(client.logins[0].options.scopes), ["email", "profile"]);
     assert.equal(client.posts[0].displayName, "Ada Lovelace");
+    assert.equal(client.posts[0].authorizationCode, undefined);
   });
 });

@@ -1,5 +1,6 @@
 .env
 deploy/.env
+*.p8
 /backups/
 *.dump
 *.pem

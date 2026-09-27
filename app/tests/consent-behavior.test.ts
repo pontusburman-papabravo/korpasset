@@ -22,6 +22,10 @@ interface BootOptions {
   gaId?: string;
   metaPixelId?: string;
   cookies?: SeedCookie[];
+  capacitor?: {
+    isNativePlatform?: boolean;
+    getPlatform?: string;
+  } | null;
 }
 
 function boot(options: BootOptions = {}) {
@@ -157,14 +161,16 @@ function boot(options: BootOptions = {}) {
     var head = new Element("head");
     var analytics = el("input", { "data-consent-analytics": true });
     var marketing = el("input", { "data-consent-marketing": true });
+    var analyticsChoice = el("label", { "data-consent-analytics-choice": true }, [analytics]);
+    var marketingChoice = el("label", { "data-consent-marketing-choice": true }, [marketing]);
     var banner = el("section", { className: "consent__banner" }, [
       el("button", { "data-consent-accept": true, className: "consent__btn consent__btn--primary" }),
       el("button", { "data-consent-reject": true, className: "consent__btn consent__btn--primary" }),
       el("button", { "data-consent-customize": true, className: "consent__btn consent__btn--quiet" })
     ]);
     var panel = el("section", { className: "consent__panel" }, [
-      analytics,
-      marketing,
+      analyticsChoice,
+      marketingChoice,
       el("button", { "data-consent-save": true }),
       el("button", { "data-consent-accept": true }),
       el("button", { "data-consent-reject": true })
@@ -175,11 +181,27 @@ function boot(options: BootOptions = {}) {
     var reopen = el("button", { "data-consent-open": true, className: "consent__reopen" });
     reopen.hidden = true;
     var body = el("body", {}, [root, reopen]);
+    Element.prototype.querySelectorAll = function (sel) {
+      var parts = sel.split(",");
+      var found = [];
+      function walk(node, includeSelf) {
+        if (includeSelf && node.matches) {
+          for (var i = 0; i < parts.length; i += 1) {
+            if (node.matches(parts[i].trim())) found.push(node);
+          }
+        }
+        var kids = node.children || [];
+        for (var j = 0; j < kids.length; j += 1) walk(kids[j], true);
+      }
+      walk(this, false);
+      return found;
+    };
     var document = {
       head: head,
       body: body,
       createElement: function (tag) { return new Element(tag); },
       querySelector: function (sel) { return body.querySelector(sel); },
+      querySelectorAll: function (sel) { return body.querySelectorAll(sel); },
       addEventListener: function (type, fn) { body.addEventListener(type, fn); }
     };
     Object.defineProperty(document, "cookie", {
@@ -200,7 +222,17 @@ function boot(options: BootOptions = {}) {
       metaPixelId: ${JSON.stringify(options.metaPixelId ?? "")},
       leadCookieName: "korpasset_meta_lead"
     };
+    ${
+      options.capacitor
+        ? `window.Capacitor = {
+      isNativePlatform: function () { return ${JSON.stringify(Boolean(options.capacitor.isNativePlatform))}; },
+      getPlatform: function () { return ${JSON.stringify(options.capacitor.getPlatform ?? "web")}; }
+    };`
+        : ""
+    }
     globalThis.__root = root;
+    globalThis.__analyticsChoice = analyticsChoice;
+    globalThis.__marketingChoice = marketingChoice;
     globalThis.__reopen = reopen;
     globalThis.__banner = banner;
     globalThis.__panel = panel;
@@ -483,6 +515,139 @@ describe("Meta Pixel consent", () => {
     assert.equal(fbqCalls(page).some((call) => call[1] === "Lead"), false);
     assert.equal(
       fbqCalls(page).filter((call) => call[1] === "PageView").length,
+      1,
+    );
+  });
+});
+
+function bootNativeIos(options: Omit<BootOptions, "capacitor"> = {}) {
+  return boot({
+    ...options,
+    capacitor: { isNativePlatform: true, getPlatform: "ios" },
+  });
+}
+
+function metaRequests(context: Record<string, unknown>): string[] {
+  return scriptSrcs(context).filter((src) =>
+    /facebook\.net|facebook\.com\/tr|connect\.facebook\.net/i.test(src),
+  );
+}
+
+describe("native iOS disables advertising tracking", () => {
+  it("never loads Meta, fbq, PageView, Lead or marketing consent in the iOS WebView", () => {
+    const page = bootNativeIos({
+      metaPixelId: META_PIXEL_ID,
+      cookies: [
+        {
+          name: "korpasset_consent",
+          value: `v${CONSENT_VERSION}.a1.m1.${now}`,
+          domain: "",
+        },
+        { name: "korpasset_meta_lead", value: "1", domain: "" },
+        { name: "_fbp", value: "fb.1.1.1", domain: "" },
+      ],
+    });
+    const runtime = page.KORPASSET_RUNTIME as {
+      isNativeApp: boolean;
+      nativePlatform: string;
+      allowMarketingTracking: boolean;
+      allowAnalyticsTracking: boolean;
+      showConsentBanner: boolean;
+      showMarketingConsent: boolean;
+    };
+    assert.equal(runtime.isNativeApp, true);
+    assert.equal(runtime.nativePlatform, "ios");
+    assert.equal(runtime.allowMarketingTracking, false);
+    assert.equal(runtime.allowAnalyticsTracking, false);
+    assert.equal(runtime.showConsentBanner, false);
+    assert.equal(runtime.showMarketingConsent, false);
+    assert.equal((page.__root as { hidden: boolean }).hidden, true);
+    assert.equal((page.__banner as { hidden: boolean }).hidden, true);
+    assert.equal((page.__reopen as { hidden: boolean }).hidden, true);
+    assert.equal((page.__marketingChoice as { hidden: boolean }).hidden, true);
+    assert.equal((page.__analyticsChoice as { hidden: boolean }).hidden, true);
+    assert.equal(page.fbq, undefined);
+    assert.equal(fbqCalls(page).length, 0);
+    assert.equal(metaRequests(page).length, 0);
+    assert.equal(scriptSrcs(page).some((src) => src.includes("googletagmanager")), false);
+    assert.equal(cookieNames(page).includes("_fbp"), false);
+    assert.equal(cookieNames(page).includes("korpasset_meta_lead"), true);
+
+    click(page, "[data-consent-accept]");
+    assert.equal((page.__reopen as { hidden: boolean }).hidden, true);
+    (page.__reopen as { click: () => void }).click();
+    assert.equal((page.__root as { hidden: boolean }).hidden, true);
+    assert.equal(page.fbq, undefined);
+    assert.equal(metaRequests(page).length, 0);
+    assert.equal(fbqCalls(page).some((call) => call[1] === "Lead"), false);
+    assert.equal(fbqCalls(page).some((call) => call[1] === "PageView"), false);
+  });
+
+  it("does not let korpasset_meta_lead start Meta after a first-visit accept click", () => {
+    const page = bootNativeIos({
+      metaPixelId: META_PIXEL_ID,
+      cookies: [{ name: "korpasset_meta_lead", value: "1", domain: "" }],
+    });
+    click(page, "[data-consent-accept]");
+    click(page, "[data-consent-customize]");
+    (page.__marketing as { checked: boolean }).checked = true;
+    click(page, "[data-consent-save]");
+    assert.equal(page.fbq, undefined);
+    assert.equal(metaRequests(page).length, 0);
+    assert.equal(fbqCalls(page).length, 0);
+    assert.equal((page.korpassetConsent as { get: () => { marketing: boolean } }).get().marketing, false);
+  });
+});
+
+describe("native Android keeps website consent and Meta", () => {
+  it("still loads Meta after marketing consent and ignores iOS-only suppression", () => {
+    const page = boot({
+      metaPixelId: META_PIXEL_ID,
+      capacitor: { isNativePlatform: true, getPlatform: "android" },
+    });
+    const runtime = page.KORPASSET_RUNTIME as {
+      isNativeApp: boolean;
+      nativePlatform: string;
+      allowMarketingTracking: boolean;
+      showConsentBanner: boolean;
+    };
+    assert.equal(runtime.isNativeApp, true);
+    assert.equal(runtime.nativePlatform, "android");
+    assert.equal(runtime.allowMarketingTracking, true);
+    assert.equal(runtime.showConsentBanner, true);
+    assert.equal((page.__root as { hidden: boolean }).hidden, false);
+    assert.equal((page.__marketingChoice as { hidden: boolean }).hidden, false);
+    click(page, "[data-consent-accept]");
+    assert.equal(metaRequests(page).length, 1);
+    assert.deepEqual(
+      fbqCalls(page).filter((call) => call[0] === "init"),
+      [["init", META_PIXEL_ID]],
+    );
+    assert.equal(
+      fbqCalls(page).some((call) => call[0] === "track" && call[1] === "PageView"),
+      true,
+    );
+  });
+});
+
+describe("ordinary browser keeps website Meta after consent", () => {
+  it("treats Capacitor web as a browser and still requires marketing consent", () => {
+    const denied = boot({
+      metaPixelId: META_PIXEL_ID,
+      capacitor: { isNativePlatform: false, getPlatform: "web" },
+    });
+    assert.equal((denied.KORPASSET_RUNTIME as { isNativeApp: boolean }).isNativeApp, false);
+    assert.equal(denied.fbq, undefined);
+    click(denied, "[data-consent-reject]");
+    assert.equal(denied.fbq, undefined);
+
+    const granted = boot({
+      metaPixelId: META_PIXEL_ID,
+      cookies: [{ name: "korpasset_meta_lead", value: "1", domain: "" }],
+    });
+    click(granted, "[data-consent-accept]");
+    assert.equal(
+      fbqCalls(granted).filter((call) => call[0] === "track" && call[1] === "Lead").length,
       1,
     );
   });

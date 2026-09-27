@@ -102,10 +102,12 @@ Om identity redan sitter på en **annan** user: **409**. Ingen merge. Ingen tyst
 | --- | --- |
 | Logga ut | Cookie rensas. User och identities kvar. |
 | Ändra visningsnamn | Bara `users.display_name`. Inte identity, inte resa. |
-| Radera konto i appen | Se [kravspec §10.2](../kravspec.md#102-kontoradering-och-data-lifecycle-tombstoning): identiteter bort, namn nollat, `deleted`, elevresor CASCADE. Handledarhistorik på andras resor behålls men frikopplas från `users` (`user_id` nollad + `observer_deleted` / `supervisor_deleted` / `started_by_deleted`). Waitlist orörd. |
+| Radera konto i appen | Se [kravspec §10.2](../kravspec.md#102-kontoradering-och-data-lifecycle-tombstoning): identiteter bort, namn nollat, `deleted`, elevresor CASCADE. Handledarhistorik på andras resor behålls men frikopplas från `users` (`user_id` nollad + `observer_deleted` / `supervisor_deleted` / `started_by_deleted`). Waitlist orörd. Har Apple-identity en sparad refresh token anropas Apples revoke-endpoint först. Token-raden raderas inte före det anropet. |
 | Radera via webben (`/radera-konto`) | Supportväg när appen inte finns. Samma tombstone. |
 
-Efter radering: ny Apple/Google-inloggning är ett nytt konto, inte recovery av den tombstonade `user_id`.
+Efter radering: ny Apple/Google-inloggning är ett nytt konto, inte recovery av den tombstonade `user_id`. Apple styr själv om nästa Sign in with Apple visar namn och e-post igen. Körpasset sparar en ny refresh token om den nya inloggningen skickar en authorization code och Apple-nyckeln är konfigurerad.
+
+Apple-identities som saknar refresh token (konton skapade innan växlingen fanns, eller inloggningar där växlingen inte kunde sparas) raderas ändå lokalt. Då påstås inte att Apple-auktorisationen återkallats. Bekräftelsesidan ber dem ta bort Körpasset under Inställningar → namn → Inloggning och säkerhet → Logga in med Apple. Nya konton med sparad token ska inte behöva det steget.
 
 Inbjudan får **inte** skriva över `display_name` på ett `active`-konto. Namn från inbjudningsformuläret används när en guest-actor skapas. Aktiv user behåller kontots namn; ändring sker på `/konto`.
 

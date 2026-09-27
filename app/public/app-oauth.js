@@ -28,6 +28,25 @@
     );
   }
 
+  // @capgo/capacitor-social-login 8.5.10 (the plugin in iOS 1.0 build 6)
+  // leaves useProperTokenExchange false unless initialize asks for it.
+  // In that mode authorizationCode is nil and the raw authorization code
+  // is accessToken.token. redirectUrl stays empty, so the plugin does not
+  // exchange the code itself.
+  function appleAuthorizationCodeFrom(result, identityToken) {
+    if (!result) return "";
+    const nested = result.result || {};
+    const explicit =
+      (typeof nested.authorizationCode === "string" && nested.authorizationCode.trim()) ||
+      (typeof result.authorizationCode === "string" && result.authorizationCode.trim()) ||
+      "";
+    const access = nested.accessToken || result.accessToken || {};
+    const legacy = typeof access.token === "string" ? access.token.trim() : "";
+    const code = explicit || legacy;
+    if (!code || code === identityToken) return "";
+    return code;
+  }
+
   function displayNameFrom(result) {
     const profile = result?.result?.profile || result?.profile || result?.result || {};
     const given = profile.givenName || profile.given_name || "";
@@ -112,16 +131,21 @@
         showError("Inloggningen gav ingen identitet. Försök igen.");
         return;
       }
+      const payload = {
+        identityToken: identityToken,
+        displayName: displayNameFrom(result),
+        returnTo: returnTo,
+        nonce: nonce,
+      };
+      if (provider === "apple") {
+        const authorizationCode = appleAuthorizationCodeFrom(result, identityToken);
+        if (authorizationCode) payload.authorizationCode = authorizationCode;
+      }
       const response = await fetch("/api/auth/" + provider, {
         method: "POST",
         headers: { "content-type": "application/json", accept: "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({
-          identityToken,
-          displayName: displayNameFrom(result),
-          returnTo,
-          nonce: nonce,
-        }),
+        body: JSON.stringify(payload),
       });
       const body = await response.json().catch(function () {
         return {};
