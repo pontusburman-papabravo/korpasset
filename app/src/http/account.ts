@@ -3,7 +3,9 @@ import {
   clearSessionCookie,
   requireSessionUserId,
 } from "../auth/session.js";
+import { revokeAppleBeforeAccountDeletion } from "../services/apple-account.js";
 import { deleteProductAccount } from "../services/account-lifecycle.js";
+import { AppError } from "../errors.js";
 import {
   listLinkedIdentities,
   providerLabel,
@@ -20,6 +22,19 @@ import {
 } from "./layout.js";
 import { renderSignedInAs } from "./account-identity.js";
 import { clearActiveJourneyCookie } from "./active-journey.js";
+
+function deletedAccountPage(legacyAppleWithoutToken: boolean): string {
+  const legacy = legacyAppleWithoutToken
+    ? `<p>Körpasset kunde inte återkalla inloggningen hos Apple automatiskt för det här äldre kontot. Ta bort Körpasset under Inställningar → ditt namn → Inloggning och säkerhet → Logga in med Apple.</p>`
+    : "";
+  return layout(
+    "Kontot raderat",
+    `<h1>Kontot är raderat</h1>
+     <p>Du kan stänga appen. Om du vill tillbaka senare skapar du ett nytt konto med Apple eller Google.</p>
+     ${legacy}
+     <a class="btn btn-secondary" href="/app">Till Körpasset</a>`,
+  );
+}
 
 function providerRow(provider: OAuthProvider, linked: boolean): string {
   const label = providerLabel(provider);
@@ -141,22 +156,24 @@ export async function registerAccountRoutes(app: FastifyInstance): Promise<void>
         }),
       );
     }
+    let legacyAppleWithoutToken = false;
     try {
+      const revoke = await revokeAppleBeforeAccountDeletion(reusable);
+      legacyAppleWithoutToken = revoke.legacyAppleWithoutToken;
       await deleteProductAccount(reusable);
     } catch (error) {
+      if (error instanceof AppError && error.code?.startsWith("apple_revoke_")) {
+        request.log.warn({ code: error.code }, "apple revoke blocked account deletion");
+        return reply.status(error.statusCode).type("text/html").send(
+          await renderAccountPage(reusable, { errorMessage: error.message }),
+        );
+      }
       request.log.error({ err: error }, "account deletion failed");
       throw error;
     }
     clearSessionCookie(reply);
     clearActiveJourneyCookie(reply);
-    return reply.type("text/html").send(
-      layout(
-        "Kontot raderat",
-        `<h1>Kontot är raderat</h1>
-         <p>Du kan stänga appen. Om du vill tillbaka senare skapar du ett nytt konto med Apple eller Google.</p>
-         <a class="btn btn-secondary" href="/app">Till Körpasset</a>`,
-      ),
-    );
+    return reply.type("text/html").send(deletedAccountPage(legacyAppleWithoutToken));
   });
 
   app.post("/logout", async (_request, reply) => {

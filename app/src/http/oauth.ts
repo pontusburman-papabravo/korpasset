@@ -6,6 +6,7 @@ import {
   verifyIdentityToken,
   type OAuthProvider,
 } from "../auth/oauth-verify.js";
+import { rememberAppleRefreshTokenFromAuthorizationCode } from "../services/apple-account.js";
 import { continueWithOAuth } from "../services/oauth-accounts.js";
 import { acceptInvitation } from "../services/invitations.js";
 import { getUserById } from "../services/users.js";
@@ -90,6 +91,7 @@ async function continueFromToken(
 
   const body = (request.body ?? {}) as {
     identityToken?: unknown;
+    authorizationCode?: unknown;
     displayName?: unknown;
     returnTo?: unknown;
     nonce?: unknown;
@@ -106,6 +108,11 @@ async function continueFromToken(
     typeof body.displayName === "string" ? body.displayName : undefined;
   const returnTo = typeof body.returnTo === "string" ? body.returnTo : undefined;
 
+  const authorizationCode =
+    provider === "apple" && typeof body.authorizationCode === "string"
+      ? body.authorizationCode.trim()
+      : "";
+
   const identity = await verifyIdentityToken(provider, identityToken, nonce);
   const result = await continueWithOAuth({
     provider,
@@ -114,6 +121,15 @@ async function continueFromToken(
     email: identity.email,
     sessionUserId: getSessionUserId(request),
   });
+  if (authorizationCode) {
+    await rememberAppleRefreshTokenFromAuthorizationCode(
+      identity.subject,
+      authorizationCode,
+      (fields, message) => {
+        request.log.warn(fields, message);
+      },
+    );
+  }
   setSessionCookie(reply, result.userId);
 
   let redirectTo = await signedInRedirectPath(result.userId);

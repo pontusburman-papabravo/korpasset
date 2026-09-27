@@ -226,6 +226,7 @@ describe("production foundation / fresh database migrate", () => {
       "0013_user_contact_email.sql",
       "0014_unlink_deleted_account_history.sql",
       "0015_training_focus_created_by.sql",
+      "0016_auth_identity_apple_refresh_token.sql",
     ]);
     assert.deepEqual(first.stamped, []);
 
@@ -304,6 +305,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
       "0013_user_contact_email.sql",
       "0014_unlink_deleted_account_history.sql",
       "0015_training_focus_created_by.sql",
+      "0016_auth_identity_apple_refresh_token.sql",
     ]);
     assert.deepEqual(first.skipped, []);
 
@@ -339,6 +341,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
         "0013_user_contact_email.sql",
         "0014_unlink_deleted_account_history.sql",
         "0015_training_focus_created_by.sql",
+        "0016_auth_identity_apple_refresh_token.sql",
       ],
     );
 

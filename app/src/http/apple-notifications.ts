@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { AppError } from "../errors.js";
 import { verifyAppleServerNotification } from "../auth/oauth-verify.js";
+import { revokeAppleBeforeAccountDeletion } from "../services/apple-account.js";
 import { deleteProductAccount } from "../services/account-lifecycle.js";
 import {
   findUserIdByIdentity,
@@ -42,6 +43,7 @@ export async function registerAppleNotificationRoutes(
       }
 
       if (event.type === "account-delete") {
+        await revokeAppleBeforeAccountDeletion(userId);
         try {
           await deleteProductAccount(userId);
         } catch (error) {
@@ -50,6 +52,7 @@ export async function registerAppleNotificationRoutes(
           }
         }
       } else if (event.type === "consent-revoked") {
+        await revokeAppleBeforeAccountDeletion(userId);
         const remaining = await unlinkProviderIdentity(userId, "apple");
         if (remaining === 0) {
           try {

@@ -293,6 +293,48 @@ export async function getFeedbackReplyContact(
   };
 }
 
+/**
+ * Stores a Sign in with Apple refresh token on the Apple identity.
+ * Does not clear an existing token when the new value is empty.
+ * The value is credential material and must not be logged.
+ */
+export async function storeAppleRefreshToken(
+  subject: string,
+  refreshToken: string,
+): Promise<boolean> {
+  const providerSubject = subject.trim();
+  const token = refreshToken.trim();
+  if (!providerSubject || !token) return false;
+  const result = await getPool().query(
+    `UPDATE auth_identities
+     SET apple_refresh_token = $2
+     WHERE provider = 'apple' AND provider_subject = $1`,
+    [providerSubject, token],
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function appleIdentityRevokeState(userId: string): Promise<{
+  hasAppleIdentity: boolean;
+  refreshTokens: string[];
+}> {
+  const result = await getPool().query(
+    `SELECT apple_refresh_token
+     FROM auth_identities
+     WHERE user_id = $1 AND provider = 'apple'`,
+    [userId],
+  );
+  const refreshTokens = result.rows
+    .map((row) =>
+      typeof row.apple_refresh_token === "string" ? row.apple_refresh_token.trim() : "",
+    )
+    .filter((token) => token.length > 0);
+  return {
+    hasAppleIdentity: (result.rowCount ?? 0) > 0,
+    refreshTokens,
+  };
+}
+
 export async function findUserIdByIdentity(
   provider: OAuthProvider,
   subject: string,
