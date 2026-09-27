@@ -8,4 +8,4 @@ The iOS app does not show a marketing-cookie choice, does not use App Tracking T
 
 No login is required to verify this: open the app and confirm that no requests are made to `connect.facebook.net` or `facebook.com/tr`.
 
-Account deletion is inside the app: Mer → Konto → type RADERA → Radera mitt konto. No email to support and no separate website login are required. For a Sign in with Apple account that has a stored refresh token, the server revokes that token with Apple before the Körpasset account is deleted. A reviewer can create an account with Sign in with Apple and delete it from Konto.
+Account deletion: More → Delete account → type RADERA → Delete my account. In the app that is Mer → Radera konto → skriv RADERA → Radera mitt konto. No email to support and no separate website login are required. For a Sign in with Apple account that has a stored refresh token, the server revokes that token with Apple before the Körpasset account is deleted. A reviewer can create an account with Sign in with Apple and delete it from Mer → Radera konto.

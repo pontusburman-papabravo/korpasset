@@ -349,7 +349,7 @@ export function accountDeletionPage(): string {
      <h2>Så begär du radering</h2>
      <h3>I appen Körpasset</h3>
      <ol>
-       <li>Öppna Körpasset och gå till <strong>Konto</strong>.</li>
+       <li>Öppna Körpasset och gå till <strong>Mer</strong> → <strong>Radera konto</strong>.</li>
        <li>Skriv <strong>RADERA</strong> i bekräftelsefältet.</li>
        <li>Tryck på <strong>Radera mitt konto</strong>.</li>
      </ol>

@@ -102,7 +102,7 @@ Om identity redan sitter på en **annan** user: **409**. Ingen merge. Ingen tyst
 | --- | --- |
 | Logga ut | Cookie rensas. User och identities kvar. |
 | Ändra visningsnamn | Bara `users.display_name`. Inte identity, inte resa. |
-| Radera konto i appen | Se [kravspec §10.2](../kravspec.md#102-kontoradering-och-data-lifecycle-tombstoning): identiteter bort, namn nollat, `deleted`, elevresor CASCADE. Handledarhistorik på andras resor behålls men frikopplas från `users` (`user_id` nollad + `observer_deleted` / `supervisor_deleted` / `started_by_deleted`). Waitlist orörd. Har Apple-identity en sparad refresh token anropas Apples revoke-endpoint först. Token-raden raderas inte före det anropet. |
+| Radera konto i appen | Ingång: Mer → Radera konto (`/konto#radera-konto`), samma formulär som på `/konto`. Se [kravspec §10.2](../kravspec.md#102-kontoradering-och-data-lifecycle-tombstoning): identiteter bort, namn nollat, `deleted`, elevresor CASCADE. Handledarhistorik på andras resor behålls men frikopplas från `users` (`user_id` nollad + `observer_deleted` / `supervisor_deleted` / `started_by_deleted`). Waitlist orörd. Har Apple-identity en sparad refresh token anropas Apples revoke-endpoint först. Token-raden raderas inte före det anropet. |
 | Radera via webben (`/radera-konto`) | Supportväg när appen inte finns. Samma tombstone. |
 
 Efter radering: ny Apple/Google-inloggning är ett nytt konto, inte recovery av den tombstonade `user_id`. Apple styr själv om nästa Sign in with Apple visar namn och e-post igen. Körpasset sparar en ny refresh token om den nya inloggningen skickar en authorization code och Apple-nyckeln är konfigurerad.

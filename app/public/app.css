@@ -274,6 +274,11 @@ a.journey-choice .journey-choice__meta {
   outline-offset: 2px;
 }
 
+.account-delete {
+  scroll-margin-top: 1rem;
+  scroll-margin-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+}
+
 .practice-item {
   display: grid;
   gap: 0.15rem;

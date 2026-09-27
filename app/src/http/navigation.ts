@@ -85,7 +85,7 @@ export function renderMorePage(options: {
       <a href="/hjalp">Hjälp</a>
       <a href="/integritet">Integritet</a>
       <a href="/villkor">Villkor</a>
-      <a href="/radera-konto">Radera konto</a>
+      <a href="/konto#radera-konto">Radera konto</a>
     </nav>
     <form method="post" action="/logout">
       <button type="submit" class="btn btn-secondary">Logga ut</button>
