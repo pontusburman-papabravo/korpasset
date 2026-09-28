@@ -119,6 +119,57 @@
     return options;
   }
 
+  // Credential Manager error 16 / 28444 means Google rejected the installed
+  // app certificate. The web client already accepts redirect_uri
+  // https://korpasset.se/app, and the installed app already opens that URL.
+  function googleCredentialManagerRejected(error) {
+    const code = pluginFailureCode(error);
+    return code === "16" || code === "28444";
+  }
+
+  function googleBrowserAuthorizeUrl(nonce, returnTo) {
+    let state = nonce;
+    const invite =
+      typeof returnTo === "string" ? returnTo.match(/^\/invite\/([A-Za-z0-9_-]+)$/) : null;
+    if (invite) state = nonce + "." + invite[1];
+    const params = new URLSearchParams({
+      client_id: oauth.googleWebClientId || "",
+      redirect_uri: "https://korpasset.se/app",
+      response_type: "id_token",
+      response_mode: "fragment",
+      scope: "openid email profile",
+      nonce: nonce,
+      state: state,
+      prompt: "select_account",
+    });
+    return "https://accounts.google.com/o/oauth2/v2/auth?" + params.toString();
+  }
+
+  function androidAppIntentUrl(code) {
+    const open = "https://korpasset.se/app?oauth_handoff=" + code;
+    return (
+      "intent://korpasset.se/app?oauth_handoff=" +
+      code +
+      "#Intent;scheme=https;package=se.korpasset.app;S.browser_fallback_url=" +
+      encodeURIComponent(open) +
+      ";end"
+    );
+  }
+
+  function nonceFromState(state) {
+    const raw = typeof state === "string" ? state : "";
+    const nonce = raw.split(".")[0] || "";
+    const invite = raw.split(".")[1] || "";
+    return {
+      nonce: nonce,
+      returnTo: TOKEN.test(invite) ? "/invite/" + invite : "",
+    };
+  }
+
+  function validHandoffCode(value) {
+    return typeof value === "string" && /^[A-Za-z0-9_-]{20,128}$/.test(value);
+  }
+
   function loginWasCancelled(error) {
     const code = error && typeof error.code === "string" ? error.code : "";
     if (code === "USER_CANCELLED") return true;
@@ -265,14 +316,28 @@
         options: loginOptions(provider, nonce),
       });
     } catch (error) {
+      const cancelled = loginWasCancelled(error);
       if (provider === "google") {
         traceGoogleFailure(
-          loginWasCancelled(error) ? "google_login_cancelled" : "google_native_login_failed",
+          cancelled ? "google_login_cancelled" : "google_native_login_failed",
           error,
         );
+        if (
+          !cancelled &&
+          platform() === "android" &&
+          googleCredentialManagerRejected(error) &&
+          oauth.googleWebClientId
+        ) {
+          oauthTrace("google_browser_fallback", {
+            pluginCode: pluginFailureCode(error),
+            hasIdentityToken: false,
+          });
+          window.location.assign(googleBrowserAuthorizeUrl(nonce, returnTo));
+          return;
+        }
       }
       showError(
-        loginWasCancelled(error)
+        cancelled
           ? "Inloggningen avbröts. Försök igen."
           : "Kunde inte logga in. Försök igen.",
       );
@@ -298,6 +363,10 @@
       if (authorizationCode) payload.authorizationCode = authorizationCode;
     }
 
+    postProvider(provider, payload);
+  }
+
+  async function postProvider(provider, payload) {
     let response;
     try {
       response = await fetch("/api/auth/" + provider, {
@@ -337,6 +406,112 @@
       });
     }
     window.location.assign(body.redirectTo || "/app");
+  }
+
+  async function finishBrowserHandoff(idToken, state) {
+    const parsed = nonceFromState(state);
+    oauthTrace("google_browser_return", { hasIdentityToken: true });
+    let response;
+    try {
+      response = await fetch("/api/auth/google/browser-handoff", {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          identityToken: idToken,
+          nonce: parsed.nonce,
+          returnTo: parsed.returnTo || "/app",
+        }),
+      });
+    } catch (error) {
+      oauthTrace("google_backend_request_failed", { hasIdentityToken: true });
+      showError("Kunde inte logga in. Försök igen.");
+      return;
+    }
+    const body = await response.json().catch(function () {
+      return {};
+    });
+    if (!response.ok || !validHandoffCode(body.handoff)) {
+      const backendCode = sanitizeTraceCode(body.code);
+      oauthTrace(response.ok ? "google_browser_return_failed" : googleBackendStep(backendCode), {
+        hasIdentityToken: true,
+        httpStatus: response.status,
+        backendCode: backendCode,
+      });
+      showError(body.error || "Kunde inte logga in. Försök igen.");
+      return;
+    }
+    oauthTrace("google_browser_handoff", {
+      hasIdentityToken: true,
+      httpStatus: response.status,
+      created: body.created === true,
+    });
+    const intentUrl = androidAppIntentUrl(body.handoff);
+    try {
+      if (document.body && typeof document.createElement === "function") {
+        let link = document.getElementById("oauth-open-app");
+        if (!link) {
+          link = document.createElement("a");
+          link.id = "oauth-open-app";
+          link.className = "btn btn-primary";
+          link.textContent = "Öppna Körpasset";
+          document.body.appendChild(link);
+        }
+        link.setAttribute("href", intentUrl);
+      }
+    } catch (error) {
+      /* ignore */
+    }
+    window.location.assign(intentUrl);
+  }
+
+  function consumeGoogleBrowserReturn() {
+    const hash = String((window.location && window.location.hash) || "");
+    if (hash.indexOf("id_token=") === -1 && hash.indexOf("error=") === -1) return;
+    const raw = hash.charAt(0) === "#" ? hash.slice(1) : hash;
+    try {
+      const path = window.location.pathname || "/app";
+      const search = window.location.search || "";
+      if (window.history && typeof window.history.replaceState === "function") {
+        window.history.replaceState(null, "", path + search);
+      }
+    } catch (error) {
+      /* ignore */
+    }
+    let params;
+    try {
+      params = new URLSearchParams(raw);
+    } catch (error) {
+      oauthTrace("google_browser_return_failed", { hasIdentityToken: false });
+      showError("Kunde inte logga in. Försök igen.");
+      return;
+    }
+    const idToken = params.get("id_token") || "";
+    const oauthError = params.get("error") || "";
+    const state = params.get("state") || "";
+    if (!idToken) {
+      const cancelled = oauthError === "access_denied";
+      oauthTrace(cancelled ? "google_login_cancelled" : "google_browser_return_failed", {
+        pluginCode: sanitizeTraceCode(oauthError),
+        hasIdentityToken: false,
+      });
+      showError(
+        cancelled
+          ? "Inloggningen avbröts. Försök igen."
+          : "Kunde inte logga in. Försök igen.",
+      );
+      return;
+    }
+    if (nativeApp()) {
+      const parsed = nonceFromState(state);
+      postProvider("google", {
+        identityToken: idToken,
+        nonce: parsed.nonce,
+        returnTo: parsed.returnTo || window.location.pathname + (window.location.search || ""),
+      });
+      return;
+    }
+    finishBrowserHandoff(idToken, state);
   }
 
   function nativeApp() {
@@ -689,4 +864,5 @@
   prepareInviteHandoff();
   prepareNativeInviteLogin();
   bootNativeInviteHandoff();
+  consumeGoogleBrowserReturn();
 })();

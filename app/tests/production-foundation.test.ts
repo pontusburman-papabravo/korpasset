@@ -123,6 +123,10 @@ describe("production foundation", () => {
       "/admin/reset-password?token=[redacted]",
     );
     assert.equal(redactRequestPath(undefined), "");
+    assert.equal(
+      redactRequestPath("/app?oauth_handoff=abc.def_token"),
+      "/app?oauth_handoff=[redacted]",
+    );
   });
 
   it("rejects production boot with missing or default secrets", () => {
@@ -242,6 +246,7 @@ describe("production foundation / fresh database migrate", () => {
       "0014_unlink_deleted_account_history.sql",
       "0015_training_focus_created_by.sql",
       "0016_auth_identity_apple_refresh_token.sql",
+      "0017_oauth_handoffs.sql",
     ]);
     assert.deepEqual(first.stamped, []);
 
@@ -321,6 +326,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
       "0014_unlink_deleted_account_history.sql",
       "0015_training_focus_created_by.sql",
       "0016_auth_identity_apple_refresh_token.sql",
+      "0017_oauth_handoffs.sql",
     ]);
     assert.deepEqual(first.skipped, []);
 
@@ -357,6 +363,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
         "0014_unlink_deleted_account_history.sql",
         "0015_training_focus_created_by.sql",
         "0016_auth_identity_apple_refresh_token.sql",
+        "0017_oauth_handoffs.sql",
       ],
     );
 
