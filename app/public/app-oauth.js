@@ -2,7 +2,18 @@
   const oauth = window.KORPASSET_OAUTH || {};
   const PENDING_KEY = "korpasset.pendingInvite";
   const DEBUG_KEY = "korpasset.deeplinkDebug";
+  const AUTH_KEY = "korpasset.pendingAuth";
+  const NATIVE_UNUSABLE_KEY = "korpasset.googleNativeUnusable";
   const TOKEN = /^[A-Za-z0-9_-]+$/;
+  const AUTH_GRACE_MS = 8000;
+  const authRuntime = {
+    attemptId: null,
+    provider: null,
+    inProgress: false,
+    navigating: false,
+  };
+  const initializedProviders = Object.create(null);
+  let recoverPromise = null;
 
   function plugin(name) {
     const cap = window.Capacitor;
@@ -224,6 +235,10 @@
     const event = {
       step: step,
       platform: platform() || "web",
+      attemptId:
+        sanitizeTraceCode(info.attemptId) || sanitizeTraceCode(authRuntime.attemptId),
+      provider: sanitizeTraceCode(info.provider) || sanitizeTraceCode(authRuntime.provider),
+      reason: sanitizeTraceCode(info.reason),
       hasIdentityToken: Boolean(info.hasIdentityToken),
       pluginCode: sanitizeTraceCode(info.pluginCode),
       pluginMessage: typeof info.pluginMessage === "string" ? info.pluginMessage : "",
@@ -241,6 +256,9 @@
         "oauth",
         "step=" + event.step,
         "platform=" + event.platform,
+        "attemptId=" + (event.attemptId || "-"),
+        "provider=" + (event.provider || "-"),
+        "reason=" + (event.reason || "-"),
         "hasIdentityToken=" + (event.hasIdentityToken ? "1" : "0"),
         "pluginCode=" + (event.pluginCode || "-"),
         "httpStatus=" + (event.httpStatus || "-"),
@@ -275,95 +293,152 @@
     });
   }
 
+  async function initializeOnce(SocialLogin, provider) {
+    const key = provider + ":" + (platform() || "web");
+    if (initializedProviders[key]) return;
+    await initialize(SocialLogin, provider);
+    initializedProviders[key] = true;
+  }
+
   async function continueWith(provider) {
+    if (authRuntime.inProgress || authRuntime.navigating) {
+      oauthTrace("auth_duplicate_start_blocked", { provider: provider });
+      return;
+    }
+    authRuntime.inProgress = true;
+    const attemptId = randomNonce();
+    authRuntime.attemptId = attemptId;
+    authRuntime.provider = provider;
+
     const stack = document.querySelector(".oauth-stack, .oauth-continue");
     const returnTo =
       (stack && stack.getAttribute("data-return-to")) ||
       window.location.pathname + window.location.search;
-    const SocialLogin = plugin("SocialLogin");
-
-    if (!SocialLogin || typeof SocialLogin.login !== "function") {
-      showError("Öppna Körpasset-appen för att fortsätta med Apple eller Google.");
-      return;
-    }
-
-    if (provider === "google" && !googleReady()) {
-      showError(
-        platform() === "ios"
-          ? "Google-inloggning på iPhone är inte redo i den här versionen. Fortsätt med Apple."
-          : "Google-inloggning är inte redo ännu. Fortsätt med Apple.",
-      );
-      return;
-    }
-
-    const nonce = randomNonce();
-    try {
-      await initialize(SocialLogin, provider);
-    } catch (error) {
-      if (provider === "google") traceGoogleFailure("google_initialize_failed", error);
-      showError(
-        loginWasCancelled(error)
-          ? "Inloggningen avbröts. Försök igen."
-          : "Kunde inte logga in. Försök igen.",
-      );
-      return;
-    }
-
-    let result;
-    try {
-      result = await SocialLogin.login({
-        provider,
-        options: loginOptions(provider, nonce),
-      });
-    } catch (error) {
-      const cancelled = loginWasCancelled(error);
-      if (provider === "google") {
-        traceGoogleFailure(
-          cancelled ? "google_login_cancelled" : "google_native_login_failed",
-          error,
-        );
-        if (
-          !cancelled &&
-          platform() === "android" &&
-          googleCredentialManagerRejected(error) &&
-          oauth.googleWebClientId
-        ) {
-          oauthTrace("google_browser_fallback", {
-            pluginCode: pluginFailureCode(error),
-            hasIdentityToken: false,
-          });
-          window.location.assign(googleBrowserAuthorizeUrl(nonce, returnTo));
-          return;
-        }
-      }
-      showError(
-        cancelled
-          ? "Inloggningen avbröts. Försök igen."
-          : "Kunde inte logga in. Försök igen.",
-      );
-      return;
-    }
-
-    const identityToken = idTokenFrom(result);
-    if (!identityToken) {
-      if (provider === "google") {
-        oauthTrace("google_no_identity_token", { hasIdentityToken: false });
-      }
-      showError("Inloggningen gav ingen identitet. Försök igen.");
-      return;
-    }
-    const payload = {
-      identityToken: identityToken,
-      displayName: displayNameFrom(result),
+    persistAuth({
+      attemptId: attemptId,
+      provider: provider,
       returnTo: returnTo,
-      nonce: nonce,
-    };
-    if (provider === "apple") {
-      const authorizationCode = appleAuthorizationCodeFrom(result, identityToken);
-      if (authorizationCode) payload.authorizationCode = authorizationCode;
-    }
+      startedAt: Date.now(),
+      phase: "started",
+    });
+    setLoginBusy(true);
+    hideConsentForAuth();
+    if (provider === "google") oauthTrace("auth_google_started", { provider: provider });
 
-    postProvider(provider, payload);
+    try {
+      if (recoverPromise) {
+        const recovered = await recoverPromise;
+        if ((recovered && recovered.authenticated) || authRuntime.navigating) return;
+      }
+
+      const SocialLogin = plugin("SocialLogin");
+      if (!SocialLogin || typeof SocialLogin.login !== "function") {
+        showError("Öppna Körpasset-appen för att fortsätta med Apple eller Google.");
+        failAuth("plugin-missing");
+        return;
+      }
+
+      if (provider === "google" && !googleReady()) {
+        showError(
+          platform() === "ios"
+            ? "Google-inloggning på iPhone är inte redo i den här versionen. Fortsätt med Apple."
+            : "Google-inloggning är inte redo ännu. Fortsätt med Apple.",
+        );
+        failAuth("google-not-ready");
+        return;
+      }
+
+      if (provider === "google" && platform() === "android" && googleNativeUnusable()) {
+        startGoogleBrowserFallback(returnTo, randomNonce(), "");
+        return;
+      }
+
+      const nonce = randomNonce();
+      try {
+        await initializeOnce(SocialLogin, provider);
+      } catch (error) {
+        if (provider === "google") traceGoogleFailure("google_initialize_failed", error);
+        showError(
+          loginWasCancelled(error)
+            ? "Inloggningen avbröts. Försök igen."
+            : "Kunde inte logga in. Försök igen.",
+        );
+        failAuth("initialize-failed");
+        return;
+      }
+
+      let result;
+      try {
+        result = await SocialLogin.login({
+          provider,
+          options: loginOptions(provider, nonce),
+        });
+      } catch (error) {
+        const cancelled = loginWasCancelled(error);
+        if (provider === "google") {
+          traceGoogleFailure(
+            cancelled ? "google_login_cancelled" : "google_native_login_failed",
+            error,
+          );
+          if (
+            !cancelled &&
+            platform() === "android" &&
+            googleCredentialManagerRejected(error) &&
+            oauth.googleWebClientId
+          ) {
+            markGoogleNativeUnusable();
+            startGoogleBrowserFallback(returnTo, nonce, pluginFailureCode(error));
+            return;
+          }
+        }
+        showError(
+          cancelled
+            ? "Inloggningen avbröts. Försök igen."
+            : "Kunde inte logga in. Försök igen.",
+        );
+        failAuth(cancelled ? "cancelled" : "native-failed");
+        return;
+      }
+
+      const identityToken = idTokenFrom(result);
+      if (!identityToken) {
+        if (provider === "google") {
+          oauthTrace("google_no_identity_token", { hasIdentityToken: false });
+        }
+        showError("Inloggningen gav ingen identitet. Försök igen.");
+        failAuth("no-identity");
+        return;
+      }
+      if (provider === "google") {
+        oauthTrace("auth_google_account_selected", { hasIdentityToken: true });
+        oauthTrace("auth_callback_received", { hasIdentityToken: true });
+      }
+      updateAuthPhase("callback");
+      const payload = {
+        identityToken: identityToken,
+        displayName: displayNameFrom(result),
+        returnTo: returnTo,
+        nonce: nonce,
+      };
+      if (provider === "apple") {
+        const authorizationCode = appleAuthorizationCodeFrom(result, identityToken);
+        if (authorizationCode) payload.authorizationCode = authorizationCode;
+      }
+
+      await postProvider(provider, payload);
+    } catch (error) {
+      showError("Kunde inte logga in. Försök igen.");
+      failAuth("exception");
+    }
+  }
+
+  function startGoogleBrowserFallback(returnTo, nonce, pluginCode) {
+    oauthTrace("google_browser_fallback", {
+      pluginCode: pluginCode,
+      hasIdentityToken: false,
+    });
+    updateAuthPhase("browser");
+    window.location.assign(googleBrowserAuthorizeUrl(nonce, returnTo));
   }
 
   async function postProvider(provider, payload) {
@@ -380,6 +455,7 @@
         oauthTrace("google_backend_request_failed", { hasIdentityToken: true });
       }
       showError("Kunde inte logga in. Försök igen.");
+      failAuth("backend-transport");
       return;
     }
 
@@ -396,6 +472,7 @@
         });
       }
       showError(body.error || "Kunde inte logga in. Försök igen.");
+      failAuth("backend-rejected");
       return;
     }
     if (provider === "google") {
@@ -404,13 +481,20 @@
         httpStatus: response.status,
         created: body.created === true,
       });
+      oauthTrace("auth_session_verified", {
+        hasIdentityToken: true,
+        httpStatus: response.status,
+        created: body.created === true,
+      });
     }
-    window.location.assign(body.redirectTo || "/app");
+    navigateAfterAuth(body.redirectTo || "/app");
   }
 
   async function finishBrowserHandoff(idToken, state) {
     const parsed = nonceFromState(state);
+    adoptCallbackAttempt(parsed.nonce, parsed.returnTo || "/app");
     oauthTrace("google_browser_return", { hasIdentityToken: true });
+    oauthTrace("auth_callback_received", { hasIdentityToken: true });
     let response;
     try {
       response = await fetch("/api/auth/google/browser-handoff", {
@@ -426,6 +510,7 @@
     } catch (error) {
       oauthTrace("google_backend_request_failed", { hasIdentityToken: true });
       showError("Kunde inte logga in. Försök igen.");
+      failAuth("backend-transport");
       return;
     }
     const body = await response.json().catch(function () {
@@ -439,6 +524,7 @@
         backendCode: backendCode,
       });
       showError(body.error || "Kunde inte logga in. Försök igen.");
+      failAuth("handoff-failed");
       return;
     }
     oauthTrace("google_browser_handoff", {
@@ -467,7 +553,7 @@
 
   function consumeGoogleBrowserReturn() {
     const hash = String((window.location && window.location.hash) || "");
-    if (hash.indexOf("id_token=") === -1 && hash.indexOf("error=") === -1) return;
+    if (hash.indexOf("id_token=") === -1 && hash.indexOf("error=") === -1) return false;
     const raw = hash.charAt(0) === "#" ? hash.slice(1) : hash;
     try {
       const path = window.location.pathname || "/app";
@@ -484,7 +570,8 @@
     } catch (error) {
       oauthTrace("google_browser_return_failed", { hasIdentityToken: false });
       showError("Kunde inte logga in. Försök igen.");
-      return;
+      failAuth("browser-return-parse");
+      return true;
     }
     const idToken = params.get("id_token") || "";
     const oauthError = params.get("error") || "";
@@ -500,18 +587,22 @@
           ? "Inloggningen avbröts. Försök igen."
           : "Kunde inte logga in. Försök igen.",
       );
-      return;
+      failAuth(cancelled ? "cancelled" : "browser-return-failed");
+      return true;
     }
+    const parsed = nonceFromState(state);
+    adoptCallbackAttempt(parsed.nonce, parsed.returnTo || "/app");
+    oauthTrace("auth_callback_received", { hasIdentityToken: true });
     if (nativeApp()) {
-      const parsed = nonceFromState(state);
       postProvider("google", {
         identityToken: idToken,
         nonce: parsed.nonce,
         returnTo: parsed.returnTo || window.location.pathname + (window.location.search || ""),
       });
-      return;
+      return true;
     }
     finishBrowserHandoff(idToken, state);
+    return true;
   }
 
   function nativeApp() {
@@ -549,6 +640,289 @@
       window.__KORPASSET_DEEPLINK_STORE__ = memoryStore();
     }
     return window.__KORPASSET_DEEPLINK_STORE__;
+  }
+
+  function persistAuth(state, store) {
+    try {
+      storage(store).setItem(AUTH_KEY, JSON.stringify(state));
+    } catch (error) {
+      /* ignore */
+    }
+  }
+
+  function readAuth(store) {
+    try {
+      const raw = storage(store).getItem(AUTH_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed.attemptId !== "string") return null;
+      if (!sanitizeTraceCode(parsed.attemptId)) return null;
+      return parsed;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function clearAuth(store) {
+    try {
+      storage(store).removeItem(AUTH_KEY);
+    } catch (error) {
+      /* ignore */
+    }
+  }
+
+  function updateAuthPhase(phase) {
+    const current = readAuth() || {
+      attemptId: authRuntime.attemptId,
+      provider: authRuntime.provider,
+      returnTo: "/app",
+      startedAt: Date.now(),
+    };
+    persistAuth({
+      attemptId: current.attemptId || authRuntime.attemptId,
+      provider: current.provider || authRuntime.provider,
+      returnTo: current.returnTo || "/app",
+      startedAt: current.startedAt || Date.now(),
+      phase: phase,
+    });
+  }
+
+  function adoptCallbackAttempt(_nonce, returnTo) {
+    const existing = readAuth();
+    const id = (existing && existing.attemptId) || randomNonce();
+    authRuntime.inProgress = true;
+    authRuntime.attemptId = id;
+    authRuntime.provider = authRuntime.provider || "google";
+    persistAuth({
+      attemptId: id,
+      provider: "google",
+      returnTo: returnTo || (existing && existing.returnTo) || "/app",
+      startedAt: (existing && existing.startedAt) || Date.now(),
+      phase: "callback",
+    });
+    setLoginBusy(true);
+    hideConsentForAuth();
+  }
+
+  function failAuth(reason) {
+    authRuntime.inProgress = false;
+    authRuntime.navigating = false;
+    clearAuth();
+    setLoginBusy(false);
+    if (reason && reason !== "cancelled") {
+      oauthTrace("auth_session_failed", { reason: sanitizeTraceCode(reason) });
+    }
+  }
+
+  function googleNativeUnusable() {
+    try {
+      return window.localStorage && window.localStorage.getItem(NATIVE_UNUSABLE_KEY) === "1";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function markGoogleNativeUnusable() {
+    try {
+      if (window.localStorage) window.localStorage.setItem(NATIVE_UNUSABLE_KEY, "1");
+    } catch (error) {
+      /* ignore */
+    }
+  }
+
+  function isLoginSurface() {
+    try {
+      return Boolean(
+        document.querySelector &&
+          document.querySelector("[data-oauth-provider], .oauth-continue, .oauth-stack"),
+      );
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function setLoginBusy(busy) {
+    try {
+      const buttons =
+        (document.querySelectorAll && document.querySelectorAll("[data-oauth-provider]")) || [];
+      for (let i = 0; i < buttons.length; i += 1) {
+        const button = buttons[i];
+        if (!button) continue;
+        if (busy) {
+          if (!button.getAttribute("data-oauth-label")) {
+            button.setAttribute("data-oauth-label", button.textContent || "");
+          }
+          button.disabled = true;
+          button.setAttribute("aria-busy", "true");
+          if (button.getAttribute("data-oauth-provider") === "google") {
+            button.textContent = "Loggar in…";
+          }
+        } else {
+          button.disabled = false;
+          button.removeAttribute("aria-busy");
+          const label = button.getAttribute("data-oauth-label");
+          if (label) button.textContent = label;
+        }
+      }
+      let status = document.getElementById && document.getElementById("oauth-status");
+      if (!status && busy && document.createElement && document.body) {
+        status = document.createElement("p");
+        status.id = "oauth-status";
+        status.className = "muted";
+        const stack = document.querySelector(".oauth-continue, .oauth-stack");
+        if (stack) stack.insertBefore(status, stack.firstChild);
+        else document.body.appendChild(status);
+      }
+      if (status) {
+        status.hidden = !busy;
+        status.textContent = "Loggar in…";
+      }
+    } catch (error) {
+      /* ignore */
+    }
+  }
+
+  function hideConsentForAuth() {
+    try {
+      const root = document.querySelector && document.querySelector("[data-consent-root]");
+      if (!root) return;
+      root.hidden = true;
+      root.setAttribute("data-auth-hidden", "1");
+    } catch (error) {
+      /* ignore */
+    }
+  }
+
+  function safeRedirectPath(value) {
+    if (typeof value !== "string") return "/app";
+    const path = value.trim().split("?")[0].split("#")[0];
+    if (!path.startsWith("/") || path.startsWith("//")) return "/app";
+    if (!/^\/[A-Za-z0-9/_-]*$/.test(path) || path.length > 300) return "/app";
+    return path;
+  }
+
+  function navigateAfterAuth(url, ctx) {
+    if (authRuntime.navigating) return;
+    const dest = safeRedirectPath(url);
+    const current = String(currentPathFrom(ctx) || "").split("?")[0];
+    authRuntime.navigating = true;
+    oauthTrace("auth_navigation_started", { reason: current === dest ? "reload" : "assign" });
+    hideConsentForAuth();
+    clearAuth(ctx && ctx.storage);
+    authRuntime.inProgress = false;
+    if (current === dest) {
+      if (ctx && typeof ctx.reload === "function") ctx.reload();
+      else window.location.reload();
+    } else {
+      assignLocation(dest, ctx);
+    }
+    oauthTrace("auth_navigation_completed", { reason: current === dest ? "reload" : "assign" });
+  }
+
+  async function fetchSession() {
+    const response = await fetch("/api/auth/session", {
+      method: "GET",
+      headers: { accept: "application/json" },
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+    const body = await response.json().catch(function () {
+      return {};
+    });
+    return {
+      authenticated: body.authenticated === true,
+      redirectTo: typeof body.redirectTo === "string" ? body.redirectTo : null,
+    };
+  }
+
+  function recoverAuth(reason, ctx) {
+    if (authRuntime.navigating) {
+      return Promise.resolve({ skipped: true, reason: "navigating" });
+    }
+    if (recoverPromise) return recoverPromise;
+    recoverPromise = recoverAuthNow(reason, ctx).finally(function () {
+      recoverPromise = null;
+    });
+    return recoverPromise;
+  }
+
+  async function recoverAuthNow(reason, ctx) {
+    const pending = readAuth(ctx && ctx.storage);
+    const login = isLoginSurface();
+    if (!pending && !login) return { skipped: true, reason: "idle" };
+    oauthTrace("auth_recovery_started", { reason: sanitizeTraceCode(reason) });
+    if (pending && !authRuntime.attemptId) {
+      authRuntime.attemptId = pending.attemptId;
+      authRuntime.provider = pending.provider || "google";
+      setLoginBusy(true);
+      hideConsentForAuth();
+    }
+    let session;
+    try {
+      session = await fetchSession();
+    } catch (error) {
+      oauthTrace("auth_session_failed", { reason: "transport" });
+      return { authenticated: false };
+    }
+    if (session.authenticated) {
+      oauthTrace("auth_session_verified", { reason: sanitizeTraceCode(reason) });
+      navigateAfterAuth(session.redirectTo || "/app", ctx);
+      return { authenticated: true, redirectTo: session.redirectTo };
+    }
+    if (authRuntime.inProgress) return { authenticated: false, waiting: true };
+    if (pending && Date.now() - Number(pending.startedAt || 0) < AUTH_GRACE_MS) {
+      setLoginBusy(true);
+      return { authenticated: false, waiting: true };
+    }
+    if (pending) failAuth("stale-pending");
+    return { authenticated: false };
+  }
+
+  function handoffCodeFromUrl(rawUrl) {
+    if (typeof rawUrl !== "string" || !rawUrl.trim()) return "";
+    try {
+      const parsed = new URL(rawUrl.trim(), "https://korpasset.se");
+      const host = (parsed.hostname || "").toLowerCase();
+      const scheme = (parsed.protocol || "").replace(/:$/, "").toLowerCase();
+      if (scheme && scheme !== "https" && scheme !== "http") return "";
+      if (host && host !== "korpasset.se" && host !== "www.korpasset.se") return "";
+      if ((parsed.pathname || "") !== "/app") return "";
+      const code = parsed.searchParams.get("oauth_handoff") || "";
+      return validHandoffCode(code) ? code : "";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function consumeAuthCallbackUrl(rawUrl, eventType, ctx) {
+    const code = handoffCodeFromUrl(rawUrl);
+    if (!code) return false;
+    oauthTrace("auth_callback_received", { reason: sanitizeTraceCode(eventType) });
+    const existing = readAuth(ctx && ctx.storage);
+    persistAuth({
+      attemptId: (existing && existing.attemptId) || randomNonce(),
+      provider: "google",
+      returnTo: "/app",
+      startedAt: (existing && existing.startedAt) || Date.now(),
+      phase: "callback",
+    }, ctx && ctx.storage);
+    setLoginBusy(true);
+    hideConsentForAuth();
+    let current = "";
+    try {
+      current =
+        new URLSearchParams((ctx && ctx.search) || window.location.search || "").get(
+          "oauth_handoff",
+        ) || "";
+    } catch (error) {
+      current = "";
+    }
+    if (current === code) {
+      recoverAuth(eventType || "handoff", ctx);
+      return true;
+    }
+    assignLocation("/app?oauth_handoff=" + encodeURIComponent(code), ctx);
+    return true;
   }
 
   function validToken(value) {
@@ -782,6 +1156,11 @@
     error.id = "oauth-error";
     error.className = "banner banner-error";
     error.hidden = true;
+    const status = document.createElement("p");
+    status.id = "oauth-status";
+    status.className = "muted";
+    status.hidden = true;
+    status.textContent = "Loggar in…";
     const apple = document.createElement("button");
     apple.type = "button";
     apple.className = "btn btn-primary";
@@ -794,6 +1173,7 @@
     google.textContent = "Fortsätt med Google";
     wrap.appendChild(intro);
     wrap.appendChild(error);
+    wrap.appendChild(status);
     wrap.appendChild(apple);
     wrap.appendChild(google);
     if (form) parent.insertBefore(wrap, form);
@@ -809,7 +1189,11 @@
 
     if (App && typeof App.addListener === "function") {
       App.addListener("appUrlOpen", function (event) {
+        if (consumeAuthCallbackUrl(event && event.url, "appUrlOpen")) return;
         consumeIncomingUrl(event && event.url, "appUrlOpen");
+      });
+      App.addListener("appStateChange", function (state) {
+        if (state && state.isActive) recoverAuth("resume");
       });
     }
 
@@ -833,12 +1217,26 @@
     }
 
     if (launchUrl) {
+      if (consumeAuthCallbackUrl(launchUrl, "cold start")) return;
       consumeIncomingUrl(launchUrl, "cold start");
       return;
     }
 
     if (!onInvite) consumePendingIfNeeded("pending");
   }
+
+  window.KORPASSET_AUTH = {
+    AUTH_KEY: AUTH_KEY,
+    recover: recoverAuth,
+    isInProgress: function () {
+      return Boolean(authRuntime.inProgress || authRuntime.navigating || readAuth());
+    },
+    continueWith: continueWith,
+    consumeAuthCallbackUrl: consumeAuthCallbackUrl,
+    readAuth: readAuth,
+    clearAuth: clearAuth,
+    safeRedirectPath: safeRedirectPath,
+  };
 
   window.KORPASSET_DEEPLINK = {
     PENDING_KEY: PENDING_KEY,
@@ -858,11 +1256,17 @@
     const button = event.target.closest("[data-oauth-provider]");
     if (!button) return;
     event.preventDefault();
+    if (button.disabled || button.getAttribute("aria-busy") === "true") return;
     continueWith(button.getAttribute("data-oauth-provider"));
   });
+
+  function bootAuth() {
+    if (consumeGoogleBrowserReturn()) return;
+    recoverAuth("boot");
+  }
 
   prepareInviteHandoff();
   prepareNativeInviteLogin();
   bootNativeInviteHandoff();
-  consumeGoogleBrowserReturn();
+  bootAuth();
 })();

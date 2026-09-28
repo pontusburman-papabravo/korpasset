@@ -61,6 +61,7 @@ function installClient(
   const traces: OAuthTrace[] = [];
   const beacons: string[] = [];
   const assignments: string[] = [];
+  let n = 0;
   const location = {
     pathname: "/app",
     search: "",
@@ -69,6 +70,9 @@ function installClient(
     origin: "https://korpasset.se",
     assign(url: string) {
       assignments.push(url);
+    },
+    reload() {
+      assignments.push(location.pathname || "/app");
     },
   };
   let click: (event: {
@@ -85,7 +89,11 @@ function installClient(
       },
     },
     document: {
+      body: {},
       getElementById(id: string) {
+        if (id === "oauth-status") {
+          return { hidden: true, textContent: "", className: "muted" };
+        }
         if (id !== "oauth-error") return null;
         return {
           hidden: true,
@@ -96,6 +104,18 @@ function installClient(
       },
       querySelector() {
         return { getAttribute: () => "/app" };
+      },
+      querySelectorAll() {
+        return [];
+      },
+      createElement() {
+        return {
+          id: "",
+          className: "",
+          hidden: true,
+          textContent: "",
+          setAttribute() {},
+        };
       },
       addEventListener(
         _type: string,
@@ -109,12 +129,22 @@ function installClient(
     },
     crypto: {
       getRandomValues(bytes: Uint8Array) {
-        bytes.fill(7);
+        n += 1;
+        for (let i = 0; i < bytes.length; i += 1) {
+          bytes[i] = (n + i) & 0xff;
+        }
         return bytes;
       },
     },
-    fetch: async (url: string, init: { body: string }) => {
-      const body = JSON.parse(init.body) as PostedBody & { message?: string };
+    fetch: async (url: string, init: { body?: string; method?: string }) => {
+      if (String(url).startsWith("/api/auth/session")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ authenticated: false, redirectTo: null }),
+        };
+      }
+      const body = JSON.parse(init.body ?? "{}") as PostedBody & { message?: string };
       if (url === "/api/client-error") {
         beacons.push(body.message ?? "");
         return { ok: true, status: 204, json: async () => ({}) };
@@ -142,6 +172,13 @@ function installClient(
         },
       },
       sessionStorage: {
+        getItem() {
+          return null;
+        },
+        setItem() {},
+        removeItem() {},
+      },
+      localStorage: {
         getItem() {
           return null;
         },
@@ -190,6 +227,10 @@ function installClient(
   };
 }
 
+function findTrace(traces: OAuthTrace[], step: string) {
+  return traces.find((item) => item.step === step);
+}
+
 async function clickProvider(
   click: ReturnType<typeof installClient>["click"],
   provider: "apple" | "google",
@@ -203,7 +244,9 @@ async function clickProvider(
     },
     preventDefault() {},
   });
-  await new Promise((resolve) => setImmediate(resolve));
+  for (let i = 0; i < 10; i += 1) {
+    await new Promise((resolve) => setImmediate(resolve));
+  }
 }
 
 describe("native OAuth login scopes", () => {
@@ -314,8 +357,8 @@ describe("native OAuth login scopes", () => {
     assert.deepEqual(cancelled.errors, ["Inloggningen avbröts. Försök igen."]);
     assert.equal(cancelled.posts.length, 0);
     assert.equal(cancelled.assignments.length, 0);
-    assert.equal(cancelled.traces[0]?.step, "google_login_cancelled");
-    assert.equal(cancelled.traces[0]?.pluginCode, "USER_CANCELLED");
+    assert.equal(findTrace(cancelled.traces, "google_login_cancelled")?.step, "google_login_cancelled");
+    assert.equal(findTrace(cancelled.traces, "google_login_cancelled")?.pluginCode, "USER_CANCELLED");
 
     const rejected = installClient({ name: "Ada" }, {}, "android", async () => {
       throw new Error("apple.android.redirectUrl is null or empty");
@@ -324,8 +367,8 @@ describe("native OAuth login scopes", () => {
     assert.deepEqual(rejected.errors, ["Kunde inte logga in. Försök igen."]);
     assert.equal(rejected.posts.length, 0);
     assert.equal(rejected.assignments.length, 0);
-    assert.equal(rejected.traces[0]?.step, "google_native_login_failed");
-    assert.notEqual(rejected.traces[0]?.step, "google_login_cancelled");
+    assert.equal(findTrace(rejected.traces, "google_native_login_failed")?.step, "google_native_login_failed");
+    assert.equal(findTrace(rejected.traces, "google_login_cancelled"), undefined);
   });
 
   it("posts the id token from the Android 8.5.10 result shape", async () => {
@@ -355,10 +398,10 @@ describe("native OAuth login scopes", () => {
     assert.equal(client.posts[0].identityToken, "android-id-token");
     assert.equal(client.posts[0].displayName, "Ada Lovelace");
     assert.equal(client.posts[0].authorizationCode, undefined);
-    assert.equal(client.traces.at(-1)?.step, "google_login_success");
-    assert.equal(client.traces.at(-1)?.platform, "android");
-    assert.equal(client.traces.at(-1)?.hasIdentityToken, true);
-    assert.equal(client.traces.at(-1)?.created, true);
+    assert.equal(findTrace(client.traces, "google_login_success")?.step, "google_login_success");
+    assert.equal(findTrace(client.traces, "google_login_success")?.platform, "android");
+    assert.equal(findTrace(client.traces, "google_login_success")?.hasIdentityToken, true);
+    assert.equal(findTrace(client.traces, "google_login_success")?.created, true);
     const beacon = client.beacons.join("\n");
     assert.match(beacon, /step=google_login_success/);
     assert.equal(beacon.includes("android-id-token"), false);
@@ -376,9 +419,9 @@ describe("native OAuth login scopes", () => {
     await clickProvider(reauth.click, "google");
     assert.deepEqual(reauth.errors, []);
     assert.equal(reauth.posts.length, 0);
-    assert.equal(reauth.traces[0]?.step, "google_native_login_failed");
-    assert.equal(reauth.traces[0]?.pluginCode, "16");
-    assert.equal(reauth.traces[1]?.step, "google_browser_fallback");
+    assert.equal(findTrace(reauth.traces, "google_native_login_failed")?.step, "google_native_login_failed");
+    assert.equal(findTrace(reauth.traces, "google_native_login_failed")?.pluginCode, "16");
+    assert.equal(findTrace(reauth.traces, "google_browser_fallback")?.step, "google_browser_fallback");
     assert.equal(reauth.assignments.length, 1);
     const authorize = reauth.assignments[0] ?? "";
     const url = new URL(authorize);
@@ -401,9 +444,9 @@ describe("native OAuth login scopes", () => {
       );
     });
     await clickProvider(consoleSetup.click, "google");
-    assert.equal(consoleSetup.traces[0]?.step, "google_native_login_failed");
-    assert.equal(consoleSetup.traces[1]?.step, "google_browser_fallback");
-    assert.equal(consoleSetup.traces[0]?.pluginCode, "28444");
+    assert.equal(findTrace(consoleSetup.traces, "google_native_login_failed")?.step, "google_native_login_failed");
+    assert.equal(findTrace(consoleSetup.traces, "google_browser_fallback")?.step, "google_browser_fallback");
+    assert.equal(findTrace(consoleSetup.traces, "google_native_login_failed")?.pluginCode, "28444");
     assert.equal(consoleSetup.posts.length, 0);
     assert.deepEqual(consoleSetup.errors, []);
     assert.match(consoleSetup.assignments[0] ?? "", /accounts\.google\.com/);
@@ -429,7 +472,7 @@ describe("native OAuth login scopes", () => {
     await clickProvider(client.click, "google");
     assert.deepEqual(client.errors, ["Inloggningen gav ingen identitet. Försök igen."]);
     assert.equal(client.posts.length, 0);
-    assert.equal(client.traces[0]?.step, "google_no_identity_token");
+    assert.equal(findTrace(client.traces, "google_no_identity_token")?.step, "google_no_identity_token");
     assert.equal(client.beacons.join("").includes("access-only"), false);
   });
 
@@ -452,9 +495,9 @@ describe("native OAuth login scopes", () => {
     await clickProvider(rejected.click, "google");
     assert.deepEqual(rejected.errors, ["Ogiltig Google-inloggning"]);
     assert.equal(rejected.posts[0]?.identityToken, "identity-token");
-    assert.equal(rejected.traces.at(-1)?.step, "google_backend_rejected");
-    assert.equal(rejected.traces.at(-1)?.httpStatus, 401);
-    assert.equal(rejected.traces.at(-1)?.backendCode, "invalid_identity");
+    assert.equal(findTrace(rejected.traces, "google_backend_rejected")?.step, "google_backend_rejected");
+    assert.equal(findTrace(rejected.traces, "google_backend_rejected")?.httpStatus, 401);
+    assert.equal(findTrace(rejected.traces, "google_backend_rejected")?.backendCode, "invalid_identity");
     assert.equal(rejected.beacons.join("").includes("identity-token"), false);
 
     const account = installClient(
@@ -473,9 +516,9 @@ describe("native OAuth login scopes", () => {
       }),
     );
     await clickProvider(account.click, "google");
-    assert.equal(account.traces.at(-1)?.step, "google_account_creation_failed");
-    assert.equal(account.traces.at(-1)?.httpStatus, 409);
-    assert.equal(account.traces.at(-1)?.backendCode, "identity_on_other_user");
+    assert.equal(findTrace(account.traces, "google_account_creation_failed")?.step, "google_account_creation_failed");
+    assert.equal(findTrace(account.traces, "google_account_creation_failed")?.httpStatus, 409);
+    assert.equal(findTrace(account.traces, "google_account_creation_failed")?.backendCode, "identity_on_other_user");
     assert.notEqual(account.errors[0], "Inloggningen avbröts. Försök igen.");
   });
 
@@ -485,8 +528,8 @@ describe("native OAuth login scopes", () => {
     });
     await clickProvider(client.click, "google");
     assert.deepEqual(client.errors, ["Kunde inte logga in. Försök igen."]);
-    assert.equal(client.traces.at(-1)?.step, "google_backend_request_failed");
-    assert.equal(client.traces.at(-1)?.hasIdentityToken, true);
+    assert.equal(findTrace(client.traces, "google_backend_request_failed")?.step, "google_backend_request_failed");
+    assert.equal(findTrace(client.traces, "google_backend_request_failed")?.hasIdentityToken, true);
   });
 
   it("records Google initialize failure before login", async () => {
@@ -503,7 +546,7 @@ describe("native OAuth login scopes", () => {
     await clickProvider(client.click, "google");
     assert.equal(client.logins.length, 0);
     assert.equal(client.posts.length, 0);
-    assert.equal(client.traces[0]?.step, "google_initialize_failed");
+    assert.equal(findTrace(client.traces, "google_initialize_failed")?.step, "google_initialize_failed");
     assert.deepEqual(client.errors, ["Kunde inte logga in. Försök igen."]);
   });
 
@@ -543,7 +586,9 @@ describe("native OAuth login scopes", () => {
       undefined,
       { hash: `#id_token=${token}&state=${nonce}`, native: false },
     );
-    await new Promise((resolve) => setImmediate(resolve));
+    for (let i = 0; i < 10; i += 1) {
+      await new Promise((resolve) => setImmediate(resolve));
+    }
 
     assert.equal(client.hash(), "");
     assert.equal(client.posts.length, 1);
@@ -571,7 +616,9 @@ describe("native OAuth login scopes", () => {
       undefined,
       { hash: "#id_token=webview-id-token&state=webviewnonce", native: true },
     );
-    await new Promise((resolve) => setImmediate(resolve));
+    for (let i = 0; i < 10; i += 1) {
+      await new Promise((resolve) => setImmediate(resolve));
+    }
     assert.equal(client.postUrls[0], "/api/auth/google");
     assert.equal(client.posts[0].identityToken, "webview-id-token");
     assert.equal(client.posts[0].nonce, "webviewnonce");
@@ -585,11 +632,13 @@ describe("native OAuth login scopes", () => {
       hash: "#error=access_denied&state=abc",
       native: false,
     });
-    await new Promise((resolve) => setImmediate(resolve));
+    for (let i = 0; i < 10; i += 1) {
+      await new Promise((resolve) => setImmediate(resolve));
+    }
     assert.deepEqual(client.errors, ["Inloggningen avbröts. Försök igen."]);
     assert.equal(client.posts.length, 0);
     assert.equal(client.assignments.length, 0);
-    assert.equal(client.traces[0]?.step, "google_login_cancelled");
+    assert.equal(findTrace(client.traces, "google_login_cancelled")?.step, "google_login_cancelled");
     assert.equal(client.hash(), "");
   });
 });

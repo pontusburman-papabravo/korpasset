@@ -332,6 +332,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get("/app", async (request, reply) => {
+    reply.header("cache-control", "no-store, no-cache, must-revalidate");
     setNativeAppCookie(reply);
     const handoffCode = oauthHandoffQuery(request.query);
     if (handoffCode) {

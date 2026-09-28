@@ -26,6 +26,7 @@ interface BootOptions {
     isNativePlatform?: boolean;
     getPlatform?: string;
   } | null;
+  authInProgress?: boolean;
 }
 
 function boot(options: BootOptions = {}) {
@@ -228,6 +229,11 @@ function boot(options: BootOptions = {}) {
       isNativePlatform: function () { return ${JSON.stringify(Boolean(options.capacitor.isNativePlatform))}; },
       getPlatform: function () { return ${JSON.stringify(options.capacitor.getPlatform ?? "web")}; }
     };`
+        : ""
+    }
+    ${
+      options.authInProgress
+        ? `window.KORPASSET_AUTH = { isInProgress: function () { return true; } };`
         : ""
     }
     globalThis.__root = root;
@@ -596,6 +602,19 @@ describe("native iOS disables advertising tracking", () => {
     assert.equal(metaRequests(page).length, 0);
     assert.equal(fbqCalls(page).length, 0);
     assert.equal((page.korpassetConsent as { get: () => { marketing: boolean } }).get().marketing, false);
+  });
+});
+
+describe("cookie consent does not block auth completion", () => {
+  it("keeps the banner closed while Google auth is in progress", () => {
+    const page = boot({
+      capacitor: { isNativePlatform: true, getPlatform: "android" },
+      authInProgress: true,
+    });
+    assert.equal((page.__root as { hidden: boolean }).hidden, true);
+    assert.equal((page.__banner as { hidden: boolean }).hidden, true);
+    assert.match(source, /KORPASSET_AUTH/);
+    assert.match(source, /isInProgress/);
   });
 });
 

@@ -55,6 +55,9 @@ function load(pathname: string, native: boolean, panelHidden = true) {
         if (selector === 'form[action^="/invite/"]') return form;
         return null;
       },
+      querySelectorAll() {
+        return [];
+      },
       createElement() {
         const el = {
           className: "",
@@ -133,7 +136,10 @@ describe("invitation link opens the app", () => {
 
   it("listens for Capacitor appUrlOpen and getLaunchUrl", () => {
     assert.match(script, /App\.addListener\("appUrlOpen"/);
+    assert.match(script, /App\.addListener\("appStateChange"/);
     assert.match(script, /App\.getLaunchUrl/);
+    assert.match(script, /KORPASSET_AUTH/);
+    assert.match(script, /auth_recovery_started/);
     assert.match(script, /korpasset\.pendingInvite/);
   });
 

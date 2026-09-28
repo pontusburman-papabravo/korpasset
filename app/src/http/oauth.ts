@@ -9,7 +9,7 @@ import {
 import { rememberAppleRefreshTokenFromAuthorizationCode } from "../services/apple-account.js";
 import { continueWithOAuth } from "../services/oauth-accounts.js";
 import { acceptInvitation } from "../services/invitations.js";
-import { getUserById } from "../services/users.js";
+import { getReusableSessionUserId, getUserById } from "../services/users.js";
 import { createOAuthHandoff } from "../services/oauth-handoff.js";
 import { signedInRedirectPath } from "./navigation.js";
 import { allowRequest, OAUTH_RATE_LIMIT } from "./rate-limit.js";
@@ -191,6 +191,18 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
       .header("cache-control", "public, max-age=3600")
       .type("application/json")
       .send(androidAssetLinks());
+  });
+
+  app.get("/api/auth/session", async (request, reply) => {
+    reply.header("cache-control", "no-store, no-cache, must-revalidate");
+    const sessionUserId = await getReusableSessionUserId(getSessionUserId(request));
+    if (!sessionUserId) {
+      return reply.send({ authenticated: false, redirectTo: null });
+    }
+    return reply.send({
+      authenticated: true,
+      redirectTo: await signedInRedirectPath(sessionUserId),
+    });
   });
 
   app.post("/api/auth/google/browser-handoff", async (request, reply) => {

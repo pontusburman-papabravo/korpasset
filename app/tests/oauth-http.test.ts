@@ -364,6 +364,29 @@ describe("app oauth HTTP (FR-11)", () => {
     await app.close();
   });
 
+  it("reports session status without leaking tokens or requiring a new login", async () => {
+    const app = await createTestApp();
+    const missing = await app.inject({ method: "GET", url: "/api/auth/session" });
+    assert.equal(missing.statusCode, 200);
+    assert.deepEqual(missing.json(), { authenticated: false, redirectTo: null });
+    assert.match(String(missing.headers["cache-control"]), /no-store/);
+
+    const student = await createJourneyForStudent("Ella");
+    const signedIn = await injectWithSession(
+      app,
+      { bilklar_session: createSessionToken(student.userId) },
+      { method: "GET", url: "/api/auth/session" },
+    );
+    assert.equal(signedIn.statusCode, 200);
+    assert.deepEqual(signedIn.json(), {
+      authenticated: true,
+      redirectTo: `/journey/${student.journey.id}`,
+    });
+    assert.equal(JSON.stringify(signedIn.json()).includes(student.userId), false);
+    assert.equal(JSON.stringify(signedIn.json()).includes("bilklar_session"), false);
+    await app.close();
+  });
+
   it("sends a signed-in user with a journey to that journey after continue", async () => {
     const student = await createJourneyForStudent("Ella");
     setIdentityTokenVerifierForTests(async () => ({
