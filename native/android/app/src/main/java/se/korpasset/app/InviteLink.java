@@ -56,6 +56,93 @@ public final class InviteLink {
         return current != null && current.equals(target);
     }
 
+    public static boolean hasOAuthHandoff(String url) {
+        if (url == null) return false;
+        int queryStart = url.indexOf('?');
+        if (queryStart < 0) return false;
+        String query = url.substring(queryStart + 1);
+        int hash = query.indexOf('#');
+        if (hash >= 0) query = query.substring(0, hash);
+        String[] parts = query.split("&");
+        for (String part : parts) {
+            if (part.startsWith("oauth_handoff=") && part.length() > "oauth_handoff=".length()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static String pageKey(String url) {
+        if (!isKorpassetOrigin(url)) return null;
+        int schemeEnd = url.indexOf("://");
+        if (schemeEnd < 0) return null;
+        String rest = url.substring(schemeEnd + 3);
+        int slash = rest.indexOf('/');
+        if (slash < 0) return null;
+        String host = rest.substring(0, slash).toLowerCase(Locale.ROOT);
+        if (host.startsWith("www.")) host = host.substring(4);
+        String path = rest.substring(slash);
+        int query = path.indexOf('?');
+        if (query >= 0) path = path.substring(0, query);
+        int hash = path.indexOf('#');
+        if (hash >= 0) path = path.substring(0, hash);
+        if (path.endsWith("/") && path.length() > 1) {
+            path = path.substring(0, path.length() - 1);
+        }
+        return host + path;
+    }
+
+    public static boolean isSamePage(String currentUrl, String targetUrl) {
+        String current = pageKey(currentUrl);
+        String target = pageKey(targetUrl);
+        return current != null && current.equals(target);
+    }
+
+    /**
+     * Bare /app, /onboarding, and /konto App Links must not replace a live
+     * Körpasset page. After auth the WebView may already have navigated to
+     * /onboarding; a stale /app resume would overlay that route. Session
+     * recovery runs in JS instead. oauth_handoff is the only /app query that
+     * still forces a load, because the server must redeem it.
+     */
+    public static boolean shouldLoadWebView(String currentUrl, String targetUrl) {
+        if (targetUrl == null || targetUrl.isEmpty()) return false;
+        if (hasOAuthHandoff(targetUrl)) {
+            return !sameRequest(currentUrl, targetUrl);
+        }
+        if (isSameInvite(currentUrl, targetUrl)) return false;
+        if (isKorpassetOrigin(currentUrl) && isAppShell(targetUrl)) return false;
+        return !isSamePage(currentUrl, targetUrl);
+    }
+
+    public static boolean isAppShell(String url) {
+        String key = pageKey(url);
+        if (key == null) return false;
+        int slash = key.indexOf('/');
+        if (slash < 0) return false;
+        String path = key.substring(slash);
+        return "/app".equals(path) || "/onboarding".equals(path) || "/konto".equals(path);
+    }
+
+    public static String authRecoverJs(String event) {
+        String eventJson = jsonString(event == null ? "native-resume" : event);
+        return "(function(){try{"
+            + "if(window.KORPASSET_AUTH&&window.KORPASSET_AUTH.recover){"
+            + "window.KORPASSET_AUTH.recover(" + eventJson + ");"
+            + "}"
+            + "}catch(e){}})();";
+    }
+
+    private static boolean sameRequest(String currentUrl, String targetUrl) {
+        if (currentUrl == null || targetUrl == null) return false;
+        return stripFragment(currentUrl).equals(stripFragment(targetUrl));
+    }
+
+    private static String stripFragment(String url) {
+        int hash = url.indexOf('#');
+        return hash >= 0 ? url.substring(0, hash) : url;
+    }
+
     public static boolean isKorpassetOrigin(String url) {
         if (url == null) return false;
         return url.startsWith("https://korpasset.se/") || url.startsWith("https://www.korpasset.se/");

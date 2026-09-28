@@ -57,6 +57,9 @@ describe("app entry (GET /app) and production onboarding", () => {
     assert.match(response.body, /noindex, nofollow/);
     assert.doesNotMatch(response.body, /Bli betatestare/);
     assert.doesNotMatch(response.body, /action="\/interest"/);
+    assert.match(String(response.headers["cache-control"]), /no-store/);
+    assert.match(response.body, /id="oauth-status"/);
+    assert.match(response.body, /Loggar in…/);
     await app.close();
   });
 

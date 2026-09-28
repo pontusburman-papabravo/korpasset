@@ -60,6 +60,7 @@ function loggerOptions() {
         "req.headers.referer",
         "req.headers.referrer",
         "req.body.identityToken",
+        "req.body.id_token",
         "req.body.authorizationCode",
         "req.body.payload",
       ],

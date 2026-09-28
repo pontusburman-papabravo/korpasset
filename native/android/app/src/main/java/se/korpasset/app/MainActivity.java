@@ -18,7 +18,10 @@ public class MainActivity extends BridgeActivity {
     private int applyAttempts;
     private int loadCount;
     private boolean consumedLaunchIntent;
+    private boolean authRecoveredThisResume;
+    private int authRecoverAttempts;
     private final Runnable applyRunnable = this::applyPendingInvite;
+    private final Runnable authRecoverRunnable = this::applyAuthRecovery;
 
     @Override
     public void onStart() {
@@ -26,6 +29,15 @@ public class MainActivity extends BridgeActivity {
         if (consumedLaunchIntent) return;
         consumedLaunchIntent = true;
         openIncomingLink(getIntent(), "cold start");
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        authRecoveredThisResume = false;
+        authRecoverAttempts = 0;
+        handler.removeCallbacks(authRecoverRunnable);
+        handler.post(authRecoverRunnable);
     }
 
     @Override
@@ -84,6 +96,13 @@ public class MainActivity extends BridgeActivity {
             return;
         }
 
+        if (!InviteLink.shouldLoadWebView(current, pendingTarget)) {
+            webView.evaluateJavascript(InviteLink.authRecoverJs(pendingEvent), null);
+            log("already-on-page event=" + pendingEvent);
+            pendingTarget = null;
+            return;
+        }
+
         if (InviteLink.isKorpassetOrigin(current)) {
             webView.evaluateJavascript(InviteLink.pendingInviteJs(pendingTarget, pendingEvent, true), null);
         }
@@ -95,6 +114,35 @@ public class MainActivity extends BridgeActivity {
         }
 
         scheduleRetry();
+    }
+
+    private void applyAuthRecovery() {
+        if (authRecoveredThisResume) return;
+        if (pendingTarget != null) return;
+        if (bridge == null || bridge.getWebView() == null) {
+            scheduleAuthRecoverRetry();
+            return;
+        }
+        WebView webView = bridge.getWebView();
+        webView.evaluateJavascript(
+            "(function(){return !!(window.KORPASSET_AUTH&&window.KORPASSET_AUTH.recover);})()",
+            value -> {
+                if (authRecoveredThisResume) return;
+                if (value != null && value.contains("true")) {
+                    authRecoveredThisResume = true;
+                    webView.evaluateJavascript(InviteLink.authRecoverJs("native-resume"), null);
+                    log("auth-recover event=native-resume");
+                    return;
+                }
+                scheduleAuthRecoverRetry();
+            }
+        );
+    }
+
+    private void scheduleAuthRecoverRetry() {
+        authRecoverAttempts += 1;
+        if (authRecoverAttempts >= MAX_ATTEMPTS) return;
+        handler.postDelayed(authRecoverRunnable, 150);
     }
 
     private void scheduleRetry() {

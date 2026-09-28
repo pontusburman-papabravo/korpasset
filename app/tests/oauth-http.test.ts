@@ -364,6 +364,106 @@ describe("app oauth HTTP (FR-11)", () => {
     await app.close();
   });
 
+  it("reports session status without leaking tokens or requiring a new login", async () => {
+    const app = await createTestApp();
+    const missing = await app.inject({ method: "GET", url: "/api/auth/session" });
+    assert.equal(missing.statusCode, 200);
+    assert.deepEqual(missing.json(), { authenticated: false, redirectTo: null });
+    assert.match(String(missing.headers["cache-control"]), /no-store/);
+
+    const student = await createJourneyForStudent("Ella");
+    const signedIn = await injectWithSession(
+      app,
+      { bilklar_session: createSessionToken(student.userId) },
+      { method: "GET", url: "/api/auth/session" },
+    );
+    assert.equal(signedIn.statusCode, 200);
+    assert.deepEqual(signedIn.json(), {
+      authenticated: true,
+      redirectTo: `/journey/${student.journey.id}`,
+    });
+    assert.equal(JSON.stringify(signedIn.json()).includes(student.userId), false);
+    assert.equal(JSON.stringify(signedIn.json()).includes("bilklar_session"), false);
+    await app.close();
+  });
+
+  it("turns a Google form_post into a handoff redirect without putting the token in the URL", async () => {
+    setIdentityTokenVerifierForTests(async (provider, token, nonce) => {
+      assert.equal(provider, "google");
+      assert.equal(token, "form-post-id-token");
+      assert.equal(nonce, "formpostnonce");
+      return {
+        provider: "google",
+        subject: "google.sub.formpost",
+        email: "form.post@example.com",
+        name: "Form Post",
+      };
+    });
+    const app = await createTestApp();
+    const posted = await app.inject({
+      method: "POST",
+      url: "/app",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: new URLSearchParams({
+        id_token: "form-post-id-token",
+        state: "formpostnonce",
+      }).toString(),
+    });
+    assert.equal(posted.statusCode, 302);
+    const location = String(posted.headers.location ?? "");
+    assert.match(location, /^\/app\?oauth_handoff=[A-Za-z0-9_-]{20,128}$/);
+    assert.equal(location.includes("form-post-id-token"), false);
+    assert.equal(location.includes("id_token"), false);
+    assert.equal(
+      posted.cookies.find((item) => item.name === "bilklar_session"),
+      undefined,
+    );
+
+    const code = new URL(location, "https://korpasset.se").searchParams.get("oauth_handoff") ?? "";
+    const opened = await app.inject({
+      method: "GET",
+      url: `/app?oauth_handoff=${code}`,
+    });
+    assert.equal(opened.statusCode, 302);
+    assert.equal(opened.headers.location, "/onboarding");
+    assert.ok(opened.cookies.find((item) => item.name === "bilklar_session")?.value);
+    await app.close();
+  });
+
+  it("maps Google form_post cancel and failure to an explicit login retry", async () => {
+    const app = await createTestApp();
+    const cancelled = await app.inject({
+      method: "POST",
+      url: "/app",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: new URLSearchParams({
+        error: "access_denied",
+        state: "formpostnonce",
+      }).toString(),
+    });
+    assert.equal(cancelled.statusCode, 302);
+    assert.equal(cancelled.headers.location, "/app?oauth_error=cancelled");
+
+    setIdentityTokenVerifierForTests(async () => {
+      throw new AppError("Ogiltig Google-inloggning", 401, "invalid_identity");
+    });
+    const failed = await app.inject({
+      method: "POST",
+      url: "/app",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: new URLSearchParams({
+        id_token: "bad-form-token",
+        state: "formpostnonce",
+      }).toString(),
+    });
+    assert.equal(failed.statusCode, 302);
+    assert.equal(failed.headers.location, "/app?oauth_error=failed");
+    assert.equal(String(failed.headers.location).includes("bad-form-token"), false);
+    const users = await getPool().query(`SELECT id FROM users`);
+    assert.equal(users.rowCount, 0);
+    await app.close();
+  });
+
   it("sends a signed-in user with a journey to that journey after continue", async () => {
     const student = await createJourneyForStudent("Ella");
     setIdentityTokenVerifierForTests(async () => ({

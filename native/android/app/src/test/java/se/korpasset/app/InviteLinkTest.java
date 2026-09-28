@@ -1,7 +1,9 @@
 package se.korpasset.app;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -49,6 +51,58 @@ public class InviteLinkTest {
             "https://korpasset.se/app",
             InviteLink.webUrl("https", "korpasset.se", "/app", null)
         );
+    }
+
+    @Test
+    public void doesNotReloadAppWhenAlreadyOnApp() {
+        assertTrue(InviteLink.isSamePage("https://korpasset.se/app", "https://korpasset.se/app"));
+        assertTrue(InviteLink.isSamePage("https://www.korpasset.se/app", "https://korpasset.se/app"));
+        assertFalse(InviteLink.shouldLoadWebView("https://korpasset.se/app", "https://korpasset.se/app"));
+        assertTrue(InviteLink.shouldLoadWebView("https://korpasset.se/app", "https://korpasset.se/invite/abc"));
+    }
+
+    @Test
+    public void doesNotOverlayALivePageWithBareAppShell() {
+        assertTrue(InviteLink.isAppShell("https://korpasset.se/app"));
+        assertTrue(InviteLink.isAppShell("https://korpasset.se/onboarding"));
+        assertTrue(InviteLink.isAppShell("https://korpasset.se/konto"));
+        assertFalse(InviteLink.isAppShell("https://korpasset.se/invite/abc"));
+        assertFalse(InviteLink.shouldLoadWebView(
+            "https://korpasset.se/onboarding",
+            "https://korpasset.se/app"
+        ));
+        assertFalse(InviteLink.shouldLoadWebView(
+            "https://korpasset.se/konto",
+            "https://korpasset.se/app"
+        ));
+        assertFalse(InviteLink.shouldLoadWebView(
+            "https://korpasset.se/app",
+            "https://korpasset.se/onboarding"
+        ));
+        assertTrue(InviteLink.shouldLoadWebView(
+            "https://korpasset.se/app",
+            "https://korpasset.se/invite/abc"
+        ));
+        assertTrue(InviteLink.shouldLoadWebView(
+            "",
+            "https://korpasset.se/app"
+        ));
+        assertTrue(InviteLink.shouldLoadWebView(
+            "https://localhost/",
+            "https://korpasset.se/app"
+        ));
+    }
+
+    @Test
+    public void stillLoadsAnOauthHandoffOntoTheLoginPage() {
+        String current = "https://korpasset.se/app";
+        String target = "https://korpasset.se/app?oauth_handoff=handoffcodehandoffcode12";
+        assertTrue(InviteLink.hasOAuthHandoff(target));
+        assertFalse(InviteLink.hasOAuthHandoff(current));
+        assertTrue(InviteLink.shouldLoadWebView(current, target));
+        assertFalse(InviteLink.shouldLoadWebView(target, target));
+        assertTrue(InviteLink.authRecoverJs("native-resume").contains("KORPASSET_AUTH"));
+        assertFalse(InviteLink.authRecoverJs("native-resume").contains("handoffcode"));
     }
 
     @Test

@@ -359,8 +359,16 @@
     }
   }
 
+  function authInProgress() {
+    try {
+      return Boolean(window.KORPASSET_AUTH && window.KORPASSET_AUTH.isInProgress());
+    } catch (error) {
+      return false;
+    }
+  }
+
   function openBanner() {
-    if (!runtime.showConsentBanner) return;
+    if (!runtime.showConsentBanner || authInProgress()) return;
     syncChecks();
     panel.hidden = true;
     banner.hidden = false;
@@ -434,7 +442,7 @@
       decided: true,
       at: 0,
     });
-  } else if (!existing.decided) {
+  } else if (!existing.decided && !authInProgress()) {
     setGaDisabled(true);
     clearMatching(/^(_ga|_gid|_gat)/);
     clearMatching(/^_gcl_/);
