@@ -51,13 +51,26 @@ function installClient(
   loginImpl?: (call: LoginCall) => Promise<unknown>,
   fetchImpl?: (url: string, body: PostedBody) => Promise<FetchResult>,
   initializeImpl?: () => Promise<void>,
+  page?: { hash?: string; native?: boolean },
 ) {
   const logins: LoginCall[] = [];
   const inits: InitPayload[] = [];
   const posts: PostedBody[] = [];
+  const postUrls: string[] = [];
   const errors: string[] = [];
   const traces: OAuthTrace[] = [];
   const beacons: string[] = [];
+  const assignments: string[] = [];
+  const location = {
+    pathname: "/app",
+    search: "",
+    hash: page?.hash ?? "",
+    href: "https://korpasset.se/app",
+    origin: "https://korpasset.se",
+    assign(url: string) {
+      assignments.push(url);
+    },
+  };
   let click: (event: {
     target: { closest: (selector: string) => { getAttribute: () => string } | null };
     preventDefault: () => void;
@@ -65,6 +78,7 @@ function installClient(
 
   const sandbox: Record<string, unknown> = {
     URL,
+    URLSearchParams,
     console: {
       info(label: string, event?: OAuthTrace) {
         if (label === "[korpasset-oauth]" && event) traces.push(event);
@@ -105,6 +119,7 @@ function installClient(
         beacons.push(body.message ?? "");
         return { ok: true, status: 204, json: async () => ({}) };
       }
+      postUrls.push(url);
       posts.push(body);
       if (fetchImpl) return fetchImpl(url, body);
       return {
@@ -119,33 +134,12 @@ function installClient(
         googleWebClientId: "web.apps.googleusercontent.com",
         googleIosClientId: "ios.apps.googleusercontent.com",
       },
-      Capacitor: {
-        getPlatform: () => platformName,
-        Plugins: {
-          SocialLogin: {
-            async initialize(payload: InitPayload) {
-              inits.push(payload);
-              if (initializeImpl) await initializeImpl();
-            },
-            async login(call: LoginCall) {
-              logins.push(call);
-              if (loginImpl) return loginImpl(call);
-              return {
-                result: {
-                  idToken: "identity-token",
-                  profile,
-                  ...resultExtra,
-                },
-              };
-            },
-          },
+      location,
+      history: {
+        replaceState(_state: null, _title: string, url: string) {
+          location.hash = "";
+          location.href = url;
         },
-      },
-      location: {
-        pathname: "/app",
-        search: "",
-        href: "https://korpasset.se/app",
-        assign() {},
       },
       sessionStorage: {
         getItem() {
@@ -154,11 +148,46 @@ function installClient(
         setItem() {},
         removeItem() {},
       },
-    },
+    } as Record<string, unknown>,
   };
+  if (page?.native !== false) {
+    (sandbox.window as Record<string, unknown>).Capacitor = {
+      getPlatform: () => platformName,
+      Plugins: {
+        SocialLogin: {
+          async initialize(payload: InitPayload) {
+            inits.push(payload);
+            if (initializeImpl) await initializeImpl();
+          },
+          async login(call: LoginCall) {
+            logins.push(call);
+            if (loginImpl) return loginImpl(call);
+            return {
+              result: {
+                idToken: "identity-token",
+                profile,
+                ...resultExtra,
+              },
+            };
+          },
+        },
+      },
+    };
+  }
 
   runInContext(script, createContext(sandbox));
-  return { logins, inits, posts, errors, traces, beacons, click };
+  return {
+    logins,
+    inits,
+    posts,
+    postUrls,
+    errors,
+    traces,
+    beacons,
+    assignments,
+    hash: () => location.hash,
+    click,
+  };
 }
 
 async function clickProvider(
@@ -284,6 +313,7 @@ describe("native OAuth login scopes", () => {
     await clickProvider(cancelled.click, "google");
     assert.deepEqual(cancelled.errors, ["Inloggningen avbröts. Försök igen."]);
     assert.equal(cancelled.posts.length, 0);
+    assert.equal(cancelled.assignments.length, 0);
     assert.equal(cancelled.traces[0]?.step, "google_login_cancelled");
     assert.equal(cancelled.traces[0]?.pluginCode, "USER_CANCELLED");
 
@@ -293,6 +323,7 @@ describe("native OAuth login scopes", () => {
     await clickProvider(rejected.click, "google");
     assert.deepEqual(rejected.errors, ["Kunde inte logga in. Försök igen."]);
     assert.equal(rejected.posts.length, 0);
+    assert.equal(rejected.assignments.length, 0);
     assert.equal(rejected.traces[0]?.step, "google_native_login_failed");
     assert.notEqual(rejected.traces[0]?.step, "google_login_cancelled");
   });
@@ -319,6 +350,8 @@ describe("native OAuth login scopes", () => {
     assert.equal(client.logins[0].options.scopes, undefined);
     assert.equal(client.inits[0].apple, undefined);
     assert.equal(client.posts.length, 1);
+    assert.equal(client.postUrls[0], "/api/auth/google");
+    assert.equal(client.assignments[0], "/app");
     assert.equal(client.posts[0].identityToken, "android-id-token");
     assert.equal(client.posts[0].displayName, "Ada Lovelace");
     assert.equal(client.posts[0].authorizationCode, undefined);
@@ -334,17 +367,33 @@ describe("native OAuth login scopes", () => {
     assert.equal(beacon.includes(client.logins[0].options.nonce), false);
   });
 
-  it("records Credential Manager rejection after the account picker without posting", async () => {
+  it("opens system-browser Google sign-in when Credential Manager rejects the installed app", async () => {
     const reauth = installClient({ name: "Ada" }, {}, "android", async () => {
-      throw new Error("Google Sign-In failed: [16] Account reauth failed");
+      throw new Error(
+        "Google Sign-In failed: [16] Account reauth failed. The plugin cleared Credential Manager credential-selection state and retried once.",
+      );
     });
     await clickProvider(reauth.click, "google");
-    assert.deepEqual(reauth.errors, ["Kunde inte logga in. Försök igen."]);
+    assert.deepEqual(reauth.errors, []);
     assert.equal(reauth.posts.length, 0);
     assert.equal(reauth.traces[0]?.step, "google_native_login_failed");
     assert.equal(reauth.traces[0]?.pluginCode, "16");
-    assert.equal(reauth.traces[0]?.hasIdentityToken, false);
-    assert.match(reauth.beacons[0] ?? "", /pluginCode=16/);
+    assert.equal(reauth.traces[1]?.step, "google_browser_fallback");
+    assert.equal(reauth.assignments.length, 1);
+    const authorize = reauth.assignments[0] ?? "";
+    const url = new URL(authorize);
+    assert.equal(url.origin, "https://accounts.google.com");
+    assert.equal(url.pathname, "/o/oauth2/v2/auth");
+    assert.equal(url.searchParams.get("client_id"), "web.apps.googleusercontent.com");
+    assert.equal(url.searchParams.get("redirect_uri"), "https://korpasset.se/app");
+    assert.equal(url.searchParams.get("response_type"), "id_token");
+    assert.equal(url.searchParams.get("prompt"), "select_account");
+    assert.equal(url.searchParams.get("nonce"), reauth.logins[0]?.options.nonce);
+    assert.equal(url.searchParams.get("state"), reauth.logins[0]?.options.nonce);
+    const beacon = reauth.beacons.join("\n");
+    assert.match(beacon, /step=google_browser_fallback/);
+    assert.equal(beacon.includes(reauth.logins[0]?.options.nonce ?? "nonce"), false);
+    assert.equal(beacon.includes("id_token"), false);
 
     const consoleSetup = installClient({ name: "Ada" }, {}, "android", async () => {
       throw new Error(
@@ -353,9 +402,19 @@ describe("native OAuth login scopes", () => {
     });
     await clickProvider(consoleSetup.click, "google");
     assert.equal(consoleSetup.traces[0]?.step, "google_native_login_failed");
+    assert.equal(consoleSetup.traces[1]?.step, "google_browser_fallback");
     assert.equal(consoleSetup.traces[0]?.pluginCode, "28444");
     assert.equal(consoleSetup.posts.length, 0);
-    assert.deepEqual(consoleSetup.errors, ["Kunde inte logga in. Försök igen."]);
+    assert.deepEqual(consoleSetup.errors, []);
+    assert.match(consoleSetup.assignments[0] ?? "", /accounts\.google\.com/);
+
+    const ios = installClient({ name: "Ada" }, {}, "ios", async () => {
+      throw new Error("Google Sign-In failed: [16] Account reauth failed");
+    });
+    await clickProvider(ios.click, "google");
+    assert.deepEqual(ios.errors, ["Kunde inte logga in. Försök igen."]);
+    assert.equal(ios.assignments.length, 0);
+    assert.equal(ios.posts.length, 0);
   });
 
   it("records a missing id token instead of posting an access token", async () => {
@@ -459,5 +518,78 @@ describe("native OAuth login scopes", () => {
     assert.deepEqual(Array.from(client.logins[0].options.scopes), ["email", "profile"]);
     assert.equal(client.posts[0].displayName, "Ada Lovelace");
     assert.equal(client.posts[0].authorizationCode, undefined);
+  });
+
+  it("returns a system-browser Google id token to the installed app without logging it", async () => {
+    const token = "browser-id-token-value";
+    const nonce = "07070707070707070707070707070707";
+    const client = installClient(
+      {},
+      {},
+      "ios",
+      undefined,
+      async (url) => {
+        assert.equal(url, "/api/auth/google/browser-handoff");
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            ok: true,
+            handoff: "handoffcodehandoffcode12",
+            created: true,
+          }),
+        };
+      },
+      undefined,
+      { hash: `#id_token=${token}&state=${nonce}`, native: false },
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.equal(client.hash(), "");
+    assert.equal(client.posts.length, 1);
+    assert.equal(client.postUrls[0], "/api/auth/google/browser-handoff");
+    assert.equal(client.posts[0].identityToken, token);
+    assert.equal(client.posts[0].nonce, nonce);
+    assert.match(
+      client.assignments[0] ?? "",
+      /^intent:\/\/korpasset\.se\/app\?oauth_handoff=handoffcodehandoffcode12#Intent;scheme=https;package=se\.korpasset\.app;/,
+    );
+    const beacon = client.beacons.join("\n");
+    assert.match(beacon, /step=google_browser_handoff/);
+    assert.equal(beacon.includes(token), false);
+    assert.equal(beacon.includes(nonce), false);
+    assert.equal(client.errors.length, 0);
+  });
+
+  it("posts a Google id token that stayed in the app WebView to the normal login route", async () => {
+    const client = installClient(
+      {},
+      {},
+      "android",
+      undefined,
+      undefined,
+      undefined,
+      { hash: "#id_token=webview-id-token&state=webviewnonce", native: true },
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(client.postUrls[0], "/api/auth/google");
+    assert.equal(client.posts[0].identityToken, "webview-id-token");
+    assert.equal(client.posts[0].nonce, "webviewnonce");
+    assert.equal(client.assignments[0], "/app");
+    assert.equal(client.hash(), "");
+    assert.equal(client.beacons.join("").includes("webview-id-token"), false);
+  });
+
+  it("keeps a real Google cancel on the browser return as a cancel message", async () => {
+    const client = installClient({}, {}, "ios", undefined, undefined, undefined, {
+      hash: "#error=access_denied&state=abc",
+      native: false,
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(client.errors, ["Inloggningen avbröts. Försök igen."]);
+    assert.equal(client.posts.length, 0);
+    assert.equal(client.assignments.length, 0);
+    assert.equal(client.traces[0]?.step, "google_login_cancelled");
+    assert.equal(client.hash(), "");
   });
 });

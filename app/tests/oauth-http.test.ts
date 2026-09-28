@@ -262,6 +262,108 @@ describe("app oauth HTTP (FR-11)", () => {
     await app.close();
   });
 
+  it("creates a new Google user from the system browser and opens that session in the app", async () => {
+    setIdentityTokenVerifierForTests(async (provider, token, nonce) => {
+      assert.equal(provider, "google");
+      assert.equal(token, "browser-id-token");
+      assert.equal(nonce, "abc123nonce");
+      return {
+        provider: "google",
+        subject: "google.sub.browser",
+        email: "browser.user@example.com",
+        name: "Browser",
+      };
+    });
+    const app = await createTestApp();
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/auth/google/browser-handoff",
+      headers: { "content-type": "application/json" },
+      payload: { identityToken: "browser-id-token", nonce: "abc123nonce" },
+    });
+    assert.equal(created.statusCode, 200);
+    const body = created.json() as { ok: boolean; created: boolean; handoff: string };
+    assert.equal(body.ok, true);
+    assert.equal(body.created, true);
+    assert.match(body.handoff, /^[A-Za-z0-9_-]{20,128}$/);
+    assert.equal(JSON.stringify(body).includes("browser-id-token"), false);
+    assert.equal(JSON.stringify(body).includes("browser.user@example.com"), false);
+    assert.equal(JSON.stringify(body).includes("google.sub.browser"), false);
+    assert.equal(
+      created.cookies.find((item) => item.name === "bilklar_session"),
+      undefined,
+    );
+
+    const users = await getPool().query(
+      `SELECT id, account_state, display_name FROM users`,
+    );
+    assert.equal(users.rowCount, 1);
+    assert.equal(users.rows[0].account_state, "active");
+    assert.equal(users.rows[0].display_name, "Browser");
+    const identities = await getPool().query(
+      `SELECT provider, provider_subject FROM auth_identities WHERE user_id = $1`,
+      [users.rows[0].id],
+    );
+    assert.equal(identities.rows[0].provider, "google");
+    assert.equal(identities.rows[0].provider_subject, "google.sub.browser");
+
+    const opened = await app.inject({
+      method: "GET",
+      url: `/app?oauth_handoff=${body.handoff}`,
+    });
+    assert.equal(opened.statusCode, 302);
+    assert.equal(opened.headers.location, "/onboarding");
+    assert.ok(opened.cookies.find((item) => item.name === "bilklar_session")?.value);
+    assert.equal(String(opened.headers.location).includes(body.handoff), false);
+
+    const again = await app.inject({
+      method: "GET",
+      url: `/app?oauth_handoff=${body.handoff}`,
+    });
+    assert.equal(again.statusCode, 302);
+    assert.equal(again.headers.location, "/onboarding");
+
+    await getPool().query(
+      `UPDATE oauth_handoffs SET used_at = now() - interval '31 seconds' WHERE code = $1`,
+      [body.handoff],
+    );
+    const stale = await app.inject({
+      method: "GET",
+      url: `/app?oauth_handoff=${body.handoff}`,
+    });
+    assert.equal(stale.statusCode, 200);
+    assert.match(stale.body, /Inloggningen gick inte att slutföra/);
+    assert.equal(stale.body.includes(body.handoff), false);
+    assert.equal(
+      stale.cookies.find((item) => item.name === "bilklar_session"),
+      undefined,
+    );
+    await app.close();
+  });
+
+  it("does not report a rejected browser Google token as a cancelled login", async () => {
+    setIdentityTokenVerifierForTests(async () => {
+      throw new AppError("Ogiltig Google-inloggning", 401, "invalid_identity");
+    });
+    const app = await createTestApp();
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/auth/google/browser-handoff",
+      headers: { "content-type": "application/json" },
+      payload: { identityToken: "bad-token", nonce: "nonce" },
+    });
+    assert.equal(response.statusCode, 401);
+    const body = response.json() as { error: string; code: string };
+    assert.equal(body.error, "Ogiltig Google-inloggning");
+    assert.equal(body.code, "invalid_identity");
+    assert.equal(JSON.stringify(body).includes("handoff"), false);
+    const users = await getPool().query(`SELECT id FROM users`);
+    assert.equal(users.rowCount, 0);
+    const handoffs = await getPool().query(`SELECT code FROM oauth_handoffs`);
+    assert.equal(handoffs.rowCount, 0);
+    await app.close();
+  });
+
   it("sends a signed-in user with a journey to that journey after continue", async () => {
     const student = await createJourneyForStudent("Ella");
     setIdentityTokenVerifierForTests(async () => ({

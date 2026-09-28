@@ -67,6 +67,7 @@ import {
   recordProductEventSafe,
 } from "../services/product-events.js";
 import { config } from "../config.js";
+import { redeemOAuthHandoff } from "../services/oauth-handoff.js";
 import { getReusableSessionUserId, getUserById } from "../services/users.js";
 import {
   escapeHtml,
@@ -303,6 +304,12 @@ async function recordOnboardingObservation(
   }
 }
 
+function oauthHandoffQuery(query: unknown): string {
+  if (!query || typeof query !== "object") return "";
+  const value = (query as { oauth_handoff?: unknown }).oauth_handoff;
+  return typeof value === "string" ? value : "";
+}
+
 function appLoginPage(errorMessage?: string): string {
   return layout(
     "Körpasset",
@@ -326,6 +333,24 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
 
   app.get("/app", async (request, reply) => {
     setNativeAppCookie(reply);
+    const handoffCode = oauthHandoffQuery(request.query);
+    if (handoffCode) {
+      try {
+        const redeemed = await redeemOAuthHandoff(handoffCode);
+        if (redeemed) {
+          setSessionCookie(reply, redeemed.userId);
+          return reply.redirect(redeemed.redirectTo);
+        }
+      } catch (error) {
+        request.log.error(
+          { errorName: error instanceof Error ? error.name : "unknown" },
+          "oauth handoff failed",
+        );
+      }
+      return reply.type("text/html").send(
+        appLoginPage("Inloggningen gick inte att slutföra. Försök igen."),
+      );
+    }
     const sessionUserId = await getReusableSessionUserId(getSessionUserId(request));
     if (!sessionUserId) {
       return reply.type("text/html").send(appLoginPage());

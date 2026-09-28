@@ -99,6 +99,7 @@ export async function resetDatabaseData(): Promise<void> {
       skill_definitions,
       skills,
       auth_identities,
+      oauth_handoffs,
       users
     RESTART IDENTITY CASCADE
   `);
