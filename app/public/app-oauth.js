@@ -3,16 +3,22 @@
   const PENDING_KEY = "korpasset.pendingInvite";
   const DEBUG_KEY = "korpasset.deeplinkDebug";
   const AUTH_KEY = "korpasset.pendingAuth";
-  const NATIVE_UNUSABLE_KEY = "korpasset.googleNativeUnusable";
   const TOKEN = /^[A-Za-z0-9_-]+$/;
-  const AUTH_GRACE_MS = 8000;
+  const AUTH_SETTLE_MS = 40;
   const authRuntime = {
     attemptId: null,
     provider: null,
     inProgress: false,
     navigating: false,
+    completed: false,
+    callbackReceived: false,
+    nativePickerPresented: false,
+    path: "",
   };
   const initializedProviders = Object.create(null);
+  const completedAttempts = Object.create(null);
+  const consumedHandoffs = Object.create(null);
+  const recoveryTraces = Object.create(null);
   let recoverPromise = null;
 
   function plugin(name) {
@@ -130,9 +136,13 @@
     return options;
   }
 
-  // Credential Manager error 16 / 28444 means Google rejected the installed
-  // app certificate. The web client already accepts redirect_uri
-  // https://korpasset.se/app, and the installed app already opens that URL.
+  // 16 = GET_CREDENTIAL / account reauth failed. It is thrown after
+  // Credential Manager has already shown (or retried) the account picker.
+  // 28444 = this APK's signing cert is not registered on the Google Cloud
+  // OAuth client. Also observed after login() has started, i.e. after UI.
+  // Neither code can be known before native UI, so a same-attempt browser
+  // fallback would be a second picker. Treat both as a failed attempt.
+  // Browser fallback is only allowed when login() was never called.
   function googleCredentialManagerRejected(error) {
     const code = pluginFailureCode(error);
     return code === "16" || code === "28444";
@@ -147,7 +157,10 @@
       client_id: oauth.googleWebClientId || "",
       redirect_uri: "https://korpasset.se/app",
       response_type: "id_token",
-      response_mode: "fragment",
+      // form_post keeps the id_token out of the URL. Android App Links drop
+      // #fragments, which is why a fragment callback can never be recovered
+      // from an Intent. The server turns the POST into ?oauth_handoff=.
+      response_mode: "form_post",
       scope: "openid email profile",
       nonce: nonce,
       state: state,
@@ -348,16 +361,22 @@
         return;
       }
 
-      if (provider === "google" && platform() === "android" && googleNativeUnusable()) {
-        startGoogleBrowserFallback(returnTo, randomNonce(), "");
-        return;
-      }
-
       const nonce = randomNonce();
       try {
         await initializeOnce(SocialLogin, provider);
       } catch (error) {
         if (provider === "google") traceGoogleFailure("google_initialize_failed", error);
+        if (
+          provider === "google" &&
+          platform() === "android" &&
+          !authRuntime.nativePickerPresented &&
+          googleCredentialManagerRejected(error) &&
+          oauth.googleWebClientId
+        ) {
+          selectAuthPath("browser-before-picker");
+          startGoogleBrowserFallback(returnTo, nonce, pluginFailureCode(error));
+          return;
+        }
         showError(
           loginWasCancelled(error)
             ? "Inloggningen avbröts. Försök igen."
@@ -367,6 +386,8 @@
         return;
       }
 
+      selectAuthPath("native");
+      authRuntime.nativePickerPresented = true;
       let result;
       try {
         result = await SocialLogin.login({
@@ -380,23 +401,19 @@
             cancelled ? "google_login_cancelled" : "google_native_login_failed",
             error,
           );
-          if (
-            !cancelled &&
-            platform() === "android" &&
-            googleCredentialManagerRejected(error) &&
-            oauth.googleWebClientId
-          ) {
-            markGoogleNativeUnusable();
-            startGoogleBrowserFallback(returnTo, nonce, pluginFailureCode(error));
-            return;
-          }
         }
         showError(
           cancelled
             ? "Inloggningen avbröts. Försök igen."
             : "Kunde inte logga in. Försök igen.",
         );
-        failAuth(cancelled ? "cancelled" : "native-failed");
+        failAuth(
+          cancelled
+            ? "cancelled"
+            : googleCredentialManagerRejected(error)
+              ? "credential-manager-rejected"
+              : "native-failed",
+        );
         return;
       }
 
@@ -409,9 +426,9 @@
         failAuth("no-identity");
         return;
       }
+      markCallbackReceived({ hasIdentityToken: true });
       if (provider === "google") {
         oauthTrace("auth_google_account_selected", { hasIdentityToken: true });
-        oauthTrace("auth_callback_received", { hasIdentityToken: true });
       }
       updateAuthPhase("callback");
       const payload = {
@@ -430,6 +447,24 @@
       showError("Kunde inte logga in. Försök igen.");
       failAuth("exception");
     }
+  }
+
+  function selectAuthPath(path) {
+    if (authRuntime.path) return;
+    authRuntime.path = path;
+    oauthTrace("auth_path_selected", { reason: path });
+  }
+
+  function markCallbackReceived(detail) {
+    if (authRuntime.callbackReceived) return;
+    authRuntime.callbackReceived = true;
+    oauthTrace("auth_callback_received", detail || { hasIdentityToken: true });
+  }
+
+  function delay(ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms);
+    });
   }
 
   function startGoogleBrowserFallback(returnTo, nonce, pluginCode) {
@@ -494,7 +529,7 @@
     const parsed = nonceFromState(state);
     adoptCallbackAttempt(parsed.nonce, parsed.returnTo || "/app");
     oauthTrace("google_browser_return", { hasIdentityToken: true });
-    oauthTrace("auth_callback_received", { hasIdentityToken: true });
+    markCallbackReceived({ hasIdentityToken: true });
     let response;
     try {
       response = await fetch("/api/auth/google/browser-handoff", {
@@ -551,6 +586,35 @@
     window.location.assign(intentUrl);
   }
 
+  function consumeAuthOutcomeQuery() {
+    let params;
+    try {
+      params = new URLSearchParams(window.location.search || "");
+    } catch (error) {
+      return false;
+    }
+    const outcome = params.get("oauth_error") || "";
+    if (outcome !== "cancelled" && outcome !== "failed") return false;
+    try {
+      const path = window.location.pathname || "/app";
+      if (window.history && typeof window.history.replaceState === "function") {
+        window.history.replaceState(null, "", path);
+      }
+    } catch (error) {
+      /* ignore */
+    }
+    const cancelled = outcome === "cancelled";
+    oauthTrace(cancelled ? "google_login_cancelled" : "google_browser_return_failed", {
+      pluginCode: sanitizeTraceCode(outcome),
+      hasIdentityToken: false,
+    });
+    showError(
+      cancelled ? "Inloggningen avbröts. Försök igen." : "Kunde inte logga in. Försök igen.",
+    );
+    failAuth(cancelled ? "cancelled" : "form-post-failed");
+    return true;
+  }
+
   function consumeGoogleBrowserReturn() {
     const hash = String((window.location && window.location.hash) || "");
     if (hash.indexOf("id_token=") === -1 && hash.indexOf("error=") === -1) return false;
@@ -592,7 +656,7 @@
     }
     const parsed = nonceFromState(state);
     adoptCallbackAttempt(parsed.nonce, parsed.returnTo || "/app");
-    oauthTrace("auth_callback_received", { hasIdentityToken: true });
+    markCallbackReceived({ hasIdentityToken: true });
     if (nativeApp()) {
       postProvider("google", {
         identityToken: idToken,
@@ -704,30 +768,31 @@
     hideConsentForAuth();
   }
 
+  function resetAuthRuntime() {
+    authRuntime.inProgress = false;
+    authRuntime.navigating = false;
+    authRuntime.completed = false;
+    authRuntime.callbackReceived = false;
+    authRuntime.nativePickerPresented = false;
+    authRuntime.path = "";
+    authRuntime.attemptId = null;
+    authRuntime.provider = null;
+  }
+
   function failAuth(reason) {
     authRuntime.inProgress = false;
     authRuntime.navigating = false;
+    authRuntime.completed = false;
+    authRuntime.callbackReceived = false;
+    authRuntime.nativePickerPresented = false;
+    authRuntime.path = "";
     clearAuth();
     setLoginBusy(false);
     if (reason && reason !== "cancelled") {
       oauthTrace("auth_session_failed", { reason: sanitizeTraceCode(reason) });
     }
-  }
-
-  function googleNativeUnusable() {
-    try {
-      return window.localStorage && window.localStorage.getItem(NATIVE_UNUSABLE_KEY) === "1";
-    } catch (error) {
-      return false;
-    }
-  }
-
-  function markGoogleNativeUnusable() {
-    try {
-      if (window.localStorage) window.localStorage.setItem(NATIVE_UNUSABLE_KEY, "1");
-    } catch (error) {
-      /* ignore */
-    }
+    authRuntime.attemptId = null;
+    authRuntime.provider = null;
   }
 
   function isLoginSurface() {
@@ -802,21 +867,35 @@
   }
 
   function navigateAfterAuth(url, ctx) {
-    if (authRuntime.navigating) return;
+    const attemptId = authRuntime.attemptId || (readAuth(ctx && ctx.storage) || {}).attemptId || "";
+    if (authRuntime.navigating || authRuntime.completed) return;
+    if (attemptId && completedAttempts[attemptId]) return;
     const dest = safeRedirectPath(url);
     const current = String(currentPathFrom(ctx) || "").split("?")[0];
+    const alreadyThere = current === dest && !isLoginSurface();
+    if (alreadyThere) {
+      if (attemptId) completedAttempts[attemptId] = true;
+      authRuntime.completed = true;
+      authRuntime.navigating = true;
+      clearAuth(ctx && ctx.storage);
+      authRuntime.inProgress = false;
+      return;
+    }
+    if (attemptId) completedAttempts[attemptId] = true;
+    authRuntime.completed = true;
     authRuntime.navigating = true;
-    oauthTrace("auth_navigation_started", { reason: current === dest ? "reload" : "assign" });
+    const mode = current === dest ? "reload" : "assign";
+    oauthTrace("auth_navigation_started", { reason: mode });
     hideConsentForAuth();
     clearAuth(ctx && ctx.storage);
     authRuntime.inProgress = false;
-    if (current === dest) {
+    if (mode === "reload") {
       if (ctx && typeof ctx.reload === "function") ctx.reload();
       else window.location.reload();
     } else {
       assignLocation(dest, ctx);
     }
-    oauthTrace("auth_navigation_completed", { reason: current === dest ? "reload" : "assign" });
+    oauthTrace("auth_navigation_completed", { reason: mode });
   }
 
   async function fetchSession() {
@@ -836,7 +915,7 @@
   }
 
   function recoverAuth(reason, ctx) {
-    if (authRuntime.navigating) {
+    if (authRuntime.navigating || authRuntime.completed) {
       return Promise.resolve({ skipped: true, reason: "navigating" });
     }
     if (recoverPromise) return recoverPromise;
@@ -846,16 +925,32 @@
     return recoverPromise;
   }
 
+  function traceRecoveryOnce(reason, attemptId) {
+    const key = (attemptId || "-") + ":" + (reason || "recover");
+    if (recoveryTraces[key]) return false;
+    recoveryTraces[key] = true;
+    oauthTrace("auth_recovery_started", { reason: sanitizeTraceCode(reason) });
+    return true;
+  }
+
   async function recoverAuthNow(reason, ctx) {
     const pending = readAuth(ctx && ctx.storage);
     const login = isLoginSurface();
     if (!pending && !login) return { skipped: true, reason: "idle" };
-    oauthTrace("auth_recovery_started", { reason: sanitizeTraceCode(reason) });
+    const safeReason = sanitizeTraceCode(reason);
+    const isReturn =
+      safeReason === "resume" ||
+      safeReason === "native-resume" ||
+      safeReason === "handoff" ||
+      safeReason === "appUrlOpen";
     if (pending && !authRuntime.attemptId) {
       authRuntime.attemptId = pending.attemptId;
       authRuntime.provider = pending.provider || "google";
       setLoginBusy(true);
       hideConsentForAuth();
+    }
+    if (pending || authRuntime.inProgress) {
+      traceRecoveryOnce(safeReason, authRuntime.attemptId || (pending && pending.attemptId));
     }
     let session;
     try {
@@ -865,17 +960,38 @@
       return { authenticated: false };
     }
     if (session.authenticated) {
-      oauthTrace("auth_session_verified", { reason: sanitizeTraceCode(reason) });
+      if (!pending && !authRuntime.inProgress) {
+        traceRecoveryOnce(safeReason, "session");
+      }
+      oauthTrace("auth_session_verified", { reason: safeReason });
       navigateAfterAuth(session.redirectTo || "/app", ctx);
       return { authenticated: true, redirectTo: session.redirectTo };
     }
-    if (authRuntime.inProgress) return { authenticated: false, waiting: true };
-    if (pending && Date.now() - Number(pending.startedAt || 0) < AUTH_GRACE_MS) {
+    if (authRuntime.inProgress) return { authenticated: false, waiting: true, outcome: "pending" };
+    if (pending && !isReturn) {
       setLoginBusy(true);
-      return { authenticated: false, waiting: true };
+      return { authenticated: false, waiting: true, outcome: "pending" };
     }
-    if (pending) failAuth("stale-pending");
-    return { authenticated: false };
+    if (pending && isReturn) {
+      await delay(AUTH_SETTLE_MS);
+      if (authRuntime.navigating || authRuntime.completed) {
+        return { skipped: true, reason: "navigating" };
+      }
+      try {
+        session = await fetchSession();
+      } catch (error) {
+        session = { authenticated: false, redirectTo: null };
+      }
+      if (session.authenticated) {
+        oauthTrace("auth_session_verified", { reason: safeReason });
+        navigateAfterAuth(session.redirectTo || "/app", ctx);
+        return { authenticated: true, redirectTo: session.redirectTo };
+      }
+      showError("Kunde inte slutföra inloggningen. Försök igen.");
+      failAuth("incomplete-return");
+      return { authenticated: false, outcome: "failed" };
+    }
+    return { authenticated: false, outcome: "idle" };
   }
 
   function handoffCodeFromUrl(rawUrl) {
@@ -894,13 +1010,41 @@
     }
   }
 
+  function oauthErrorFromUrl(rawUrl) {
+    if (typeof rawUrl !== "string" || !rawUrl.trim()) return "";
+    try {
+      const parsed = new URL(rawUrl.trim(), "https://korpasset.se");
+      if ((parsed.pathname || "") !== "/app") return "";
+      const outcome = parsed.searchParams.get("oauth_error") || "";
+      return outcome === "cancelled" || outcome === "failed" ? outcome : "";
+    } catch (error) {
+      return "";
+    }
+  }
+
   function consumeAuthCallbackUrl(rawUrl, eventType, ctx) {
+    const outcome = oauthErrorFromUrl(rawUrl);
+    if (outcome) {
+      const cancelled = outcome === "cancelled";
+      oauthTrace(cancelled ? "google_login_cancelled" : "google_browser_return_failed", {
+        pluginCode: sanitizeTraceCode(outcome),
+        reason: sanitizeTraceCode(eventType),
+        hasIdentityToken: false,
+      });
+      showError(
+        cancelled ? "Inloggningen avbröts. Försök igen." : "Kunde inte logga in. Försök igen.",
+      );
+      failAuth(cancelled ? "cancelled" : "form-post-failed");
+      return true;
+    }
     const code = handoffCodeFromUrl(rawUrl);
     if (!code) return false;
-    oauthTrace("auth_callback_received", { reason: sanitizeTraceCode(eventType) });
+    const already = Boolean(consumedHandoffs[code]);
+    consumedHandoffs[code] = true;
+    if (!already) markCallbackReceived({ reason: sanitizeTraceCode(eventType) });
     const existing = readAuth(ctx && ctx.storage);
     persistAuth({
-      attemptId: (existing && existing.attemptId) || randomNonce(),
+      attemptId: (existing && existing.attemptId) || authRuntime.attemptId || randomNonce(),
       provider: "google",
       returnTo: "/app",
       startedAt: (existing && existing.startedAt) || Date.now(),
@@ -917,7 +1061,7 @@
     } catch (error) {
       current = "";
     }
-    if (current === code) {
+    if (current === code || already || authRuntime.navigating || authRuntime.completed) {
       recoverAuth(eventType || "handoff", ctx);
       return true;
     }
@@ -1262,6 +1406,7 @@
 
   function bootAuth() {
     if (consumeGoogleBrowserReturn()) return;
+    if (consumeAuthOutcomeQuery()) return;
     recoverAuth("boot");
   }
 

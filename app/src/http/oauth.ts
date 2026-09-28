@@ -121,16 +121,46 @@ async function establishFromToken(
       ? body.authorizationCode.trim()
       : "";
 
+  return completeOAuthLogin(request, provider, {
+    identityToken,
+    nonce,
+    displayName,
+    returnTo,
+    authorizationCode,
+  });
+}
+
+function parseGoogleOAuthState(state: string): { nonce: string; returnTo: string } {
+  const raw = state.trim();
+  const nonce = raw.split(".")[0] || "";
+  const invite = raw.split(".")[1] || "";
+  return {
+    nonce,
+    returnTo: parseInviteReturnTo(`/invite/${invite}`) ? `/invite/${invite}` : "/app",
+  };
+}
+
+async function completeOAuthLogin(
+  request: FastifyRequest,
+  provider: OAuthProvider,
+  input: {
+    identityToken: string;
+    nonce?: string;
+    displayName?: string;
+    returnTo?: string;
+    authorizationCode?: string;
+  },
+): Promise<EstablishedOAuthLogin> {
   let stage: "verify" | "account" = "verify";
   let identity;
   let result;
   try {
-    identity = await verifyIdentityToken(provider, identityToken, nonce);
+    identity = await verifyIdentityToken(provider, input.identityToken, input.nonce);
     stage = "account";
     result = await continueWithOAuth({
       provider,
       subject: identity.subject,
-      displayName: displayName || identity.name,
+      displayName: input.displayName || identity.name,
       email: identity.email,
       sessionUserId: getSessionUserId(request),
     });
@@ -140,17 +170,17 @@ async function establishFromToken(
     }
     throw error;
   }
-  if (authorizationCode) {
+  if (input.authorizationCode) {
     await rememberAppleRefreshTokenFromAuthorizationCode(
       identity.subject,
-      authorizationCode,
+      input.authorizationCode,
       (fields, message) => {
         request.log.warn(fields, message);
       },
     );
   }
   let redirectTo = await signedInRedirectPath(result.userId);
-  const inviteToken = parseInviteReturnTo(returnTo);
+  const inviteToken = parseInviteReturnTo(input.returnTo);
   if (inviteToken) {
     try {
       const user = await getUserById(result.userId);
@@ -222,6 +252,63 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
       });
     } catch (error) {
       return sendOAuthError(request, reply, "google", error);
+    }
+  });
+
+  // OpenID form_post from Google. Tokens stay in the POST body, never in a
+  // GET URL or App Link. Success becomes a one-time oauth_handoff redirect
+  // so the WebView can set its own session cookie.
+  app.post("/app", async (request, reply) => {
+    reply.header("cache-control", "no-store, no-cache, must-revalidate");
+    const body = (request.body ?? {}) as {
+      id_token?: unknown;
+      state?: unknown;
+      error?: unknown;
+    };
+    const oauthError = typeof body.error === "string" ? body.error.trim() : "";
+    const identityToken = typeof body.id_token === "string" ? body.id_token.trim() : "";
+    const state = typeof body.state === "string" ? body.state : "";
+    const parsed = parseGoogleOAuthState(state);
+
+    if (oauthError === "access_denied") {
+      return reply.redirect("/app?oauth_error=cancelled");
+    }
+    if (!identityToken) {
+      return reply.redirect("/app?oauth_error=failed");
+    }
+    if (
+      !allowRequest(
+        `oauth:google:${request.ip || "unknown"}`,
+        OAUTH_RATE_LIMIT.limit,
+        OAUTH_RATE_LIMIT.windowMs,
+      ) ||
+      !config.isOAuthConfigured("google")
+    ) {
+      return reply.redirect("/app?oauth_error=failed");
+    }
+
+    try {
+      const established = await completeOAuthLogin(request, "google", {
+        identityToken,
+        nonce: parsed.nonce || undefined,
+        returnTo: parsed.returnTo,
+      });
+      const handoff = await createOAuthHandoff(established.userId, established.redirectTo);
+      request.log.info(
+        { oauth: "google", created: established.created },
+        "google form_post handoff created",
+      );
+      return reply.redirect(`/app?oauth_handoff=${encodeURIComponent(handoff)}`);
+    } catch (error) {
+      request.log.warn(
+        {
+          oauth: "google",
+          stage: oauthFailureStage(error),
+          errorName: error instanceof Error ? error.name : "unknown",
+        },
+        "google form_post failed",
+      );
+      return reply.redirect("/app?oauth_error=failed");
     }
   });
 

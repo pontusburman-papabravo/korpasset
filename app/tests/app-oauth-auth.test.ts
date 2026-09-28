@@ -21,7 +21,12 @@ type SessionBody = { authenticated: boolean; redirectTo: string | null };
 
 type AuthWindow = {
   KORPASSET_AUTH: {
-    recover: (reason: string) => Promise<{ authenticated?: boolean; skipped?: boolean }>;
+    recover: (reason: string) => Promise<{
+      authenticated?: boolean;
+      skipped?: boolean;
+      waiting?: boolean;
+      outcome?: string;
+    }>;
     continueWith: (provider: string) => Promise<void>;
     isInProgress: () => boolean;
     consumeAuthCallbackUrl: (url: string, event?: string) => boolean;
@@ -82,7 +87,7 @@ function installAuth(options: {
   pathname?: string;
   search?: string;
   pendingAuth?: Record<string, unknown> | null;
-  nativeUnusable?: boolean;
+  initialize?: () => Promise<void>;
 } = {}) {
   const google = button("google", "Fortsätt med Google");
   const apple = button("apple", "Fortsätt med Apple");
@@ -96,9 +101,9 @@ function installAuth(options: {
     store.set("korpasset.pendingAuth", JSON.stringify(options.pendingAuth));
   }
   const local = new Map<string, string>();
-  if (options.nativeUnusable) local.set("korpasset.googleNativeUnusable", "1");
 
   const logins: Array<{ provider: string }> = [];
+  const errors: string[] = [];
   const posts: Array<{ url: string; identityToken?: string }> = [];
   const assignments: string[] = [];
   const reloads: number[] = [];
@@ -127,6 +132,8 @@ function installAuth(options: {
   const sandbox: Record<string, unknown> = {
     URL,
     URLSearchParams,
+    setTimeout,
+    clearTimeout,
     console: {
       info(label: string, event?: OAuthTrace) {
         if (label === "[korpasset-oauth]" && event) traces.push(event);
@@ -137,7 +144,12 @@ function installAuth(options: {
       getElementById(id: string) {
         if (id === "oauth-status") return status;
         if (id === "oauth-error") {
-          return { hidden: true, textContent: "" };
+          return {
+            hidden: true,
+            set textContent(value: string) {
+              errors.push(value);
+            },
+          };
         }
         return null;
       },
@@ -234,7 +246,9 @@ function installAuth(options: {
       isNativePlatform: () => true,
       Plugins: {
         SocialLogin: {
-          async initialize() {},
+          async initialize() {
+            if (options.initialize) await options.initialize();
+          },
           async login(call: { provider: string }) {
             logins.push(call);
             if (options.login) return options.login();
@@ -265,6 +279,7 @@ function installAuth(options: {
     reloads,
     traces,
     beacons,
+    errors,
     store,
     click,
     win,
@@ -519,17 +534,207 @@ describe("Android Google auth lifecycle", () => {
     assert.equal(client.beacons.join("").includes("handoffcodehandoffcode12"), false);
   });
 
-  it("skips native Google after Credential Manager was rejected once", async () => {
+  it("does not permanently disable native Google after Credential Manager 16", async () => {
+    let failNative = true;
     const client = installAuth({
       platform: "android",
-      nativeUnusable: true,
+      login: async () => {
+        if (failNative) {
+          throw new Error("Google Sign-In failed: [16] Account reauth failed");
+        }
+        return { result: { idToken: "identity-token", profile: { name: "Ada" } } };
+      },
+    });
+    await flush();
+    await client.tapGoogle();
+    assert.equal(client.logins.length, 1);
+    assert.equal(client.assignments.length, 0);
+    assert.equal(client.google.disabled, false);
+    assert.equal(client.win.KORPASSET_AUTH.isInProgress(), false);
+    assert.equal(findTrace(client.traces, "google_browser_fallback"), undefined);
+    failNative = false;
+    await client.tapGoogle();
+    assert.equal(client.logins.length, 2);
+    assert.equal(client.posts.length, 1);
+    assert.equal(client.assignments[0], "/onboarding");
+  });
+
+  it("uses one browser fallback when initialize reports 28444 before the picker", async () => {
+    const client = installAuth({
+      platform: "android",
+      initialize: async () => {
+        throw new Error(
+          "Google Sign-In failed: Google Cloud OAuth is not configured for this installed build ([28444] Developer console is not set up correctly).",
+        );
+      },
     });
     await flush();
     await client.tapGoogle();
     assert.equal(client.logins.length, 0);
     assert.equal(client.posts.length, 0);
-    assert.match(client.assignments[0] ?? "", /accounts\.google\.com/);
-    assert.equal(findTrace(client.traces, "google_browser_fallback")?.step, "google_browser_fallback");
-    assert.equal(findTrace(client.traces, "auth_google_started")?.step, "auth_google_started");
+    assert.equal(findTrace(client.traces, "auth_path_selected")?.reason, "browser-before-picker");
+    assert.match(client.assignments[0] ?? "", /response_mode=form_post/);
+    assert.equal(client.beacons.join("").includes("id_token"), false);
+  });
+
+  it("keeps a pending browser attempt in recovery until resume can decide", async () => {
+    const client = installAuth({
+      platform: "android",
+      pendingAuth: {
+        attemptId: "03030303030303030303030303030303",
+        provider: "google",
+        returnTo: "/app",
+        startedAt: Date.now(),
+        phase: "browser",
+      },
+    });
+    await flush();
+    const boot = await client.win.KORPASSET_AUTH.recover("boot");
+    assert.equal(boot.waiting, true);
+    assert.equal(boot.outcome, "pending");
+    assert.equal(client.assignments.length, 0);
+    assert.equal(client.google.disabled, true);
+    assert.ok(client.win.KORPASSET_AUTH.readAuth());
+    assert.equal(client.logins.length, 0);
+  });
+
+  it("turns an incomplete return into an explicit failed retry instead of a silent login screen", async () => {
+    const client = installAuth({
+      platform: "android",
+      pendingAuth: {
+        attemptId: "03030303030303030303030303030303",
+        provider: "google",
+        returnTo: "/app",
+        startedAt: Date.now(),
+        phase: "browser",
+      },
+    });
+    await flush();
+    const result = await client.win.KORPASSET_AUTH.recover("resume");
+    assert.equal(result.outcome, "failed");
+    assert.equal(result.authenticated, false);
+    assert.equal(client.assignments.length, 0);
+    assert.equal(client.logins.length, 0);
+    assert.equal(client.google.disabled, false);
+    assert.equal(client.win.KORPASSET_AUTH.readAuth(), null);
+    assert.equal(client.win.KORPASSET_AUTH.isInProgress(), false);
+    assert.deepEqual(client.errors, ["Kunde inte slutföra inloggningen. Försök igen."]);
+    assert.equal(findTrace(client.traces, "auth_session_failed")?.reason, "incomplete-return");
+  });
+
+  it("completes a callback/resume race only once and does not start OAuth", async () => {
+    let session: SessionBody = { authenticated: false, redirectTo: null };
+    const client = installAuth({
+      platform: "android",
+      session: () => session,
+      pendingAuth: {
+        attemptId: "03030303030303030303030303030303",
+        provider: "google",
+        returnTo: "/app",
+        startedAt: Date.now(),
+        phase: "callback",
+      },
+    });
+    await flush();
+    session = { authenticated: true, redirectTo: "/onboarding" };
+    const callback = client.win.KORPASSET_AUTH.recover("handoff");
+    client.resume();
+    const resume = client.win.KORPASSET_AUTH.recover("native-resume");
+    await callback;
+    await resume;
+    await flush();
+    assert.equal(client.assignments.filter((url) => url === "/onboarding").length, 1);
+    assert.equal(client.logins.length, 0);
+    assert.equal(client.reloads.length, 0);
+    assert.equal(client.win.KORPASSET_AUTH.readAuth(), null);
+  });
+
+  it("does not navigate again when resume runs after a completed attempt", async () => {
+    const client = installAuth({
+      platform: "android",
+      session: { authenticated: true, redirectTo: "/onboarding" },
+    });
+    await flush();
+    assert.equal(client.assignments[0], "/onboarding");
+    client.resume();
+    const again = await client.win.KORPASSET_AUTH.recover("native-resume");
+    await flush();
+    assert.equal(again.skipped, true);
+    assert.equal(client.assignments.length, 1);
+    assert.equal(client.reloads.length, 0);
+    assert.equal(client.logins.length, 0);
+  });
+
+  it("consumes the same oauth_handoff once and keeps the original attempt id", async () => {
+    const client = installAuth({
+      platform: "android",
+      pendingAuth: {
+        attemptId: "03030303030303030303030303030303",
+        provider: "google",
+        returnTo: "/app",
+        startedAt: Date.now(),
+        phase: "browser",
+      },
+    });
+    await flush();
+    const url = "https://korpasset.se/app?oauth_handoff=handoffcodehandoffcode12";
+    assert.equal(client.win.KORPASSET_AUTH.consumeAuthCallbackUrl(url, "appUrlOpen"), true);
+    assert.equal(client.win.KORPASSET_AUTH.consumeAuthCallbackUrl(url, "appUrlOpen"), true);
+    assert.equal(
+      client.assignments.filter((item) => item.includes("oauth_handoff=")).length,
+      1,
+    );
+    assert.equal(client.win.KORPASSET_AUTH.readAuth()?.attemptId, "03030303030303030303030303030303");
+    assert.equal(
+      client.traces.filter((item) => item.step === "auth_callback_received").length,
+      1,
+    );
+    assert.equal(client.beacons.join("").includes("handoffcodehandoffcode12"), false);
+    assert.equal(client.logins.length, 0);
+  });
+
+  it("does not duplicate resume recovery traces for the same attempt", async () => {
+    const client = installAuth({
+      platform: "android",
+      pendingAuth: {
+        attemptId: "03030303030303030303030303030303",
+        provider: "google",
+        returnTo: "/app",
+        startedAt: Date.now(),
+        phase: "callback",
+      },
+    });
+    await flush();
+    client.resume();
+    await flush();
+    client.resume();
+    await flush();
+    assert.equal(
+      client.traces.filter((item) => item.step === "auth_recovery_started" && item.reason === "resume")
+        .length,
+      1,
+    );
+    assert.equal(client.traces.filter((item) => item.step === "auth_google_started").length, 0);
+    assert.equal(client.logins.length, 0);
+  });
+
+  it("restores retry from an oauth_error return without starting a new attempt", async () => {
+    const client = installAuth({
+      platform: "android",
+      search: "?oauth_error=cancelled",
+      pendingAuth: {
+        attemptId: "03030303030303030303030303030303",
+        provider: "google",
+        returnTo: "/app",
+        startedAt: Date.now(),
+        phase: "browser",
+      },
+    });
+    await flush();
+    assert.equal(client.logins.length, 0);
+    assert.equal(client.google.disabled, false);
+    assert.equal(client.win.KORPASSET_AUTH.readAuth(), null);
+    assert.equal(findTrace(client.traces, "google_login_cancelled")?.pluginCode, "cancelled");
+    assert.deepEqual(client.errors, ["Inloggningen avbröts. Försök igen."]);
   });
 });

@@ -98,13 +98,30 @@ public final class InviteLink {
         return current != null && current.equals(target);
     }
 
+    /**
+     * Bare /app, /onboarding, and /konto App Links must not replace a live
+     * Körpasset page. After auth the WebView may already have navigated to
+     * /onboarding; a stale /app resume would overlay that route. Session
+     * recovery runs in JS instead. oauth_handoff is the only /app query that
+     * still forces a load, because the server must redeem it.
+     */
     public static boolean shouldLoadWebView(String currentUrl, String targetUrl) {
         if (targetUrl == null || targetUrl.isEmpty()) return false;
         if (hasOAuthHandoff(targetUrl)) {
             return !sameRequest(currentUrl, targetUrl);
         }
         if (isSameInvite(currentUrl, targetUrl)) return false;
+        if (isKorpassetOrigin(currentUrl) && isAppShell(targetUrl)) return false;
         return !isSamePage(currentUrl, targetUrl);
+    }
+
+    public static boolean isAppShell(String url) {
+        String key = pageKey(url);
+        if (key == null) return false;
+        int slash = key.indexOf('/');
+        if (slash < 0) return false;
+        String path = key.substring(slash);
+        return "/app".equals(path) || "/onboarding".equals(path) || "/konto".equals(path);
     }
 
     public static String authRecoverJs(String event) {

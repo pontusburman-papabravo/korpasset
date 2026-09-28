@@ -62,6 +62,38 @@ public class InviteLinkTest {
     }
 
     @Test
+    public void doesNotOverlayALivePageWithBareAppShell() {
+        assertTrue(InviteLink.isAppShell("https://korpasset.se/app"));
+        assertTrue(InviteLink.isAppShell("https://korpasset.se/onboarding"));
+        assertTrue(InviteLink.isAppShell("https://korpasset.se/konto"));
+        assertFalse(InviteLink.isAppShell("https://korpasset.se/invite/abc"));
+        assertFalse(InviteLink.shouldLoadWebView(
+            "https://korpasset.se/onboarding",
+            "https://korpasset.se/app"
+        ));
+        assertFalse(InviteLink.shouldLoadWebView(
+            "https://korpasset.se/konto",
+            "https://korpasset.se/app"
+        ));
+        assertFalse(InviteLink.shouldLoadWebView(
+            "https://korpasset.se/app",
+            "https://korpasset.se/onboarding"
+        ));
+        assertTrue(InviteLink.shouldLoadWebView(
+            "https://korpasset.se/app",
+            "https://korpasset.se/invite/abc"
+        ));
+        assertTrue(InviteLink.shouldLoadWebView(
+            "",
+            "https://korpasset.se/app"
+        ));
+        assertTrue(InviteLink.shouldLoadWebView(
+            "https://localhost/",
+            "https://korpasset.se/app"
+        ));
+    }
+
+    @Test
     public void stillLoadsAnOauthHandoffOntoTheLoginPage() {
         String current = "https://korpasset.se/app";
         String target = "https://korpasset.se/app?oauth_handoff=handoffcodehandoffcode12";

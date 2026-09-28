@@ -30,6 +30,7 @@ type PostedBody = {
 type OAuthTrace = {
   step?: string;
   platform?: string;
+  reason?: string;
   hasIdentityToken?: boolean;
   pluginCode?: string;
   pluginMessage?: string;
@@ -83,6 +84,8 @@ function installClient(
   const sandbox: Record<string, unknown> = {
     URL,
     URLSearchParams,
+    setTimeout,
+    clearTimeout,
     console: {
       info(label: string, event?: OAuthTrace) {
         if (label === "[korpasset-oauth]" && event) traces.push(event);
@@ -410,33 +413,22 @@ describe("native OAuth login scopes", () => {
     assert.equal(beacon.includes(client.logins[0].options.nonce), false);
   });
 
-  it("opens system-browser Google sign-in when Credential Manager rejects the installed app", async () => {
+  it("fails the same attempt after Credential Manager 16 or 28444 once the native picker has been shown", async () => {
     const reauth = installClient({ name: "Ada" }, {}, "android", async () => {
       throw new Error(
         "Google Sign-In failed: [16] Account reauth failed. The plugin cleared Credential Manager credential-selection state and retried once.",
       );
     });
     await clickProvider(reauth.click, "google");
-    assert.deepEqual(reauth.errors, []);
+    assert.deepEqual(reauth.errors, ["Kunde inte logga in. Försök igen."]);
     assert.equal(reauth.posts.length, 0);
+    assert.equal(reauth.logins.length, 1);
+    assert.equal(reauth.assignments.length, 0);
     assert.equal(findTrace(reauth.traces, "google_native_login_failed")?.step, "google_native_login_failed");
     assert.equal(findTrace(reauth.traces, "google_native_login_failed")?.pluginCode, "16");
-    assert.equal(findTrace(reauth.traces, "google_browser_fallback")?.step, "google_browser_fallback");
-    assert.equal(reauth.assignments.length, 1);
-    const authorize = reauth.assignments[0] ?? "";
-    const url = new URL(authorize);
-    assert.equal(url.origin, "https://accounts.google.com");
-    assert.equal(url.pathname, "/o/oauth2/v2/auth");
-    assert.equal(url.searchParams.get("client_id"), "web.apps.googleusercontent.com");
-    assert.equal(url.searchParams.get("redirect_uri"), "https://korpasset.se/app");
-    assert.equal(url.searchParams.get("response_type"), "id_token");
-    assert.equal(url.searchParams.get("prompt"), "select_account");
-    assert.equal(url.searchParams.get("nonce"), reauth.logins[0]?.options.nonce);
-    assert.equal(url.searchParams.get("state"), reauth.logins[0]?.options.nonce);
-    const beacon = reauth.beacons.join("\n");
-    assert.match(beacon, /step=google_browser_fallback/);
-    assert.equal(beacon.includes(reauth.logins[0]?.options.nonce ?? "nonce"), false);
-    assert.equal(beacon.includes("id_token"), false);
+    assert.equal(findTrace(reauth.traces, "google_browser_fallback"), undefined);
+    assert.equal(findTrace(reauth.traces, "auth_session_failed")?.reason, "credential-manager-rejected");
+    assert.equal(findTrace(reauth.traces, "auth_path_selected")?.reason, "native");
 
     const consoleSetup = installClient({ name: "Ada" }, {}, "android", async () => {
       throw new Error(
@@ -444,12 +436,11 @@ describe("native OAuth login scopes", () => {
       );
     });
     await clickProvider(consoleSetup.click, "google");
-    assert.equal(findTrace(consoleSetup.traces, "google_native_login_failed")?.step, "google_native_login_failed");
-    assert.equal(findTrace(consoleSetup.traces, "google_browser_fallback")?.step, "google_browser_fallback");
     assert.equal(findTrace(consoleSetup.traces, "google_native_login_failed")?.pluginCode, "28444");
-    assert.equal(consoleSetup.posts.length, 0);
-    assert.deepEqual(consoleSetup.errors, []);
-    assert.match(consoleSetup.assignments[0] ?? "", /accounts\.google\.com/);
+    assert.equal(findTrace(consoleSetup.traces, "google_browser_fallback"), undefined);
+    assert.equal(consoleSetup.assignments.length, 0);
+    assert.deepEqual(consoleSetup.errors, ["Kunde inte logga in. Försök igen."]);
+    assert.equal(findTrace(consoleSetup.traces, "auth_session_failed")?.reason, "credential-manager-rejected");
 
     const ios = installClient({ name: "Ada" }, {}, "ios", async () => {
       throw new Error("Google Sign-In failed: [16] Account reauth failed");
@@ -458,6 +449,56 @@ describe("native OAuth login scopes", () => {
     assert.deepEqual(ios.errors, ["Kunde inte logga in. Försök igen."]);
     assert.equal(ios.assignments.length, 0);
     assert.equal(ios.posts.length, 0);
+  });
+
+  it("uses one browser fallback only when Credential Manager rejects initialize before the native picker", async () => {
+    const beforePicker = installClient(
+      { name: "Ada" },
+      {},
+      "android",
+      async () => {
+        throw new Error("login() must not run after initialize 28444");
+      },
+      undefined,
+      async () => {
+        throw new Error(
+          "Google Sign-In failed: Google Cloud OAuth is not configured for this installed build ([28444] Developer console is not set up correctly).",
+        );
+      },
+    );
+    await clickProvider(beforePicker.click, "google");
+    assert.equal(beforePicker.logins.length, 0);
+    assert.equal(beforePicker.posts.length, 0);
+    assert.equal(findTrace(beforePicker.traces, "google_initialize_failed")?.pluginCode, "28444");
+    assert.equal(findTrace(beforePicker.traces, "auth_path_selected")?.reason, "browser-before-picker");
+    assert.equal(findTrace(beforePicker.traces, "google_browser_fallback")?.step, "google_browser_fallback");
+    assert.equal(beforePicker.assignments.length, 1);
+    const url = new URL(beforePicker.assignments[0] ?? "");
+    assert.equal(url.origin, "https://accounts.google.com");
+    assert.equal(url.pathname, "/o/oauth2/v2/auth");
+    assert.equal(url.searchParams.get("response_mode"), "form_post");
+    assert.equal(url.searchParams.get("response_type"), "id_token");
+    assert.equal(url.searchParams.get("prompt"), "select_account");
+    assert.equal(url.searchParams.get("redirect_uri"), "https://korpasset.se/app");
+    assert.equal(beforePicker.beacons.join("").includes("id_token"), false);
+    assert.deepEqual(beforePicker.errors, []);
+
+    const reauthInit = installClient(
+      { name: "Ada" },
+      {},
+      "android",
+      async () => {
+        throw new Error("login() must not run after initialize 16");
+      },
+      undefined,
+      async () => {
+        throw new Error("Google Sign-In failed: [16] Account reauth failed");
+      },
+    );
+    await clickProvider(reauthInit.click, "google");
+    assert.equal(reauthInit.logins.length, 0);
+    assert.equal(findTrace(reauthInit.traces, "auth_path_selected")?.reason, "browser-before-picker");
+    assert.match(reauthInit.assignments[0] ?? "", /accounts\.google\.com/);
   });
 
   it("records a missing id token instead of posting an access token", async () => {
