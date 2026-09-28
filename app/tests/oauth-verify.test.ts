@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { describe, it } from "node:test";
 import { generateKeyPair, SignJWT, exportJWK, createLocalJWKSet } from "jose";
 import { verifySignedIdentityToken } from "../src/auth/oauth-verify.js";
@@ -106,6 +107,35 @@ describe("oauth identity token verification", () => {
       nonce: "client-nonce",
     });
     assert.equal(identity.subject, "google-user-1");
+  });
+
+  it("accepts a Google nonce claim that is the raw value, sha256 hex, or sha256 base64url", async () => {
+    const raw = "client-nonce";
+    const hashedHex = createHash("sha256").update(raw).digest("hex");
+    const hashedB64 = createHash("sha256").update(raw).digest("base64url");
+    const { privateKey, publicKey } = await generateKeyPair("ES256");
+    const jwk = await exportJWK(publicKey);
+    jwk.kid = "test-google";
+    const jwks = createLocalJWKSet({ keys: [jwk] });
+
+    for (const claimed of [raw, hashedHex, hashedB64]) {
+      const token = await new SignJWT({ sub: "google-user-1", nonce: claimed })
+        .setProtectedHeader({ alg: "ES256", kid: "test-google" })
+        .setIssuer("https://accounts.google.com")
+        .setAudience("web.apps.googleusercontent.com")
+        .setIssuedAt()
+        .setExpirationTime("5m")
+        .sign(privateKey);
+      const identity = await verifySignedIdentityToken({
+        provider: "google",
+        token,
+        jwks,
+        issuer: ["https://accounts.google.com", "accounts.google.com"],
+        audience: ["web.apps.googleusercontent.com"],
+        nonce: raw,
+      });
+      assert.equal(identity.subject, "google-user-1");
+    }
   });
 
   it("still requires Apple tokens to echo the nonce when one was sent", async () => {

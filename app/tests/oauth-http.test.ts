@@ -81,6 +81,53 @@ describe("app oauth HTTP (FR-11)", () => {
     await app.close();
   });
 
+  it("creates a new user from a Google subject that has never signed in", async () => {
+    setIdentityTokenVerifierForTests(async (provider, token, nonce) => {
+      assert.equal(provider, "google");
+      assert.equal(token, "first-google-token");
+      assert.equal(nonce, "client-nonce");
+      return {
+        provider: "google",
+        subject: "google.sub.new",
+        email: "new.user@example.com",
+        name: "Nya",
+      };
+    });
+    const app = await createTestApp();
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/auth/google",
+      headers: { "content-type": "application/json" },
+      payload: {
+        identityToken: "first-google-token",
+        displayName: "Nya",
+        nonce: "client-nonce",
+      },
+    });
+    assert.equal(response.statusCode, 200);
+    const body = response.json() as { ok: boolean; created: boolean; redirectTo: string };
+    assert.equal(body.ok, true);
+    assert.equal(body.created, true);
+    assert.equal(body.redirectTo, "/onboarding");
+    assert.ok(response.cookies.find((item) => item.name === "bilklar_session")?.value);
+
+    const users = await getPool().query(
+      `SELECT id, account_state, display_name FROM users`,
+    );
+    assert.equal(users.rowCount, 1);
+    assert.equal(users.rows[0].account_state, "active");
+    assert.equal(users.rows[0].display_name, "Nya");
+    const identities = await getPool().query(
+      `SELECT provider, provider_subject, email FROM auth_identities WHERE user_id = $1`,
+      [users.rows[0].id],
+    );
+    assert.equal(identities.rowCount, 1);
+    assert.equal(identities.rows[0].provider, "google");
+    assert.equal(identities.rows[0].provider_subject, "google.sub.new");
+    assert.equal(identities.rows[0].email, "new.user@example.com");
+    await app.close();
+  });
+
   it("returns the same user on the second Google continue", async () => {
     setIdentityTokenVerifierForTests(async () => ({
       provider: "google",
@@ -162,6 +209,7 @@ describe("app oauth HTTP (FR-11)", () => {
     );
     assert.equal(conflict.statusCode, 409);
     assert.equal(conflict.json().code, "identity_on_other_user");
+    assert.equal(conflict.json().stage, "account");
     await app.close();
   });
 
@@ -185,6 +233,8 @@ describe("app oauth HTTP (FR-11)", () => {
       payload: { identityToken: "nope" },
     });
     assert.equal(invalid.statusCode, 401);
+    assert.equal(invalid.json().code, "invalid_identity");
+    assert.equal(invalid.json().stage, "verify");
     await app.close();
   });
 

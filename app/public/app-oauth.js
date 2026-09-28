@@ -126,6 +126,104 @@
     return /cancel/i.test(message);
   }
 
+  function sanitizeTraceCode(value) {
+    const text = typeof value === "string" ? value.trim() : "";
+    return /^[A-Za-z0-9_.:-]{1,64}$/.test(text) ? text : "";
+  }
+
+  function pluginFailureCode(error) {
+    const code = error && typeof error.code === "string" ? error.code : "";
+    if (code === "USER_CANCELLED") return "USER_CANCELLED";
+    const message = error && typeof error.message === "string" ? error.message : "";
+    const bracket = message.match(/\[(\d{1,6})\]/);
+    if (bracket) return bracket[1];
+    if (/\b28444\b/.test(message)) return "28444";
+    if (/\b10:/.test(message)) return "10";
+    return "";
+  }
+
+  function sanitizePluginMessage(error) {
+    const message = error && typeof error.message === "string" ? error.message : "";
+    return message
+      .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[redacted]")
+      .replace(/eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g, "[redacted]")
+      .replace(/[^A-Za-z0-9 ._:\[\]()-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 160);
+  }
+
+  function googleBackendStep(code) {
+    if (
+      code === "identity_conflict" ||
+      code === "provider_already_linked" ||
+      code === "identity_on_other_user" ||
+      code === "account_unavailable" ||
+      code === "not_found"
+    ) {
+      return "google_account_creation_failed";
+    }
+    return "google_backend_rejected";
+  }
+
+  // Safe breadcrumb for a physical device. Never include tokens, nonce,
+  // subject, email, name, or cookies.
+  function oauthTrace(step, detail) {
+    const info = detail || {};
+    const event = {
+      step: step,
+      platform: platform() || "web",
+      hasIdentityToken: Boolean(info.hasIdentityToken),
+      pluginCode: sanitizeTraceCode(info.pluginCode),
+      pluginMessage: typeof info.pluginMessage === "string" ? info.pluginMessage : "",
+      httpStatus: typeof info.httpStatus === "number" ? info.httpStatus : 0,
+      backendCode: sanitizeTraceCode(info.backendCode),
+      created: typeof info.created === "boolean" ? info.created : null,
+    };
+    try {
+      console.info("[korpasset-oauth]", event);
+    } catch (error) {
+      /* ignore */
+    }
+    try {
+      const message = [
+        "oauth",
+        "step=" + event.step,
+        "platform=" + event.platform,
+        "hasIdentityToken=" + (event.hasIdentityToken ? "1" : "0"),
+        "pluginCode=" + (event.pluginCode || "-"),
+        "httpStatus=" + (event.httpStatus || "-"),
+        "backendCode=" + (event.backendCode || "-"),
+        "created=" + (event.created === null ? "-" : event.created ? "1" : "0"),
+        "pluginMessage=" + (event.pluginMessage || "-"),
+      ].join(" ");
+      fetch("/api/client-error", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "same-origin",
+        keepalive: true,
+        body: JSON.stringify({
+          message: message.slice(0, 500),
+          path: "/app",
+        }),
+      }).catch(function () {
+        /* ignore */
+      });
+    } catch (error) {
+      /* ignore */
+    }
+  }
+
+  function traceGoogleFailure(step, error, extra) {
+    oauthTrace(step, {
+      pluginCode: pluginFailureCode(error),
+      pluginMessage: sanitizePluginMessage(error),
+      hasIdentityToken: Boolean(extra && extra.hasIdentityToken),
+      httpStatus: extra && extra.httpStatus,
+      backendCode: extra && extra.backendCode,
+    });
+  }
+
   async function continueWith(provider) {
     const stack = document.querySelector(".oauth-stack, .oauth-continue");
     const returnTo =
@@ -147,49 +245,98 @@
       return;
     }
 
+    const nonce = randomNonce();
     try {
       await initialize(SocialLogin, provider);
-      const nonce = randomNonce();
-      const result = await SocialLogin.login({
-        provider,
-        options: loginOptions(provider, nonce),
-      });
-      const identityToken = idTokenFrom(result);
-      if (!identityToken) {
-        showError("Inloggningen gav ingen identitet. Försök igen.");
-        return;
-      }
-      const payload = {
-        identityToken: identityToken,
-        displayName: displayNameFrom(result),
-        returnTo: returnTo,
-        nonce: nonce,
-      };
-      if (provider === "apple") {
-        const authorizationCode = appleAuthorizationCodeFrom(result, identityToken);
-        if (authorizationCode) payload.authorizationCode = authorizationCode;
-      }
-      const response = await fetch("/api/auth/" + provider, {
-        method: "POST",
-        headers: { "content-type": "application/json", accept: "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify(payload),
-      });
-      const body = await response.json().catch(function () {
-        return {};
-      });
-      if (!response.ok) {
-        showError(body.error || "Kunde inte logga in. Försök igen.");
-        return;
-      }
-      window.location.assign(body.redirectTo || "/app");
     } catch (error) {
+      if (provider === "google") traceGoogleFailure("google_initialize_failed", error);
       showError(
         loginWasCancelled(error)
           ? "Inloggningen avbröts. Försök igen."
           : "Kunde inte logga in. Försök igen.",
       );
+      return;
     }
+
+    let result;
+    try {
+      result = await SocialLogin.login({
+        provider,
+        options: loginOptions(provider, nonce),
+      });
+    } catch (error) {
+      if (provider === "google") {
+        traceGoogleFailure(
+          loginWasCancelled(error) ? "google_login_cancelled" : "google_native_login_failed",
+          error,
+        );
+      }
+      showError(
+        loginWasCancelled(error)
+          ? "Inloggningen avbröts. Försök igen."
+          : "Kunde inte logga in. Försök igen.",
+      );
+      return;
+    }
+
+    const identityToken = idTokenFrom(result);
+    if (!identityToken) {
+      if (provider === "google") {
+        oauthTrace("google_no_identity_token", { hasIdentityToken: false });
+      }
+      showError("Inloggningen gav ingen identitet. Försök igen.");
+      return;
+    }
+    const payload = {
+      identityToken: identityToken,
+      displayName: displayNameFrom(result),
+      returnTo: returnTo,
+      nonce: nonce,
+    };
+    if (provider === "apple") {
+      const authorizationCode = appleAuthorizationCodeFrom(result, identityToken);
+      if (authorizationCode) payload.authorizationCode = authorizationCode;
+    }
+
+    let response;
+    try {
+      response = await fetch("/api/auth/" + provider, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      if (provider === "google") {
+        oauthTrace("google_backend_request_failed", { hasIdentityToken: true });
+      }
+      showError("Kunde inte logga in. Försök igen.");
+      return;
+    }
+
+    const body = await response.json().catch(function () {
+      return {};
+    });
+    if (!response.ok) {
+      if (provider === "google") {
+        const backendCode = sanitizeTraceCode(body.code);
+        oauthTrace(googleBackendStep(backendCode), {
+          hasIdentityToken: true,
+          httpStatus: response.status,
+          backendCode: backendCode,
+        });
+      }
+      showError(body.error || "Kunde inte logga in. Försök igen.");
+      return;
+    }
+    if (provider === "google") {
+      oauthTrace("google_login_success", {
+        hasIdentityToken: true,
+        httpStatus: response.status,
+        created: body.created === true,
+      });
+    }
+    window.location.assign(body.redirectTo || "/app");
   }
 
   function nativeApp() {

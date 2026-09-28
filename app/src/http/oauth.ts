@@ -113,14 +113,25 @@ async function continueFromToken(
       ? body.authorizationCode.trim()
       : "";
 
-  const identity = await verifyIdentityToken(provider, identityToken, nonce);
-  const result = await continueWithOAuth({
-    provider,
-    subject: identity.subject,
-    displayName: displayName || identity.name,
-    email: identity.email,
-    sessionUserId: getSessionUserId(request),
-  });
+  let stage: "verify" | "account" = "verify";
+  let identity;
+  let result;
+  try {
+    identity = await verifyIdentityToken(provider, identityToken, nonce);
+    stage = "account";
+    result = await continueWithOAuth({
+      provider,
+      subject: identity.subject,
+      displayName: displayName || identity.name,
+      email: identity.email,
+      sessionUserId: getSessionUserId(request),
+    });
+  } catch (error) {
+    if (error && typeof error === "object") {
+      (error as { oauthStage?: "verify" | "account" }).oauthStage = stage;
+    }
+    throw error;
+  }
   if (authorizationCode) {
     await rememberAppleRefreshTokenFromAuthorizationCode(
       identity.subject,
@@ -156,6 +167,11 @@ async function continueFromToken(
   });
 }
 
+function oauthFailureStage(error: unknown): "verify" | "account" {
+  if (!error || typeof error !== "object" || !("oauthStage" in error)) return "verify";
+  return error.oauthStage === "account" ? "account" : "verify";
+}
+
 export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
   app.get("/.well-known/apple-app-site-association", async (_request, reply) => {
     return reply
@@ -179,18 +195,27 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
     try {
       await continueFromToken(request, reply, provider);
     } catch (error) {
+      const stage = oauthFailureStage(error);
       if (error instanceof AppError) {
         request.log.warn(
-          { oauth: provider, code: error.code, status: error.statusCode },
+          { oauth: provider, code: error.code, status: error.statusCode, stage },
           "oauth failed",
         );
         return reply.status(error.statusCode).send({
           error: error.message,
           code: error.code,
+          stage,
         });
       }
-      request.log.error({ err: error, oauth: provider }, "oauth continue failed");
-      return reply.status(500).send({ error: "Something went wrong" });
+      request.log.error(
+        {
+          oauth: provider,
+          stage,
+          errorName: error instanceof Error ? error.name : "unknown",
+        },
+        "oauth continue failed",
+      );
+      return reply.status(500).send({ error: "Something went wrong", stage });
     }
   });
 }

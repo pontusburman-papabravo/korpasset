@@ -27,16 +27,37 @@ type PostedBody = {
   nonce?: string;
 };
 
+type OAuthTrace = {
+  step?: string;
+  platform?: string;
+  hasIdentityToken?: boolean;
+  pluginCode?: string;
+  pluginMessage?: string;
+  httpStatus?: number;
+  backendCode?: string;
+  created?: boolean | null;
+};
+
+type FetchResult = {
+  ok: boolean;
+  status: number;
+  json: () => Promise<Record<string, unknown>>;
+};
+
 function installClient(
   profile: Record<string, string | null>,
   resultExtra: Record<string, unknown> = {},
   platformName = "ios",
   loginImpl?: (call: LoginCall) => Promise<unknown>,
+  fetchImpl?: (url: string, body: PostedBody) => Promise<FetchResult>,
+  initializeImpl?: () => Promise<void>,
 ) {
   const logins: LoginCall[] = [];
   const inits: InitPayload[] = [];
   const posts: PostedBody[] = [];
   const errors: string[] = [];
+  const traces: OAuthTrace[] = [];
+  const beacons: string[] = [];
   let click: (event: {
     target: { closest: (selector: string) => { getAttribute: () => string } | null };
     preventDefault: () => void;
@@ -44,7 +65,11 @@ function installClient(
 
   const sandbox: Record<string, unknown> = {
     URL,
-    console,
+    console: {
+      info(label: string, event?: OAuthTrace) {
+        if (label === "[korpasset-oauth]" && event) traces.push(event);
+      },
+    },
     document: {
       getElementById(id: string) {
         if (id !== "oauth-error") return null;
@@ -74,11 +99,18 @@ function installClient(
         return bytes;
       },
     },
-    fetch: async (_url: string, init: { body: string }) => {
-      posts.push(JSON.parse(init.body) as PostedBody);
+    fetch: async (url: string, init: { body: string }) => {
+      const body = JSON.parse(init.body) as PostedBody & { message?: string };
+      if (url === "/api/client-error") {
+        beacons.push(body.message ?? "");
+        return { ok: true, status: 204, json: async () => ({}) };
+      }
+      posts.push(body);
+      if (fetchImpl) return fetchImpl(url, body);
       return {
         ok: true,
-        json: async () => ({ redirectTo: "/app" }),
+        status: 200,
+        json: async () => ({ redirectTo: "/app", created: true }),
       };
     },
     window: {
@@ -93,6 +125,7 @@ function installClient(
           SocialLogin: {
             async initialize(payload: InitPayload) {
               inits.push(payload);
+              if (initializeImpl) await initializeImpl();
             },
             async login(call: LoginCall) {
               logins.push(call);
@@ -125,7 +158,7 @@ function installClient(
   };
 
   runInContext(script, createContext(sandbox));
-  return { logins, inits, posts, errors, click };
+  return { logins, inits, posts, errors, traces, beacons, click };
 }
 
 async function clickProvider(
@@ -251,6 +284,8 @@ describe("native OAuth login scopes", () => {
     await clickProvider(cancelled.click, "google");
     assert.deepEqual(cancelled.errors, ["Inloggningen avbröts. Försök igen."]);
     assert.equal(cancelled.posts.length, 0);
+    assert.equal(cancelled.traces[0]?.step, "google_login_cancelled");
+    assert.equal(cancelled.traces[0]?.pluginCode, "USER_CANCELLED");
 
     const rejected = installClient({ name: "Ada" }, {}, "android", async () => {
       throw new Error("apple.android.redirectUrl is null or empty");
@@ -258,6 +293,159 @@ describe("native OAuth login scopes", () => {
     await clickProvider(rejected.click, "google");
     assert.deepEqual(rejected.errors, ["Kunde inte logga in. Försök igen."]);
     assert.equal(rejected.posts.length, 0);
+    assert.equal(rejected.traces[0]?.step, "google_native_login_failed");
+    assert.notEqual(rejected.traces[0]?.step, "google_login_cancelled");
+  });
+
+  it("posts the id token from the Android 8.5.10 result shape", async () => {
+    const client = installClient({ name: "Ada" }, {}, "android", async () => ({
+      provider: "google",
+      result: {
+        accessToken: null,
+        idToken: "android-id-token",
+        profile: {
+          email: "ada@example.com",
+          familyName: "Lovelace",
+          givenName: "Ada",
+          id: "google-sub",
+          name: "Ada Lovelace",
+          imageUrl: null,
+        },
+        responseType: "online",
+      },
+    }));
+    await clickProvider(client.click, "google");
+
+    assert.equal(client.logins[0].options.scopes, undefined);
+    assert.equal(client.inits[0].apple, undefined);
+    assert.equal(client.posts.length, 1);
+    assert.equal(client.posts[0].identityToken, "android-id-token");
+    assert.equal(client.posts[0].displayName, "Ada Lovelace");
+    assert.equal(client.posts[0].authorizationCode, undefined);
+    assert.equal(client.traces.at(-1)?.step, "google_login_success");
+    assert.equal(client.traces.at(-1)?.platform, "android");
+    assert.equal(client.traces.at(-1)?.hasIdentityToken, true);
+    assert.equal(client.traces.at(-1)?.created, true);
+    const beacon = client.beacons.join("\n");
+    assert.match(beacon, /step=google_login_success/);
+    assert.equal(beacon.includes("android-id-token"), false);
+    assert.equal(beacon.includes("ada@example.com"), false);
+    assert.equal(beacon.includes("google-sub"), false);
+    assert.equal(beacon.includes(client.logins[0].options.nonce), false);
+  });
+
+  it("records Credential Manager rejection after the account picker without posting", async () => {
+    const reauth = installClient({ name: "Ada" }, {}, "android", async () => {
+      throw new Error("Google Sign-In failed: [16] Account reauth failed");
+    });
+    await clickProvider(reauth.click, "google");
+    assert.deepEqual(reauth.errors, ["Kunde inte logga in. Försök igen."]);
+    assert.equal(reauth.posts.length, 0);
+    assert.equal(reauth.traces[0]?.step, "google_native_login_failed");
+    assert.equal(reauth.traces[0]?.pluginCode, "16");
+    assert.equal(reauth.traces[0]?.hasIdentityToken, false);
+    assert.match(reauth.beacons[0] ?? "", /pluginCode=16/);
+
+    const consoleSetup = installClient({ name: "Ada" }, {}, "android", async () => {
+      throw new Error(
+        "Google Sign-In failed: Google Cloud OAuth is not configured for this installed build ([28444] Developer console is not set up correctly).",
+      );
+    });
+    await clickProvider(consoleSetup.click, "google");
+    assert.equal(consoleSetup.traces[0]?.step, "google_native_login_failed");
+    assert.equal(consoleSetup.traces[0]?.pluginCode, "28444");
+    assert.equal(consoleSetup.posts.length, 0);
+    assert.deepEqual(consoleSetup.errors, ["Kunde inte logga in. Försök igen."]);
+  });
+
+  it("records a missing id token instead of posting an access token", async () => {
+    const client = installClient({ name: "Ada" }, {}, "android", async () => ({
+      provider: "google",
+      result: {
+        accessToken: { token: "access-only" },
+        profile: { name: "Ada Lovelace" },
+        responseType: "online",
+      },
+    }));
+    await clickProvider(client.click, "google");
+    assert.deepEqual(client.errors, ["Inloggningen gav ingen identitet. Försök igen."]);
+    assert.equal(client.posts.length, 0);
+    assert.equal(client.traces[0]?.step, "google_no_identity_token");
+    assert.equal(client.beacons.join("").includes("access-only"), false);
+  });
+
+  it("records backend rejection and account-creation failure separately from cancellation", async () => {
+    const rejected = installClient(
+      { name: "Ada" },
+      {},
+      "android",
+      undefined,
+      async () => ({
+        ok: false,
+        status: 401,
+        json: async () => ({
+          error: "Ogiltig Google-inloggning",
+          code: "invalid_identity",
+          stage: "verify",
+        }),
+      }),
+    );
+    await clickProvider(rejected.click, "google");
+    assert.deepEqual(rejected.errors, ["Ogiltig Google-inloggning"]);
+    assert.equal(rejected.posts[0]?.identityToken, "identity-token");
+    assert.equal(rejected.traces.at(-1)?.step, "google_backend_rejected");
+    assert.equal(rejected.traces.at(-1)?.httpStatus, 401);
+    assert.equal(rejected.traces.at(-1)?.backendCode, "invalid_identity");
+    assert.equal(rejected.beacons.join("").includes("identity-token"), false);
+
+    const account = installClient(
+      { name: "Ada" },
+      {},
+      "android",
+      undefined,
+      async () => ({
+        ok: false,
+        status: 409,
+        json: async () => ({
+          error: "Det här Apple- eller Google-kontot hör redan till en annan användare.",
+          code: "identity_on_other_user",
+          stage: "account",
+        }),
+      }),
+    );
+    await clickProvider(account.click, "google");
+    assert.equal(account.traces.at(-1)?.step, "google_account_creation_failed");
+    assert.equal(account.traces.at(-1)?.httpStatus, 409);
+    assert.equal(account.traces.at(-1)?.backendCode, "identity_on_other_user");
+    assert.notEqual(account.errors[0], "Inloggningen avbröts. Försök igen.");
+  });
+
+  it("records a transport failure after a native id token exists", async () => {
+    const client = installClient({ name: "Ada" }, {}, "android", undefined, async () => {
+      throw new Error("network down");
+    });
+    await clickProvider(client.click, "google");
+    assert.deepEqual(client.errors, ["Kunde inte logga in. Försök igen."]);
+    assert.equal(client.traces.at(-1)?.step, "google_backend_request_failed");
+    assert.equal(client.traces.at(-1)?.hasIdentityToken, true);
+  });
+
+  it("records Google initialize failure before login", async () => {
+    const client = installClient(
+      { name: "Ada" },
+      {},
+      "android",
+      undefined,
+      undefined,
+      async () => {
+        throw new Error("google.clientId is null or empty");
+      },
+    );
+    await clickProvider(client.click, "google");
+    assert.equal(client.logins.length, 0);
+    assert.equal(client.posts.length, 0);
+    assert.equal(client.traces[0]?.step, "google_initialize_failed");
+    assert.deepEqual(client.errors, ["Kunde inte logga in. Försök igen."]);
   });
 
   it("still builds a Google display name from the profile name", async () => {
