@@ -163,6 +163,12 @@ describe("beta UX HTTP", () => {
     assert.match(studentHome.body, /Planera körpass/);
     assert.doesNotMatch(studentHome.body, /Vad tränar ni på idag\?/);
     assert.doesNotMatch(studentHome.body, />Fokus</);
+    assert.match(
+      studentHome.body,
+      new RegExp(`/journey/${journey.id}/supervisors/${supervisor.userId}/remove`),
+    );
+    assert.match(studentHome.body, />Ta bort</);
+    assert.doesNotMatch(studentHome.body, /Lämna resan/);
 
     const supervisorHome = await injectWithSession(app, session(supervisor.userId), {
       method: "GET",
@@ -176,6 +182,12 @@ describe("beta UX HTTP", () => {
     assert.match(supervisorHome.body, /Handledarguiden/);
     assert.doesNotMatch(supervisorHome.body, /Växellåda/);
     assert.match(supervisorHome.body, new RegExp(`/drive/${drive.id}/done`));
+    assert.match(
+      supervisorHome.body,
+      new RegExp(`action="/journey/${journey.id}/leave"`),
+    );
+    assert.match(supervisorHome.body, /Lämna resan/);
+    assert.doesNotMatch(supervisorHome.body, />Ta bort</);
 
     await app.close();
   });
