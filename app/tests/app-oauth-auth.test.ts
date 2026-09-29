@@ -88,6 +88,7 @@ function installAuth(options: {
   search?: string;
   pendingAuth?: Record<string, unknown> | null;
   initialize?: () => Promise<void>;
+  googleHintShown?: boolean;
 } = {}) {
   const google = button("google", "Fortsätt med Google");
   const apple = button("apple", "Fortsätt med Apple");
@@ -96,11 +97,13 @@ function installAuth(options: {
     this.attrs[name] = value;
   } };
   const status = { hidden: true, textContent: "", id: "oauth-status", className: "muted" };
+  const hint = { hidden: true, textContent: "", id: "oauth-google-hint", className: "muted" };
   const store = new Map<string, string>();
   if (options.pendingAuth) {
     store.set("korpasset.pendingAuth", JSON.stringify(options.pendingAuth));
   }
   const local = new Map<string, string>();
+  if (options.googleHintShown) local.set("korpasset.googleDeviceHint", "1");
 
   const logins: Array<{ provider: string }> = [];
   const errors: string[] = [];
@@ -143,6 +146,7 @@ function installAuth(options: {
       body: {},
       getElementById(id: string) {
         if (id === "oauth-status") return status;
+        if (id === "oauth-google-hint") return hint;
         if (id === "oauth-error") {
           return {
             hidden: true,
@@ -273,6 +277,7 @@ function installAuth(options: {
     google,
     apple,
     consent,
+    hint,
     logins,
     posts,
     assignments,
@@ -774,5 +779,33 @@ describe("Android Google auth lifecycle", () => {
     assert.equal(client.win.KORPASSET_AUTH.readAuth(), null);
     assert.equal(findTrace(client.traces, "google_login_cancelled")?.pluginCode, "cancelled");
     assert.deepEqual(client.errors, ["Inloggningen avbröts. Försök igen."]);
+  });
+
+  it("tells Android users once that Google may ask to confirm the device", async () => {
+    const client = installAuth({ platform: "android" });
+    await flush();
+    assert.equal(client.hint.hidden, false);
+    assert.match(client.hint.textContent, /Google som kräver det/);
+    assert.equal(findTrace(client.traces, "google_device_hint_shown")?.reason, "once");
+    await client.tapGoogle();
+    assert.equal(client.hint.hidden, false);
+    assert.equal(
+      client.traces.filter((item) => item.step === "google_device_hint_shown").length,
+      1,
+    );
+  });
+
+  it("does not show the Google device hint again on the same install", async () => {
+    const client = installAuth({ platform: "android", googleHintShown: true });
+    await flush();
+    assert.equal(client.hint.hidden, true);
+    assert.equal(findTrace(client.traces, "google_device_hint_shown"), undefined);
+  });
+
+  it("does not show the Google device hint on iOS", async () => {
+    const client = installAuth({ platform: "ios" });
+    await flush();
+    assert.equal(client.hint.hidden, true);
+    assert.equal(findTrace(client.traces, "google_device_hint_shown"), undefined);
   });
 });

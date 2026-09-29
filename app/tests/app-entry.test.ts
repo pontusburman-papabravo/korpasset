@@ -59,6 +59,8 @@ describe("app entry (GET /app) and production onboarding", () => {
     assert.doesNotMatch(response.body, /action="\/interest"/);
     assert.match(String(response.headers["cache-control"]), /no-store/);
     assert.match(response.body, /id="oauth-status"/);
+    assert.match(response.body, /id="oauth-google-hint"/);
+    assert.match(response.body, /Det är Google som kräver det/);
     assert.match(response.body, /Loggar in…/);
     await app.close();
   });
