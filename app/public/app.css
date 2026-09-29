@@ -632,6 +632,11 @@ a.journey-choice .journey-choice__meta {
   font-size: 0.95rem;
 }
 
+#oauth-google-reauth {
+  display: grid;
+  gap: 0.75rem;
+}
+
 .focus-list {
   list-style: disc;
   padding-left: 1.25rem;

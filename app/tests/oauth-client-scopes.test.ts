@@ -421,7 +421,7 @@ describe("native OAuth login scopes", () => {
     });
     await clickProvider(reauth.click, "google");
     assert.deepEqual(reauth.errors, [
-      "Google kände inte igen enheten. Bekräfta inloggningen i Gmail eller på en annan enhet, vänta en stund, och tryck Fortsätt med Google igen.",
+      "Google kände inte igen den här telefonen. Godkänn i mailet från Google, sen tryck Fortsätt med Google igen.",
     ]);
     assert.equal(reauth.posts.length, 0);
     assert.equal(reauth.logins.length, 1);
@@ -449,7 +449,7 @@ describe("native OAuth login scopes", () => {
     });
     await clickProvider(ios.click, "google");
     assert.deepEqual(ios.errors, [
-      "Google kände inte igen enheten. Bekräfta inloggningen i Gmail eller på en annan enhet, vänta en stund, och tryck Fortsätt med Google igen.",
+      "Google kände inte igen den här telefonen. Godkänn i mailet från Google, sen tryck Fortsätt med Google igen.",
     ]);
     assert.equal(ios.assignments.length, 0);
     assert.equal(ios.posts.length, 0);
