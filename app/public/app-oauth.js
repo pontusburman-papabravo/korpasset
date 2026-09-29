@@ -5,7 +5,11 @@
   const AUTH_KEY = "korpasset.pendingAuth";
   const GOOGLE_HINT_KEY = "korpasset.googleDeviceHint";
   const GOOGLE_HINT_TEXT =
-    "Google kan be dig bekräfta enheten. Det är Google som kräver det, inte Körpasset.";
+    "Första gången med Körpasset kan Google stoppa inloggningen, även på en telefon du redan använder. Det är Google som gör det, inte Körpasset.";
+  const GOOGLE_REAUTH_ERROR =
+    "Google stoppade inloggningen. Det visades inget att godkänna. Tryck Fortsätt med Google igen.";
+  const GOOGLE_REAUTH_HOW =
+    "Google avbröt efter kontoväljaren utan mejl och utan en ruta att godkänna. Tryck Fortsätt med Google igen. Samma sak en gång till betyder att Google nekar Körpasset på den här telefonen just nu — inte att du missat en knapp.";
   const TOKEN = /^[A-Za-z0-9_-]+$/;
   const AUTH_SETTLE_MS = 40;
   const authRuntime = {
@@ -224,7 +228,7 @@
     if (loginWasCancelled(error)) return "Inloggningen avbröts. Försök igen.";
     const code = pluginFailureCode(error);
     if (code === "16") {
-      return "Google kände inte igen enheten. Bekräfta inloggningen i Gmail eller på en annan enhet, vänta en stund, och tryck Fortsätt med Google igen.";
+      return GOOGLE_REAUTH_ERROR;
     }
     return "Kunde inte logga in. Försök igen.";
   }
@@ -855,28 +859,42 @@
     }
   }
 
+  function fillGoogleReauthHelp(el) {
+    if (!el || !document.createElement) return el;
+    let how = null;
+    try {
+      how = el.querySelector && el.querySelector("#oauth-google-reauth-how");
+    } catch (error) {
+      how = null;
+    }
+    if (!how) {
+      how = document.createElement("p");
+      how.id = "oauth-google-reauth-how";
+      how.className = "muted";
+      if (el.firstChild && el.insertBefore) el.insertBefore(how, el.firstChild);
+      else if (el.appendChild) el.appendChild(how);
+    }
+    if (how) how.textContent = GOOGLE_REAUTH_HOW;
+    return el;
+  }
+
   function ensureGoogleReauthHelp() {
     try {
       let el = document.getElementById && document.getElementById("oauth-google-reauth");
-      if (el) return el;
-      if (!document.createElement) return null;
-      el = document.createElement("div");
-      el.id = "oauth-google-reauth";
-      const button = document.createElement("button");
-      button.type = "button";
-      button.id = "oauth-open-gmail";
-      button.className = "btn btn-secondary";
-      button.textContent = "Öppna Gmail och godkänn";
-      if (el.appendChild) el.appendChild(button);
-      const error = document.getElementById && document.getElementById("oauth-error");
-      if (error && error.parentNode && error.nextSibling && error.parentNode.insertBefore) {
-        error.parentNode.insertBefore(el, error.nextSibling);
-      } else if (error && error.parentNode && error.parentNode.appendChild) {
-        error.parentNode.appendChild(el);
-      } else if (document.body && document.body.appendChild) {
-        document.body.appendChild(el);
+      if (!el && document.createElement) {
+        el = document.createElement("div");
+        el.id = "oauth-google-reauth";
+        el.className = "stack";
+        const error = document.getElementById && document.getElementById("oauth-error");
+        if (error && error.parentNode && error.nextSibling && error.parentNode.insertBefore) {
+          error.parentNode.insertBefore(el, error.nextSibling);
+        } else if (error && error.parentNode && error.parentNode.appendChild) {
+          error.parentNode.appendChild(el);
+        } else if (document.body && document.body.appendChild) {
+          document.body.appendChild(el);
+        }
       }
-      return el;
+      return fillGoogleReauthHelp(el);
     } catch (error) {
       return null;
     }
@@ -887,35 +905,6 @@
       const el = ensureGoogleReauthHelp();
       if (!el) return false;
       el.hidden = false;
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  // We cannot show Google's own "approve this device" prompt. The closest
-  // action is to open Gmail in the system browser so they can tap Approve.
-  function openGoogleMail() {
-    const url = "https://mail.google.com/";
-    try {
-      if (typeof window.open === "function") {
-        window.open(url, "_blank", "noopener,noreferrer");
-        oauthTrace("google_reauth_gmail_opened", { reason: "gmail" });
-        return true;
-      }
-    } catch (error) {
-      /* fall through */
-    }
-    try {
-      const link = document.createElement && document.createElement("a");
-      if (!link) return false;
-      link.href = url;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      if (document.body && document.body.appendChild) document.body.appendChild(link);
-      if (typeof link.click === "function") link.click();
-      if (link.parentNode && link.parentNode.removeChild) link.parentNode.removeChild(link);
-      oauthTrace("google_reauth_gmail_opened", { reason: "gmail" });
       return true;
     } catch (error) {
       return false;
@@ -1491,13 +1480,9 @@
     hint.textContent = GOOGLE_HINT_TEXT;
     const reauth = document.createElement("div");
     reauth.id = "oauth-google-reauth";
+    reauth.className = "stack";
     reauth.hidden = true;
-    const openGmail = document.createElement("button");
-    openGmail.type = "button";
-    openGmail.id = "oauth-open-gmail";
-    openGmail.className = "btn btn-secondary";
-    openGmail.textContent = "Öppna Gmail och godkänn";
-    reauth.appendChild(openGmail);
+    fillGoogleReauthHelp(reauth);
     wrap.appendChild(intro);
     wrap.appendChild(error);
     wrap.appendChild(reauth);
@@ -1584,12 +1569,6 @@
   document.addEventListener("click", function (event) {
     const target = event.target && event.target.closest ? event.target : null;
     if (!target) return;
-    const gmail = target.closest("#oauth-open-gmail");
-    if (gmail) {
-      event.preventDefault();
-      openGoogleMail();
-      return;
-    }
     const button = target.closest("[data-oauth-provider]");
     if (!button) return;
     event.preventDefault();

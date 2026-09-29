@@ -98,7 +98,19 @@ function installAuth(options: {
   } };
   const status = { hidden: true, textContent: "", id: "oauth-status", className: "muted" };
   const hint = { hidden: true, textContent: "", id: "oauth-google-hint", className: "muted" };
-  const reauth = { hidden: true, id: "oauth-google-reauth" };
+  const reauthHow = { hidden: false, id: "oauth-google-reauth-how", textContent: "", className: "muted" };
+  const reauth = {
+    hidden: true,
+    id: "oauth-google-reauth",
+    firstChild: reauthHow,
+    insertBefore() {},
+    appendChild() {},
+    querySelector(selector: string) {
+      if (selector === "#oauth-google-reauth-how") return reauthHow;
+      if (selector === "#oauth-open-gmail") return { id: "oauth-open-gmail", textContent: "" };
+      return null;
+    },
+  };
   const openedUrls: string[] = [];
   const errorEl = {
     hidden: true,
@@ -292,6 +304,7 @@ function installAuth(options: {
     consent,
     hint,
     reauth,
+    reauthHow,
     openedUrls,
     logins,
     posts,
@@ -586,7 +599,7 @@ describe("Android Google auth lifecycle", () => {
     assert.equal(client.win.KORPASSET_AUTH.isInProgress(), false);
     assert.equal(findTrace(client.traces, "google_browser_fallback"), undefined);
     assert.deepEqual(client.errors, [
-      "Google kände inte igen enheten. Bekräfta inloggningen i Gmail eller på en annan enhet, vänta en stund, och tryck Fortsätt med Google igen.",
+      "Google stoppade inloggningen. Det visades inget att godkänna. Tryck Fortsätt med Google igen.",
     ]);
     assert.equal(client.hint.hidden, true);
     assert.equal(client.reauth.hidden, false);
@@ -621,7 +634,7 @@ describe("Android Google auth lifecycle", () => {
     );
     assert.equal(
       client.errors.includes(
-        "Google kände inte igen enheten. Bekräfta inloggningen i Gmail eller på en annan enhet, vänta en stund, och tryck Fortsätt med Google igen.",
+        "Google stoppade inloggningen. Det visades inget att godkänna. Tryck Fortsätt med Google igen.",
       ),
       true,
     );
@@ -818,7 +831,7 @@ describe("Android Google auth lifecycle", () => {
     await flush();
     assert.equal(client.hint.hidden, false);
     assert.equal(client.reauth.hidden, true);
-    assert.match(client.hint.textContent, /Google som kräver det/);
+    assert.match(client.hint.textContent, /Google som gör det/);
     assert.equal(findTrace(client.traces, "google_device_hint_shown")?.reason, "once");
     await client.tapGoogle();
     assert.equal(client.hint.hidden, false);
@@ -844,10 +857,11 @@ describe("Android Google auth lifecycle", () => {
       client.traces.filter((item) => item.step === "google_device_hint_shown").length,
       1,
     );
-    assert.match(client.errors.at(-1) || "", /Google kände inte igen enheten/);
-    client.tapGmail();
-    assert.deepEqual(client.openedUrls, ["https://mail.google.com/"]);
-    assert.equal(findTrace(client.traces, "google_reauth_gmail_opened")?.reason, "gmail");
+    assert.match(client.errors.at(-1) || "", /Det visades inget att godkänna/);
+    assert.match(client.reauthHow.textContent, /utan en ruta att godkänna/);
+    assert.match(client.reauthHow.textContent, /Fortsätt med Google igen/);
+    assert.equal(client.openedUrls.length, 0);
+    assert.equal(findTrace(client.traces, "google_reauth_gmail_opened"), undefined);
     assert.equal(client.logins.length, 1);
   });
 

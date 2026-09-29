@@ -220,11 +220,11 @@ export function oauthContinuePanel(intro?: string, returnTo = "/app"): string {
          <div class="stack oauth-continue" data-return-to="${escapeHtml(returnTo)}">
            <p>Fortsätt med Apple eller Google. Samma knapp är både första gången och när du kommer tillbaka.</p>
            <p id="oauth-error" class="banner banner-error" hidden></p>
-           <div id="oauth-google-reauth" hidden>
-             <button type="button" class="btn btn-secondary" id="oauth-open-gmail">Öppna Gmail och godkänn</button>
+           <div id="oauth-google-reauth" class="stack" hidden>
+             <p id="oauth-google-reauth-how" class="muted">Google avbröt efter kontoväljaren utan mejl och utan en ruta att godkänna. Tryck Fortsätt med Google igen. Samma sak en gång till betyder att Google nekar Körpasset på den här telefonen just nu — inte att du missat en knapp.</p>
            </div>
            <p id="oauth-status" class="muted" hidden>Loggar in…</p>
-           <p id="oauth-google-hint" class="muted" hidden>Google kan be dig bekräfta enheten. Det är Google som kräver det, inte Körpasset.</p>
+           <p id="oauth-google-hint" class="muted" hidden>Första gången med Körpasset kan Google stoppa inloggningen, även på en telefon du redan använder. Det är Google som gör det, inte Körpasset.</p>
            <button type="button" class="btn btn-primary" id="continue-apple" data-oauth-provider="apple">Fortsätt med Apple</button>
            <button type="button" class="btn btn-secondary" id="continue-google" data-oauth-provider="google">Fortsätt med Google</button>
          </div>`;
