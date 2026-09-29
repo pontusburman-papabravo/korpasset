@@ -43,6 +43,7 @@ v1 är strikt fokuserad på den praktiska privata övningskörningen.
 - [Account go-live](docs/operations/account-go-live.md) — Apple/Google, AASA, TestFlight/Play före extern beta
 - [VPS-access](docs/operations/vps-access.md) — korpasset.se host, Compose, redeploy
 - [Native apps](docs/operations/native-apps.md) — Capacitor, TestFlight, Play, Universal/App Links
+- [Xcode Cloud](docs/operations/xcode-cloud.md) — delat schema, post-clone, första TestFlight-arkivet
 - [Apple Developer](docs/operations/apple-developer.md) — App ID `se.korpasset.app`
 - [Google Play](docs/operations/google-play.md) — package `se.korpasset.app`
 

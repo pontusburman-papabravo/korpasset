@@ -21,7 +21,7 @@ const config: CapacitorConfig = {
     },
   },
   ios: {
-    scheme: "Körpasset",
+    scheme: "App",
     preferredContentMode: "mobile",
   },
   android: {

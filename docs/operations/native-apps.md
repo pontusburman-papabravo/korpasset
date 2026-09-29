@@ -63,17 +63,17 @@ App ID `se.korpasset.app` är redan registrerad som Explicit + Sign in with Appl
 1. Team ID är `PQ7M3B7VW5` (samma som Min Stjärndag).
 2. För Apple-inloggning på Android: Services ID t.ex. `se.korpasset.app.android` med return URL `https://korpasset.se/app`.
 3. App Store Connect: ny app **Körpasset** (inte en ny version av Min Stjärndag). SKU `se.korpasset.app`. **Privacy Policy URL:** `https://korpasset.se/integritet`. Villkor: `https://korpasset.se/villkor`.
-4. Bygg på Mac (`ios/` ligger i git):
+4. Bygg i Xcode Cloud (föredraget) eller på Mac. Delat schema `App` och `ci_post_clone.sh` ligger i git. Första workflow skapas en gång i Xcode eller App Store Connect: [xcode-cloud.md](xcode-cloud.md).
 
 ```bash
 cd native
 git pull
-npm install
+npm ci
 npx cap sync ios
 npx cap open ios
 ```
 
-I Xcode: team och Sign in with Apple capability. Associated Domains (`applinks:korpasset.se` och `webcredentials:korpasset.se`) ligger i [`native/ios/App/App/App.entitlements`](../../native/ios/App/App/App.entitlements). Archive → TestFlight.
+I Xcode: team och Sign in with Apple capability. Associated Domains (`applinks:korpasset.se` och `webcredentials:korpasset.se`) ligger i [`native/ios/App/App/App.entitlements`](../../native/ios/App/App/App.entitlements). Scheme **App** → Archive → TestFlight, eller starta Xcode Cloud-workflow mot samma schema.
 
 ## Appikon (iOS och Android)
 
