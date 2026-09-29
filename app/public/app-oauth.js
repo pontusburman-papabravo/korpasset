@@ -201,6 +201,15 @@
     return /cancel/i.test(message);
   }
 
+  function googleNativeErrorMessage(error) {
+    if (loginWasCancelled(error)) return "Inloggningen avbröts. Försök igen.";
+    const code = pluginFailureCode(error);
+    if (code === "16") {
+      return "Google kände inte igen enheten. Bekräfta inloggningen i Gmail eller på en annan enhet, vänta en stund, och tryck Fortsätt med Google igen.";
+    }
+    return "Kunde inte logga in. Försök igen.";
+  }
+
   function sanitizeTraceCode(value) {
     const text = typeof value === "string" ? value.trim() : "";
     return /^[A-Za-z0-9_.:-]{1,64}$/.test(text) ? text : "";
@@ -402,11 +411,7 @@
             error,
           );
         }
-        showError(
-          cancelled
-            ? "Inloggningen avbröts. Försök igen."
-            : "Kunde inte logga in. Försök igen.",
-        );
+        showError(googleNativeErrorMessage(error));
         failAuth(
           cancelled
             ? "cancelled"
@@ -976,6 +981,13 @@
       await delay(AUTH_SETTLE_MS);
       if (authRuntime.navigating || authRuntime.completed) {
         return { skipped: true, reason: "navigating" };
+      }
+      if (authRuntime.inProgress) {
+        return { authenticated: false, waiting: true, outcome: "pending" };
+      }
+      const livePending = readAuth(ctx && ctx.storage);
+      if (!livePending) {
+        return { skipped: true, reason: "stale-pending" };
       }
       try {
         session = await fetchSession();

@@ -552,11 +552,49 @@ describe("Android Google auth lifecycle", () => {
     assert.equal(client.google.disabled, false);
     assert.equal(client.win.KORPASSET_AUTH.isInProgress(), false);
     assert.equal(findTrace(client.traces, "google_browser_fallback"), undefined);
+    assert.deepEqual(client.errors, [
+      "Google kände inte igen enheten. Bekräfta inloggningen i Gmail eller på en annan enhet, vänta en stund, och tryck Fortsätt med Google igen.",
+    ]);
     failNative = false;
     await client.tapGoogle();
     assert.equal(client.logins.length, 2);
     assert.equal(client.posts.length, 1);
     assert.equal(client.assignments[0], "/onboarding");
+  });
+
+  it("does not overwrite a Credential Manager 16 failure with incomplete-return on resume", async () => {
+    let release: ((error: Error) => void) | undefined;
+    const client = installAuth({
+      platform: "android",
+      login: () =>
+        new Promise((_resolve, reject) => {
+          release = reject;
+        }),
+    });
+    await flush();
+    const started = client.tapGoogle();
+    await flush();
+    client.resume();
+    await flush();
+    release?.(new Error("Google Sign-In failed: [16] Account reauth failed"));
+    await started;
+    await client.win.KORPASSET_AUTH.recover("resume");
+    await flush();
+    assert.equal(
+      client.errors.includes("Kunde inte slutföra inloggningen. Försök igen."),
+      false,
+    );
+    assert.equal(
+      client.errors.includes(
+        "Google kände inte igen enheten. Bekräfta inloggningen i Gmail eller på en annan enhet, vänta en stund, och tryck Fortsätt med Google igen.",
+      ),
+      true,
+    );
+    assert.equal(findTrace(client.traces, "auth_session_failed")?.reason, "credential-manager-rejected");
+    assert.equal(
+      client.traces.some((item) => item.step === "auth_session_failed" && item.reason === "incomplete-return"),
+      false,
+    );
   });
 
   it("uses one browser fallback when initialize reports 28444 before the picker", async () => {
