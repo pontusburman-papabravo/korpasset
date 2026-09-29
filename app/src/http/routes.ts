@@ -98,7 +98,9 @@ import {
   renderJourneyPickerPage,
   renderMorePage,
   signedInHome,
+  signedInRedirectPath,
 } from "./navigation.js";
+import { waitingIdentity } from "./waiting-pages.js";
 import {
   renderDevelopmentPage,
   renderJourneyHome,
@@ -368,7 +370,9 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       return reply.redirect(`/journey/${home.journeyId}`);
     }
     if (home.kind === "onboarding") {
-      return reply.redirect(onboardingPathForTrack(readOnboardingTrack(request)));
+      return reply.redirect(
+        await signedInRedirectPath(sessionUserId, readOnboardingTrack(request)),
+      );
     }
     return reply.type("text/html").send(
       renderJourneyPickerPage(home.journeys, sessionUserId),
@@ -400,7 +404,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
           resolved.journey.studentName,
           "B",
         )
-      : null;
+      : waitingIdentity(readOnboardingTrack(request));
     return reply.type("text/html").send(
       layoutForRequest(
         request,
@@ -412,7 +416,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         }),
         {
           journeyId: resolved?.journey.id,
-          role: resolved?.role,
+          role: resolved?.role ?? identity.role,
         },
       ),
     );
@@ -809,6 +813,53 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         layout("Fel", errorBanner(message)),
       );
     }
+  });
+
+  app.get("/guide", async (request, reply) => {
+    requireSessionUserId(request);
+    const skills = await listSkillsForTaxonomy();
+    return reply.type("text/html").send(
+      layoutForRequest(
+        request,
+        "Handledarguiden",
+        renderSupervisorGuideIndex({
+          studentName: "Körkortsresan",
+          skills,
+        }),
+        { role: waitingIdentity(readOnboardingTrack(request)).role },
+      ),
+    );
+  });
+
+  app.get("/guide/:skillKey", async (request, reply) => {
+    const userId = requireSessionUserId(request);
+    const { skillKey } = request.params as { skillKey: string };
+    if (!supervisorGuideForSkillKey(skillKey)) {
+      return reply.status(404).type("text/html").send(
+        layout("Fel", errorBanner("Momentet finns inte i handledarguiden")),
+      );
+    }
+    const skill = (await listSkillsForTaxonomy()).find(
+      (item) => item.skillKey === skillKey,
+    );
+    if (!skill) {
+      return reply.status(404).type("text/html").send(
+        layout("Fel", errorBanner("Momentet finns inte i handledarguiden")),
+      );
+    }
+    await recordProductEventSafe({
+      name: "training_guidance_opened",
+      userId,
+      actorRole: waitingIdentity(readOnboardingTrack(request)).role,
+    });
+    return reply.type("text/html").send(
+      layoutForRequest(
+        request,
+        skill.title,
+        renderSupervisorGuideSkill({ skill }),
+        { role: waitingIdentity(readOnboardingTrack(request)).role },
+      ),
+    );
   });
 
   app.get("/journey/:journeyId/guide", async (request, reply) => {

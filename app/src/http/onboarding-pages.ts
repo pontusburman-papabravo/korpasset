@@ -19,7 +19,7 @@ const STAGE_HINTS: Record<Exclude<(typeof PRACTICE_STAGES)[number], "unknown">, 
   near_test: "Närmar er uppkörning. Inte ett betyg.",
 };
 
-function copyableUrlField(id: string, url: string, label: string): string {
+export function copyableUrlField(id: string, url: string, label: string): string {
   const fieldId = escapeHtml(id);
   return `<div>
            <label for="${fieldId}">${escapeHtml(label)}</label>
@@ -76,7 +76,7 @@ export function supervisorOnboardingPage(signedInHtml = ""): string {
          </ol>
          ${copyableUrlField("student-start-url", studentStartUrl(), "Länk till eleven")}
          <p>Du kan följa flera elever, till exempel två barn eller partner och barn. Varje elev har en egen resa.</p>
-         <p class="muted">Resa, Nästa och Utveckling öppnas när eleven har skapat resan och bjudit in dig.</p>
+         <p class="muted">Du kan titta runt i Resa, Nästa och Utveckling medan du väntar. Körpass och bedömning kommer när eleven bjudit in dig.</p>
          <p class="muted">Tar du själv körkort? Då ska du skapa en egen resa.</p>
          <p><a class="btn btn-secondary" href="${STUDENT_ONBOARDING_PATH}">Jag tar körkort</a></p>
          <p><a class="btn-link" href="${ONBOARDING_CHOOSER_RESET_PATH}">Tillbaka till valet</a></p>`;

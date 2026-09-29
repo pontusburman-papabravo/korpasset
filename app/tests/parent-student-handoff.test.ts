@@ -208,16 +208,56 @@ describe("parent initiates, student owns the journey", () => {
     });
     assert.equal(handledare.statusCode, 200);
     assert.match(handledare.body, /Få in den som tar körkort/);
-    assert.match(handledare.body, /Resa, Nästa och Utveckling/);
+    assert.match(handledare.body, /titta runt i Resa, Nästa och Utveckling/);
     assert.match(handledare.body, /href="\/onboarding\?byt=1"/);
     const jar = mergeCookies(cookies, handledare);
     assert.equal(jar.korpasset_onboarding_track, "handledare");
 
-    for (const url of ["/resa", "/nasta", "/utveckling", "/app", "/onboarding"]) {
-      const response = await injectWithSession(app, jar, { method: "GET", url });
-      assert.equal(response.statusCode, 302, url);
-      assert.equal(response.headers.location, "/onboarding/handledare", url);
-    }
+    const appHome = await injectWithSession(app, jar, { method: "GET", url: "/app" });
+    assert.equal(appHome.statusCode, 302);
+    assert.equal(appHome.headers.location, "/resa");
+
+    const onboarding = await injectWithSession(app, jar, {
+      method: "GET",
+      url: "/onboarding",
+    });
+    assert.equal(onboarding.statusCode, 302);
+    assert.equal(onboarding.headers.location, "/onboarding/handledare");
+
+    const resa = await injectWithSession(app, jar, { method: "GET", url: "/resa" });
+    assert.equal(resa.statusCode, 200);
+    assert.match(resa.body, /Du är handledare/);
+    assert.match(resa.body, /Handledarguiden/);
+    assert.match(resa.body, /href="\/guide"/);
+    assert.match(resa.body, /0%/);
+    assert.match(resa.body, /Länk till eleven/);
+    assert.doesNotMatch(resa.body, /Vad vill du göra/);
+    assert.match(resa.body, /href="\/resa"/);
+    assert.match(resa.body, /href="\/nasta"/);
+    assert.match(resa.body, /href="\/utveckling"/);
+
+    const nasta = await injectWithSession(app, jar, { method: "GET", url: "/nasta" });
+    assert.equal(nasta.statusCode, 200);
+    assert.match(nasta.body, /Nästa körpass/);
+    assert.match(nasta.body, /Så övar ni/);
+    assert.doesNotMatch(nasta.body, /Starta körpass/);
+
+    const utveckling = await injectWithSession(app, jar, {
+      method: "GET",
+      url: "/utveckling",
+    });
+    assert.equal(utveckling.statusCode, 200);
+    assert.match(utveckling.body, /Inte tränat ännu/);
+    assert.match(utveckling.body, /href="\/guide\//);
+
+    const guide = await injectWithSession(app, jar, { method: "GET", url: "/guide" });
+    assert.equal(guide.statusCode, 200);
+    assert.match(guide.body, /Handledarguiden/);
+    assert.match(guide.body, /Alla moment/);
+
+    const mer = await injectWithSession(app, jar, { method: "GET", url: "/mer" });
+    assert.equal(mer.statusCode, 200);
+    assert.match(mer.body, /Du är handledare/);
 
     const reset = await injectWithSession(app, jar, {
       method: "GET",

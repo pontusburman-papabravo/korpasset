@@ -84,6 +84,8 @@ describe("app runtime tracking policy", () => {
     assert.equal(isNativeProductPath("/onboarding?som=elev"), true);
     assert.equal(isNativeProductPath("/onboarding/handledare"), true);
     assert.equal(isNativeProductPath("/onboarding/elev"), true);
+    assert.equal(isNativeProductPath("/guide"), true);
+    assert.equal(isNativeProductPath("/guide/car_control_pre_drive_check"), true);
     assert.equal(isNativeProductPath("/invite/abc"), true);
     assert.equal(isNativeProductPath("/journey/00000000-0000-0000-0000-000000000000/nasta"), true);
     assert.equal(isNativeProductPath("/"), false);

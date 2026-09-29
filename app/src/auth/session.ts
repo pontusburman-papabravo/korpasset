@@ -94,6 +94,7 @@ export function isNativeProductPath(pathname: string): boolean {
     path === "/nasta" ||
     path === "/utveckling" ||
     path === "/hjalp" ||
+    path === "/guide" ||
     path === "/logout"
   ) {
     return true;
@@ -104,7 +105,8 @@ export function isNativeProductPath(pathname: string): boolean {
     path.startsWith("/onboarding/") ||
     path.startsWith("/invite/") ||
     path.startsWith("/journey/") ||
-    path.startsWith("/hjalp/")
+    path.startsWith("/hjalp/") ||
+    path.startsWith("/guide/")
   );
 }
 

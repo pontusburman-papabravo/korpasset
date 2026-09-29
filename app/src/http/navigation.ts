@@ -11,7 +11,6 @@ import {
 } from "./journey-identity.js";
 import {
   STUDENT_ONBOARDING_PATH,
-  onboardingPathForTrack,
   type OnboardingTrack,
 } from "./onboarding-track.js";
 
@@ -35,7 +34,7 @@ export async function signedInRedirectPath(
 ): Promise<string> {
   const home = await signedInHome(userId);
   if (home.kind === "journey") return `/journey/${home.journeyId}`;
-  if (home.kind === "onboarding") return onboardingPathForTrack(track ?? null);
+  if (home.kind === "onboarding") return track ? "/resa" : "/onboarding";
   return "/app";
 }
 
