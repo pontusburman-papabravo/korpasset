@@ -599,7 +599,7 @@ describe("Android Google auth lifecycle", () => {
     assert.equal(client.win.KORPASSET_AUTH.isInProgress(), false);
     assert.equal(findTrace(client.traces, "google_browser_fallback"), undefined);
     assert.deepEqual(client.errors, [
-      "Google kände inte igen den här telefonen. Godkänn i mailet från Google, sen tryck Fortsätt med Google igen.",
+      "Google krävde en extra kontroll för Körpasset. Slutför Googles ruta på telefonen, eller tryck Fortsätt med Google igen.",
     ]);
     assert.equal(client.hint.hidden, true);
     assert.equal(client.reauth.hidden, false);
@@ -634,7 +634,7 @@ describe("Android Google auth lifecycle", () => {
     );
     assert.equal(
       client.errors.includes(
-        "Google kände inte igen den här telefonen. Godkänn i mailet från Google, sen tryck Fortsätt med Google igen.",
+        "Google krävde en extra kontroll för Körpasset. Slutför Googles ruta på telefonen, eller tryck Fortsätt med Google igen.",
       ),
       true,
     );
@@ -857,9 +857,9 @@ describe("Android Google auth lifecycle", () => {
       client.traces.filter((item) => item.step === "google_device_hint_shown").length,
       1,
     );
-    assert.match(client.errors.at(-1) || "", /Godkänn i mailet från Google/);
-    assert.match(client.reauthHow.textContent, /Säkerhetsvarning/);
-    assert.match(client.reauthHow.textContent, /Ja eller Det var jag/);
+    assert.match(client.errors.at(-1) || "", /Slutför Googles ruta på telefonen/);
+    assert.match(client.reauthHow.textContent, /vi känner inte igen den här enheten/);
+    assert.match(client.reauthHow.textContent, /Fortsätt med Google igen/);
     client.tapGmail();
     assert.equal(
       client.openedUrls[0],

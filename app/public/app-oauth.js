@@ -5,11 +5,11 @@
   const AUTH_KEY = "korpasset.pendingAuth";
   const GOOGLE_HINT_KEY = "korpasset.googleDeviceHint";
   const GOOGLE_HINT_TEXT =
-    "Google kan be dig bekräfta enheten. Det är Google som kräver det, inte Körpasset.";
+    "Google kan kräva en extra kontroll första gången du använder Körpasset, även på en telefon du redan använder. Det är Google som kräver det, inte Körpasset.";
   const GOOGLE_REAUTH_ERROR =
-    "Google kände inte igen den här telefonen. Godkänn i mailet från Google, sen tryck Fortsätt med Google igen.";
+    "Google krävde en extra kontroll för Körpasset. Slutför Googles ruta på telefonen, eller tryck Fortsätt med Google igen.";
   const GOOGLE_REAUTH_HOW =
-    "I Gmail: öppna mailet från Google om ny inloggning. Rubriken är ofta Säkerhetsvarning. Tryck Ja eller Det var jag. Finns inget mejl, godkänn på en annan telefon där du redan är inne på Google. Sen tillbaka hit och Fortsätt med Google.";
+    "Samma Google-konto och samma telefon räcker inte. Google frågar ändå första gången Körpasset får logga in. Om rutan “vi känner inte igen den här enheten” syns: slutför den där. Stängde du den: tryck Fortsätt med Google igen. Bara om Google skickat ett mejl: öppna det och tryck Ja.";
   const GMAIL_SEARCH_URL =
     "https://mail.google.com/mail/u/0/#search/from%3A(no-reply%40accounts.google.com+OR+google-noreply%40google.com)";
   const GMAIL_APP_INTENT =
@@ -894,7 +894,7 @@
       button.className = "btn btn-secondary";
       if (el.appendChild) el.appendChild(button);
     }
-    if (button) button.textContent = "Visa mailet från Google";
+    if (button) button.textContent = "Om Google skickat mejl";
     return el;
   }
 

@@ -221,11 +221,11 @@ export function oauthContinuePanel(intro?: string, returnTo = "/app"): string {
            <p>Fortsätt med Apple eller Google. Samma knapp är både första gången och när du kommer tillbaka.</p>
            <p id="oauth-error" class="banner banner-error" hidden></p>
            <div id="oauth-google-reauth" class="stack" hidden>
-             <p id="oauth-google-reauth-how" class="muted">I Gmail: öppna mailet från Google om ny inloggning. Rubriken är ofta Säkerhetsvarning. Tryck Ja eller Det var jag. Finns inget mejl, godkänn på en annan telefon där du redan är inne på Google. Sen tillbaka hit och Fortsätt med Google.</p>
-             <button type="button" class="btn btn-secondary" id="oauth-open-gmail">Visa mailet från Google</button>
+             <p id="oauth-google-reauth-how" class="muted">Samma Google-konto och samma telefon räcker inte. Google frågar ändå första gången Körpasset får logga in. Om rutan “vi känner inte igen den här enheten” syns: slutför den där. Stängde du den: tryck Fortsätt med Google igen. Bara om Google skickat ett mejl: öppna det och tryck Ja.</p>
+             <button type="button" class="btn btn-secondary" id="oauth-open-gmail">Om Google skickat mejl</button>
            </div>
            <p id="oauth-status" class="muted" hidden>Loggar in…</p>
-           <p id="oauth-google-hint" class="muted" hidden>Google kan be dig bekräfta enheten. Det är Google som kräver det, inte Körpasset.</p>
+           <p id="oauth-google-hint" class="muted" hidden>Google kan kräva en extra kontroll första gången du använder Körpasset, även på en telefon du redan använder. Det är Google som kräver det, inte Körpasset.</p>
            <button type="button" class="btn btn-primary" id="continue-apple" data-oauth-provider="apple">Fortsätt med Apple</button>
            <button type="button" class="btn btn-secondary" id="continue-google" data-oauth-provider="google">Fortsätt med Google</button>
          </div>`;
