@@ -11,6 +11,7 @@ Första workflow kan **inte** skapas från Linux. Repo-filerna nedan räcker fö
 | [`native/ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme`](../../native/ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme) | Delat schema `App` med Archive i Release |
 | [`native/ios/App/App.xcworkspace`](../../native/ios/App/App.xcworkspace) | Workspace som bara wrappar `App.xcodeproj` (ingen CocoaPods) |
 | [`native/ios/App/ci_scripts/ci_post_clone.sh`](../../native/ios/App/ci_scripts/ci_post_clone.sh) | Node 22, `npm ci`, `npx cap sync ios` |
+| [`native/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`](../../native/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved) | SPM-lås för Alamofire, Google Sign-In och Capacitor. Xcode Cloud tillåter inte resolve i molnet |
 
 Project/workspace i Xcode Cloud ska vara **`native/ios/App/App.xcodeproj`** eller **`native/ios/App/App.xcworkspace`**. Inte `ios/App/App.xcworkspace` — det är Capacitor-default när `ios/` ligger i repots rot. Här ligger skalet under `native/`.
 
@@ -60,7 +61,7 @@ Byggloggen visar `ci_post_clone.sh`. Vanliga fel:
 | Symptom | Orsak |
 | --- | --- |
 | `Workspace App.xcworkspace does not exist at ios/App/App.xcworkspace` | Workflow **General** pekar på fel sökväg. Byt till `native/ios/App/App.xcodeproj` eller `native/ios/App/App.xcworkspace` |
-| `a resolved file is required when automatic dependency resolution is disabled` … `alamofire` | Xcode Cloud resolve-steget tillåter inte nya SPM-paket. `ci_post_clone.sh` ska köra `xcodebuild -resolvePackageDependencies` efter `cap sync`. Alternativ: Environment → slå av automatic-resolution-spärren |
+| `a resolved file is required when automatic dependency resolution is disabled` … `alamofire` | `Package.resolved` saknas i git. Den ska ligga i `App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/`. Kör inte `xcodebuild -resolvePackageDependencies` i `ci_post_clone.sh` — Xcode Cloud blockerar det också |
 | `CapApp-SPM` hittar inte `@capacitor/app` | `npm ci` kördes inte, eller fel working directory |
 | Missing `public` / `capacitor.config.json` | `npx cap sync ios` kördes inte |
 | Inget schema i workflow-listan | `App.xcscheme` är inte committad under `xcshareddata` |
