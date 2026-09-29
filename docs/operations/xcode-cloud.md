@@ -31,7 +31,7 @@ Gör detta inloggad på Papa Bravo-teamet (`PQ7M3B7VW5`), inte My Starday-appen.
 4. Product / project: `native/ios/App/App.xcodeproj` eller `native/ios/App/App.xcworkspace`. Inte `ios/App/…`.
 5. Scheme: **App** (det delade schemat).
 6. Action: **Archive** → iOS → destination **TestFlight Internal Testing**.
-7. Environment: Recommended Xcode + macOS. Signing lämnas automatisk (`DEVELOPMENT_TEAM` är redan `PQ7M3B7VW5`). Slå **av** “Disable automatic dependency resolution” om rutan finns — annars kräver Xcode Cloud en `Package.resolved` som `ci_post_clone.sh` skriver efter `cap sync`.
+7. Environment: Recommended Xcode + macOS. Signing lämnas automatisk (`DEVELOPMENT_TEAM` är redan `PQ7M3B7VW5`). `Package.resolved` ligger i git; slå av “Disable automatic dependency resolution” om rutan finns, som extra skydd.
 8. Start condition: **Manual** för första 1.0.7-bygget. Efter att det gått grönt kan du lägga till push till `main` eller en tagg.
 
 ### Eller från Xcode på Mac
