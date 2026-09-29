@@ -74,6 +74,9 @@ function accountPage(options: {
        <h2>Inloggning</h2>
        <p>Du kan koppla både Apple och Google till samma Körpasset-konto och använda båda för att logga in.</p>
        <p id="oauth-error" class="banner banner-error" hidden></p>
+       <div id="oauth-google-reauth" hidden>
+         <button type="button" class="btn btn-secondary" id="oauth-open-gmail">Öppna Gmail och godkänn</button>
+       </div>
        <ul class="account-providers__list">
          ${providerRow("apple", hasApple)}
          ${providerRow("google", hasGoogle)}

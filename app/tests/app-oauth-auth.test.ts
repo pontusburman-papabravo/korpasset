@@ -98,6 +98,8 @@ function installAuth(options: {
   } };
   const status = { hidden: true, textContent: "", id: "oauth-status", className: "muted" };
   const hint = { hidden: true, textContent: "", id: "oauth-google-hint", className: "muted" };
+  const reauth = { hidden: true, id: "oauth-google-reauth" };
+  const openedUrls: string[] = [];
   const errorEl = {
     hidden: true,
     id: "oauth-error",
@@ -160,6 +162,7 @@ function installAuth(options: {
       getElementById(id: string) {
         if (id === "oauth-status") return status;
         if (id === "oauth-google-hint") return hint;
+        if (id === "oauth-google-reauth") return reauth;
         if (id === "oauth-error") return errorEl;
         return null;
       },
@@ -217,6 +220,10 @@ function installAuth(options: {
         appleClientId: "se.korpasset.app",
         googleWebClientId: "web.apps.googleusercontent.com",
         googleIosClientId: "ios.apps.googleusercontent.com",
+      },
+      open(url: string) {
+        openedUrls.push(String(url));
+        return null;
       },
       location,
       history: {
@@ -284,6 +291,8 @@ function installAuth(options: {
     apple,
     consent,
     hint,
+    reauth,
+    openedUrls,
     logins,
     posts,
     assignments,
@@ -308,6 +317,19 @@ function installAuth(options: {
         preventDefault() {},
       });
       await flush();
+    },
+    tapGmail() {
+      click({
+        target: {
+          closest(selector: string) {
+            if (selector === "#oauth-open-gmail") {
+              return { id: "oauth-open-gmail" } as Button;
+            }
+            return null;
+          },
+        },
+        preventDefault() {},
+      });
     },
   };
 }
@@ -567,6 +589,7 @@ describe("Android Google auth lifecycle", () => {
       "Google kände inte igen enheten. Bekräfta inloggningen i Gmail eller på en annan enhet, vänta en stund, och tryck Fortsätt med Google igen.",
     ]);
     assert.equal(client.hint.hidden, true);
+    assert.equal(client.reauth.hidden, false);
     failNative = false;
     await client.tapGoogle();
     assert.equal(client.logins.length, 2);
@@ -787,12 +810,14 @@ describe("Android Google auth lifecycle", () => {
     assert.equal(findTrace(client.traces, "google_login_cancelled")?.pluginCode, "cancelled");
     assert.deepEqual(client.errors, ["Inloggningen avbröts. Försök igen."]);
     assert.equal(client.hint.hidden, true);
+    assert.equal(client.reauth.hidden, true);
   });
 
   it("tells Android users once that Google may ask to confirm the device", async () => {
     const client = installAuth({ platform: "android" });
     await flush();
     assert.equal(client.hint.hidden, false);
+    assert.equal(client.reauth.hidden, true);
     assert.match(client.hint.textContent, /Google som kräver det/);
     assert.equal(findTrace(client.traces, "google_device_hint_shown")?.reason, "once");
     await client.tapGoogle();
@@ -814,11 +839,16 @@ describe("Android Google auth lifecycle", () => {
     assert.equal(client.hint.hidden, false);
     await client.tapGoogle();
     assert.equal(client.hint.hidden, true);
+    assert.equal(client.reauth.hidden, false);
     assert.equal(
       client.traces.filter((item) => item.step === "google_device_hint_shown").length,
       1,
     );
     assert.match(client.errors.at(-1) || "", /Google kände inte igen enheten/);
+    client.tapGmail();
+    assert.deepEqual(client.openedUrls, ["https://mail.google.com/"]);
+    assert.equal(findTrace(client.traces, "google_reauth_gmail_opened")?.reason, "gmail");
+    assert.equal(client.logins.length, 1);
   });
 
   it("does not show the Google device hint again on the same install", async () => {
