@@ -221,6 +221,7 @@ export function oauthContinuePanel(intro?: string, returnTo = "/app"): string {
            <p>Fortsätt med Apple eller Google. Samma knapp är både första gången och när du kommer tillbaka.</p>
            <p id="oauth-error" class="banner banner-error" hidden></p>
            <p id="oauth-status" class="muted" hidden>Loggar in…</p>
+           <p id="oauth-google-hint" class="muted" hidden>Google kan be dig bekräfta enheten. Det är Google som kräver det, inte Körpasset.</p>
            <button type="button" class="btn btn-primary" id="continue-apple" data-oauth-provider="apple">Fortsätt med Apple</button>
            <button type="button" class="btn btn-secondary" id="continue-google" data-oauth-provider="google">Fortsätt med Google</button>
          </div>`;

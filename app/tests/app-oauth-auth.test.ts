@@ -88,6 +88,7 @@ function installAuth(options: {
   search?: string;
   pendingAuth?: Record<string, unknown> | null;
   initialize?: () => Promise<void>;
+  googleHintShown?: boolean;
 } = {}) {
   const google = button("google", "Fortsätt med Google");
   const apple = button("apple", "Fortsätt med Apple");
@@ -96,11 +97,13 @@ function installAuth(options: {
     this.attrs[name] = value;
   } };
   const status = { hidden: true, textContent: "", id: "oauth-status", className: "muted" };
+  const hint = { hidden: true, textContent: "", id: "oauth-google-hint", className: "muted" };
   const store = new Map<string, string>();
   if (options.pendingAuth) {
     store.set("korpasset.pendingAuth", JSON.stringify(options.pendingAuth));
   }
   const local = new Map<string, string>();
+  if (options.googleHintShown) local.set("korpasset.googleDeviceHint", "1");
 
   const logins: Array<{ provider: string }> = [];
   const errors: string[] = [];
@@ -143,6 +146,7 @@ function installAuth(options: {
       body: {},
       getElementById(id: string) {
         if (id === "oauth-status") return status;
+        if (id === "oauth-google-hint") return hint;
         if (id === "oauth-error") {
           return {
             hidden: true,
@@ -273,6 +277,7 @@ function installAuth(options: {
     google,
     apple,
     consent,
+    hint,
     logins,
     posts,
     assignments,
@@ -552,11 +557,49 @@ describe("Android Google auth lifecycle", () => {
     assert.equal(client.google.disabled, false);
     assert.equal(client.win.KORPASSET_AUTH.isInProgress(), false);
     assert.equal(findTrace(client.traces, "google_browser_fallback"), undefined);
+    assert.deepEqual(client.errors, [
+      "Google kände inte igen enheten. Bekräfta inloggningen i Gmail eller på en annan enhet, vänta en stund, och tryck Fortsätt med Google igen.",
+    ]);
     failNative = false;
     await client.tapGoogle();
     assert.equal(client.logins.length, 2);
     assert.equal(client.posts.length, 1);
     assert.equal(client.assignments[0], "/onboarding");
+  });
+
+  it("does not overwrite a Credential Manager 16 failure with incomplete-return on resume", async () => {
+    let release: ((error: Error) => void) | undefined;
+    const client = installAuth({
+      platform: "android",
+      login: () =>
+        new Promise((_resolve, reject) => {
+          release = reject;
+        }),
+    });
+    await flush();
+    const started = client.tapGoogle();
+    await flush();
+    client.resume();
+    await flush();
+    release?.(new Error("Google Sign-In failed: [16] Account reauth failed"));
+    await started;
+    await client.win.KORPASSET_AUTH.recover("resume");
+    await flush();
+    assert.equal(
+      client.errors.includes("Kunde inte slutföra inloggningen. Försök igen."),
+      false,
+    );
+    assert.equal(
+      client.errors.includes(
+        "Google kände inte igen enheten. Bekräfta inloggningen i Gmail eller på en annan enhet, vänta en stund, och tryck Fortsätt med Google igen.",
+      ),
+      true,
+    );
+    assert.equal(findTrace(client.traces, "auth_session_failed")?.reason, "credential-manager-rejected");
+    assert.equal(
+      client.traces.some((item) => item.step === "auth_session_failed" && item.reason === "incomplete-return"),
+      false,
+    );
   });
 
   it("uses one browser fallback when initialize reports 28444 before the picker", async () => {
@@ -736,5 +779,33 @@ describe("Android Google auth lifecycle", () => {
     assert.equal(client.win.KORPASSET_AUTH.readAuth(), null);
     assert.equal(findTrace(client.traces, "google_login_cancelled")?.pluginCode, "cancelled");
     assert.deepEqual(client.errors, ["Inloggningen avbröts. Försök igen."]);
+  });
+
+  it("tells Android users once that Google may ask to confirm the device", async () => {
+    const client = installAuth({ platform: "android" });
+    await flush();
+    assert.equal(client.hint.hidden, false);
+    assert.match(client.hint.textContent, /Google som kräver det/);
+    assert.equal(findTrace(client.traces, "google_device_hint_shown")?.reason, "once");
+    await client.tapGoogle();
+    assert.equal(client.hint.hidden, false);
+    assert.equal(
+      client.traces.filter((item) => item.step === "google_device_hint_shown").length,
+      1,
+    );
+  });
+
+  it("does not show the Google device hint again on the same install", async () => {
+    const client = installAuth({ platform: "android", googleHintShown: true });
+    await flush();
+    assert.equal(client.hint.hidden, true);
+    assert.equal(findTrace(client.traces, "google_device_hint_shown"), undefined);
+  });
+
+  it("does not show the Google device hint on iOS", async () => {
+    const client = installAuth({ platform: "ios" });
+    await flush();
+    assert.equal(client.hint.hidden, true);
+    assert.equal(findTrace(client.traces, "google_device_hint_shown"), undefined);
   });
 });

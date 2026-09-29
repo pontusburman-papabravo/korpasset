@@ -3,6 +3,9 @@
   const PENDING_KEY = "korpasset.pendingInvite";
   const DEBUG_KEY = "korpasset.deeplinkDebug";
   const AUTH_KEY = "korpasset.pendingAuth";
+  const GOOGLE_HINT_KEY = "korpasset.googleDeviceHint";
+  const GOOGLE_HINT_TEXT =
+    "Google kan be dig bekräfta enheten. Det är Google som kräver det, inte Körpasset.";
   const TOKEN = /^[A-Za-z0-9_-]+$/;
   const AUTH_SETTLE_MS = 40;
   const authRuntime = {
@@ -199,6 +202,15 @@
     if (code === "USER_CANCELLED") return true;
     const message = error && typeof error.message === "string" ? error.message : "";
     return /cancel/i.test(message);
+  }
+
+  function googleNativeErrorMessage(error) {
+    if (loginWasCancelled(error)) return "Inloggningen avbröts. Försök igen.";
+    const code = pluginFailureCode(error);
+    if (code === "16") {
+      return "Google kände inte igen enheten. Bekräfta inloggningen i Gmail eller på en annan enhet, vänta en stund, och tryck Fortsätt med Google igen.";
+    }
+    return "Kunde inte logga in. Försök igen.";
   }
 
   function sanitizeTraceCode(value) {
@@ -402,11 +414,7 @@
             error,
           );
         }
-        showError(
-          cancelled
-            ? "Inloggningen avbröts. Försök igen."
-            : "Kunde inte logga in. Försök igen.",
-        );
+        showError(googleNativeErrorMessage(error));
         failAuth(
           cancelled
             ? "cancelled"
@@ -795,6 +803,62 @@
     authRuntime.provider = null;
   }
 
+  function googleDeviceHintAlreadyShown() {
+    try {
+      return window.localStorage && window.localStorage.getItem(GOOGLE_HINT_KEY) === "1";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function markGoogleDeviceHintShown() {
+    try {
+      if (window.localStorage) window.localStorage.setItem(GOOGLE_HINT_KEY, "1");
+    } catch (error) {
+      /* ignore */
+    }
+  }
+
+  function hideGoogleDeviceHint() {
+    try {
+      const el = document.getElementById && document.getElementById("oauth-google-hint");
+      if (el) el.hidden = true;
+    } catch (error) {
+      /* ignore */
+    }
+  }
+
+  // One-time, Android-only. Google's device check can look like a second
+  // login; say so once, then never again on this install.
+  function showGoogleDeviceHintOnce() {
+    if (platform() !== "android" || !nativeApp()) return false;
+    if (!isLoginSurface()) return false;
+    if (googleDeviceHintAlreadyShown()) {
+      hideGoogleDeviceHint();
+      return false;
+    }
+    let el = null;
+    try {
+      el = document.getElementById && document.getElementById("oauth-google-hint");
+    } catch (error) {
+      el = null;
+    }
+    if (!el && document.createElement) {
+      el = document.createElement("p");
+      el.id = "oauth-google-hint";
+      el.className = "muted";
+      const stack = document.querySelector && document.querySelector(".oauth-continue, .oauth-stack");
+      if (stack && stack.insertBefore) stack.insertBefore(el, stack.firstChild);
+      else if (document.body && document.body.appendChild) document.body.appendChild(el);
+    }
+    if (!el) return false;
+    el.hidden = false;
+    el.textContent = GOOGLE_HINT_TEXT;
+    markGoogleDeviceHintShown();
+    oauthTrace("google_device_hint_shown", { reason: "once" });
+    return true;
+  }
+
   function isLoginSurface() {
     try {
       return Boolean(
@@ -976,6 +1040,13 @@
       await delay(AUTH_SETTLE_MS);
       if (authRuntime.navigating || authRuntime.completed) {
         return { skipped: true, reason: "navigating" };
+      }
+      if (authRuntime.inProgress) {
+        return { authenticated: false, waiting: true, outcome: "pending" };
+      }
+      const livePending = readAuth(ctx && ctx.storage);
+      if (!livePending) {
+        return { skipped: true, reason: "stale-pending" };
       }
       try {
         session = await fetchSession();
@@ -1315,9 +1386,15 @@
     google.className = "btn btn-secondary";
     google.setAttribute("data-oauth-provider", "google");
     google.textContent = "Fortsätt med Google";
+    const hint = document.createElement("p");
+    hint.id = "oauth-google-hint";
+    hint.className = "muted";
+    hint.hidden = true;
+    hint.textContent = GOOGLE_HINT_TEXT;
     wrap.appendChild(intro);
     wrap.appendChild(error);
     wrap.appendChild(status);
+    wrap.appendChild(hint);
     wrap.appendChild(apple);
     wrap.appendChild(google);
     if (form) parent.insertBefore(wrap, form);
@@ -1407,7 +1484,13 @@
   function bootAuth() {
     if (consumeGoogleBrowserReturn()) return;
     if (consumeAuthOutcomeQuery()) return;
-    recoverAuth("boot");
+    recoverAuth("boot").then(function (result) {
+      if (result && result.authenticated) {
+        hideGoogleDeviceHint();
+        return;
+      }
+      showGoogleDeviceHintOnce();
+    });
   }
 
   prepareInviteHandoff();

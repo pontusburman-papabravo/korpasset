@@ -420,7 +420,9 @@ describe("native OAuth login scopes", () => {
       );
     });
     await clickProvider(reauth.click, "google");
-    assert.deepEqual(reauth.errors, ["Kunde inte logga in. Försök igen."]);
+    assert.deepEqual(reauth.errors, [
+      "Google kände inte igen enheten. Bekräfta inloggningen i Gmail eller på en annan enhet, vänta en stund, och tryck Fortsätt med Google igen.",
+    ]);
     assert.equal(reauth.posts.length, 0);
     assert.equal(reauth.logins.length, 1);
     assert.equal(reauth.assignments.length, 0);
@@ -446,7 +448,9 @@ describe("native OAuth login scopes", () => {
       throw new Error("Google Sign-In failed: [16] Account reauth failed");
     });
     await clickProvider(ios.click, "google");
-    assert.deepEqual(ios.errors, ["Kunde inte logga in. Försök igen."]);
+    assert.deepEqual(ios.errors, [
+      "Google kände inte igen enheten. Bekräfta inloggningen i Gmail eller på en annan enhet, vänta en stund, och tryck Fortsätt med Google igen.",
+    ]);
     assert.equal(ios.assignments.length, 0);
     assert.equal(ios.posts.length, 0);
   });
