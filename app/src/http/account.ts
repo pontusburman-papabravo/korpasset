@@ -75,8 +75,7 @@ function accountPage(options: {
        <p>Du kan koppla både Apple och Google till samma Körpasset-konto och använda båda för att logga in.</p>
        <p id="oauth-error" class="banner banner-error" hidden></p>
        <div id="oauth-google-reauth" class="stack" hidden>
-         <p id="oauth-google-reauth-how" class="muted">Samma Google-konto och samma telefon räcker inte. Google frågar ändå första gången Körpasset får logga in. Om rutan “vi känner inte igen den här enheten” syns: slutför den där. Stängde du den: tryck Fortsätt med Google igen. Bara om Google skickat ett mejl: öppna det och tryck Ja.</p>
-         <button type="button" class="btn btn-secondary" id="oauth-open-gmail">Om Google skickat mejl</button>
+         <p id="oauth-google-reauth-how" class="muted">Samma Google-konto och samma telefon räcker inte. Google frågar ändå första gången Körpasset får logga in. Om rutan “vi känner inte igen den här enheten” syns: slutför den där. Stängde du den: tryck Fortsätt med Google igen. Det kommer oftast inget mejl.</p>
        </div>
        <ul class="account-providers__list">
          ${providerRow("apple", hasApple)}

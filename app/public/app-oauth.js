@@ -9,13 +9,7 @@
   const GOOGLE_REAUTH_ERROR =
     "Google krävde en extra kontroll för Körpasset. Slutför Googles ruta på telefonen, eller tryck Fortsätt med Google igen.";
   const GOOGLE_REAUTH_HOW =
-    "Samma Google-konto och samma telefon räcker inte. Google frågar ändå första gången Körpasset får logga in. Om rutan “vi känner inte igen den här enheten” syns: slutför den där. Stängde du den: tryck Fortsätt med Google igen. Bara om Google skickat ett mejl: öppna det och tryck Ja.";
-  const GMAIL_SEARCH_URL =
-    "https://mail.google.com/mail/u/0/#search/from%3A(no-reply%40accounts.google.com+OR+google-noreply%40google.com)";
-  const GMAIL_APP_INTENT =
-    "intent://mail.google.com/mail/u/0/#search/from%3A(no-reply%40accounts.google.com+OR+google-noreply%40google.com)#Intent;scheme=https;package=com.google.android.gm;S.browser_fallback_url=" +
-    encodeURIComponent(GMAIL_SEARCH_URL) +
-    ";end";
+    "Samma Google-konto och samma telefon räcker inte. Google frågar ändå första gången Körpasset får logga in. Om rutan “vi känner inte igen den här enheten” syns: slutför den där. Stängde du den: tryck Fortsätt med Google igen. Det kommer oftast inget mejl.";
   const TOKEN = /^[A-Za-z0-9_-]+$/;
   const AUTH_SETTLE_MS = 40;
   const authRuntime = {
@@ -881,20 +875,6 @@
       else if (el.appendChild) el.appendChild(how);
     }
     if (how) how.textContent = GOOGLE_REAUTH_HOW;
-    let button = null;
-    try {
-      button = el.querySelector && el.querySelector("#oauth-open-gmail");
-    } catch (error) {
-      button = null;
-    }
-    if (!button) {
-      button = document.createElement("button");
-      button.type = "button";
-      button.id = "oauth-open-gmail";
-      button.className = "btn btn-secondary";
-      if (el.appendChild) el.appendChild(button);
-    }
-    if (button) button.textContent = "Om Google skickat mejl";
     return el;
   }
 
@@ -929,45 +909,6 @@
     } catch (error) {
       return false;
     }
-  }
-
-  function clickExternalUrl(url) {
-    try {
-      const link = document.createElement && document.createElement("a");
-      if (!link || typeof link.click !== "function") return false;
-      link.href = url;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      if (document.body && document.body.appendChild) document.body.appendChild(link);
-      link.click();
-      if (link.parentNode && link.parentNode.removeChild) link.parentNode.removeChild(link);
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  // Google owns the approve UI. Open the Gmail app (or a search for that
-  // mail) so they land on the security message, not an empty inbox.
-  function openGoogleMail() {
-    if (platform() === "android" && clickExternalUrl(GMAIL_APP_INTENT)) {
-      oauthTrace("google_reauth_gmail_opened", { reason: "gmail-app" });
-      return true;
-    }
-    try {
-      if (typeof window.open === "function") {
-        window.open(GMAIL_SEARCH_URL, "_blank", "noopener,noreferrer");
-        oauthTrace("google_reauth_gmail_opened", { reason: "gmail-search" });
-        return true;
-      }
-    } catch (error) {
-      /* fall through */
-    }
-    if (clickExternalUrl(GMAIL_SEARCH_URL)) {
-      oauthTrace("google_reauth_gmail_opened", { reason: "gmail-search" });
-      return true;
-    }
-    return false;
   }
 
   // One-time, Android-only. Google's device check can look like a second
@@ -1628,12 +1569,6 @@
   document.addEventListener("click", function (event) {
     const target = event.target && event.target.closest ? event.target : null;
     if (!target) return;
-    const gmail = target.closest("#oauth-open-gmail");
-    if (gmail) {
-      event.preventDefault();
-      openGoogleMail();
-      return;
-    }
     const button = target.closest("[data-oauth-provider]");
     if (!button) return;
     event.preventDefault();

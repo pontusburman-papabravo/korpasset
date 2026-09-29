@@ -860,12 +860,9 @@ describe("Android Google auth lifecycle", () => {
     assert.match(client.errors.at(-1) || "", /Slutför Googles ruta på telefonen/);
     assert.match(client.reauthHow.textContent, /vi känner inte igen den här enheten/);
     assert.match(client.reauthHow.textContent, /Fortsätt med Google igen/);
-    client.tapGmail();
-    assert.equal(
-      client.openedUrls[0],
-      "https://mail.google.com/mail/u/0/#search/from%3A(no-reply%40accounts.google.com+OR+google-noreply%40google.com)",
-    );
-    assert.equal(findTrace(client.traces, "google_reauth_gmail_opened")?.reason, "gmail-search");
+    assert.match(client.reauthHow.textContent, /oftast inget mejl/);
+    assert.equal(client.openedUrls.length, 0);
+    assert.equal(findTrace(client.traces, "google_reauth_gmail_opened"), undefined);
     assert.equal(client.logins.length, 1);
   });
 
