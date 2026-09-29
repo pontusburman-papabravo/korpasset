@@ -55,4 +55,22 @@ if [ ! -f "$NATIVE/ios/App/App/capacitor.config.json" ]; then
 fi
 
 echo "===== Capacitor iOS sync complete ====="
+
+# Xcode Cloud resolves packages with automatic resolution disabled. cap sync
+# just added Alamofire/GoogleSignIn via CapApp-SPM, so Package.resolved must
+# exist before that step or xcodebuild fails.
+PROJECT="$NATIVE/ios/App/App.xcodeproj"
+if command -v xcodebuild >/dev/null 2>&1; then
+  echo "===== Resolving Swift packages ====="
+  xcodebuild -resolvePackageDependencies \
+    -project "$PROJECT" \
+    -scheme App
+  RESOLVED="$PROJECT/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+  if [ ! -f "$RESOLVED" ]; then
+    echo "error: xcodebuild did not write $RESOLVED" >&2
+    exit 1
+  fi
+  echo "===== Package.resolved written ====="
+fi
+
 exit 0

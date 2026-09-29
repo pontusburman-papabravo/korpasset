@@ -30,7 +30,7 @@ Gör detta inloggad på Papa Bravo-teamet (`PQ7M3B7VW5`), inte My Starday-appen.
 4. Product / project: `native/ios/App/App.xcodeproj` eller `native/ios/App/App.xcworkspace`. Inte `ios/App/…`.
 5. Scheme: **App** (det delade schemat).
 6. Action: **Archive** → iOS → destination **TestFlight Internal Testing**.
-7. Environment: Recommended Xcode + macOS. Signing lämnas automatisk (`DEVELOPMENT_TEAM` är redan `PQ7M3B7VW5`).
+7. Environment: Recommended Xcode + macOS. Signing lämnas automatisk (`DEVELOPMENT_TEAM` är redan `PQ7M3B7VW5`). Slå **av** “Disable automatic dependency resolution” om rutan finns — annars kräver Xcode Cloud en `Package.resolved` som `ci_post_clone.sh` skriver efter `cap sync`.
 8. Start condition: **Manual** för första 1.0.7-bygget. Efter att det gått grönt kan du lägga till push till `main` eller en tagg.
 
 ### Eller från Xcode på Mac
@@ -60,6 +60,7 @@ Byggloggen visar `ci_post_clone.sh`. Vanliga fel:
 | Symptom | Orsak |
 | --- | --- |
 | `Workspace App.xcworkspace does not exist at ios/App/App.xcworkspace` | Workflow **General** pekar på fel sökväg. Byt till `native/ios/App/App.xcodeproj` eller `native/ios/App/App.xcworkspace` |
+| `a resolved file is required when automatic dependency resolution is disabled` … `alamofire` | Xcode Cloud resolve-steget tillåter inte nya SPM-paket. `ci_post_clone.sh` ska köra `xcodebuild -resolvePackageDependencies` efter `cap sync`. Alternativ: Environment → slå av automatic-resolution-spärren |
 | `CapApp-SPM` hittar inte `@capacitor/app` | `npm ci` kördes inte, eller fel working directory |
 | Missing `public` / `capacitor.config.json` | `npx cap sync ios` kördes inte |
 | Inget schema i workflow-listan | `App.xcscheme` är inte committad under `xcshareddata` |
