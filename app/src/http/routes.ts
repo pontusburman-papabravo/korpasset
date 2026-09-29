@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import QRCode from "qrcode";
 import { AppError } from "../errors.js";
 import {
@@ -61,6 +61,14 @@ import {
   studentOnboardingForm,
   supervisorOnboardingPage,
 } from "./onboarding-pages.js";
+import {
+  SUPERVISOR_ONBOARDING_PATH,
+  clearOnboardingTrackCookie,
+  onboardingPathForTrack,
+  onboardingTrackFromRequest,
+  readOnboardingTrack,
+  setOnboardingTrackCookie,
+} from "./onboarding-track.js";
 import { renderSignedInAs } from "./account-identity.js";
 import { listLinkedIdentities } from "../services/oauth-accounts.js";
 import {
@@ -266,17 +274,12 @@ function groupSkillsByArea(
   return groups;
 }
 
-function onboardingPath(query: { som?: string }): "elev" | "handledare" | "val" {
-  if (query.som === "elev") return "elev";
-  if (query.som === "handledare") return "handledare";
-  return "val";
-}
-
 async function recordOnboardingObservation(
   query: { som?: string; via?: string },
+  path: "elev" | "handledare" | "val",
   userId: string | null,
 ): Promise<void> {
-  if (isParentHandoffQuery(query)) {
+  if (isParentHandoffQuery(query, path)) {
     // Student opened the supervisor-sent start URL. Not "parent copied the link".
     await recordProductEventSafe({
       name: "student_handoff_started",
@@ -286,7 +289,6 @@ async function recordOnboardingObservation(
     });
     return;
   }
-  const path = onboardingPath(query);
   if (path === "handledare") {
     await recordProductEventSafe({
       name: "onboarding_role_selected",
@@ -366,7 +368,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       return reply.redirect(`/journey/${home.journeyId}`);
     }
     if (home.kind === "onboarding") {
-      return reply.redirect("/onboarding");
+      return reply.redirect(onboardingPathForTrack(readOnboardingTrack(request)));
     }
     return reply.type("text/html").send(
       renderJourneyPickerPage(home.journeys, sessionUserId),
@@ -416,12 +418,17 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     );
   });
 
-  app.get("/onboarding", async (request, reply) => {
+  const handleOnboarding = async (request: FastifyRequest, reply: FastifyReply) => {
     const userId = getSessionUserId(request);
-    const query = request.query as { som?: string; via?: string };
-    const path = onboardingPath(query);
+    const query = request.query as { som?: string; via?: string; byt?: string };
+    let path = onboardingTrackFromRequest(request);
     const sessionUserId = await getReusableSessionUserId(userId);
     const user = sessionUserId ? await getUserById(sessionUserId) : null;
+
+    if (query.byt === "1") {
+      clearOnboardingTrackCookie(reply);
+      path = "val";
+    }
 
     if (sessionUserId) {
       const home = await signedInHome(sessionUserId);
@@ -433,8 +440,19 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
-    await recordOnboardingObservation(query, sessionUserId);
-    if (isParentHandoffQuery(query)) {
+    if (path === "val" && query.byt !== "1") {
+      const remembered = readOnboardingTrack(request);
+      if (remembered) {
+        return reply.redirect(onboardingPathForTrack(remembered));
+      }
+    }
+
+    if (path === "elev" || path === "handledare") {
+      setOnboardingTrackCookie(reply, path);
+    }
+
+    await recordOnboardingObservation(query, path, sessionUserId);
+    if (isParentHandoffQuery(query, path)) {
       setHandoffCookie(reply);
     }
     const signedInHtml = sessionUserId
@@ -456,7 +474,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       return reply.type("text/html").send(
         layout("Kom in i Körpasset", `<h1>Kom in i Körpasset</h1>
            ${oauthContinuePanel(intro)}
-           <p><a class="btn-link" href="/onboarding?som=handledare">Jag är handledare eller förälder</a></p>`),
+           <p><a class="btn-link" href="${SUPERVISOR_ONBOARDING_PATH}">Jag är handledare eller förälder</a></p>`),
       );
     }
     if (path === "elev") {
@@ -471,7 +489,11 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       );
     }
     reply.type("text/html").send(layout("Kom in i Körpasset", onboardingChooser(signedInHtml)));
-  });
+  };
+
+  app.get("/onboarding", handleOnboarding);
+  app.get("/onboarding/elev", handleOnboarding);
+  app.get("/onboarding/handledare", handleOnboarding);
 
   app.post("/start", async (request, reply) => {
     const body = request.body as { name?: string; practice_stage?: string };

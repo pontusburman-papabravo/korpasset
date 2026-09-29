@@ -29,7 +29,7 @@ Historiska rader **skrivs inte om**. Nya kolumner är NULL på gamla events. Ana
 
 | Event | Semantik | Metadata |
 | --- | --- | --- |
-| `onboarding_role_selected` | **Sidinträde** på valt onboarding-spår. GET `/onboarding?som=elev` (utan `via`) eller `?som=handledare`. Inte ett unikt val per person. Refresh/back räknas om. | `actor_role`; `event_source=direct` för elevspår; `user_id` om session |
+| `onboarding_role_selected` | **Sidinträde** på valt onboarding-spår. GET `/onboarding/elev` eller `/onboarding?som=elev` (utan `via`), och `/onboarding/handledare` eller `?som=handledare`. Inte ett unikt val per person. Refresh/back räknas om. | `actor_role`; `event_source=direct` för elevspår; `user_id` om session |
 | `student_handoff_started` | **Eleven öppnade** handledarens startlänk (`GET /onboarding?som=elev&via=handledare`). Inte att föräldern kopierade eller skickade länken. Sidinträde: refresh räknas om. | `event_source=parent_handoff`, `actor_role=student`, ofta utan `journey_id` |
 | `stale_drive_nudge_shown` | Journey-hemmet **visade** stale-nudge vid den requesten. Varje GET medan nudgen syns kan skapa en ny rad. | `journey_id`, `days_since_drive_bucket`, `practice_stage`, `actor_role` |
 

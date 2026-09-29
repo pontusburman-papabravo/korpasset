@@ -16,6 +16,7 @@ import {
   extractPathFromRedirect,
   formBody,
   injectWithSession,
+  mergeCookies,
 } from "./http-helpers.js";
 import { resetDatabaseData } from "./setup.js";
 
@@ -178,6 +179,52 @@ describe("parent initiates, student owns the journey", () => {
     assert.match(home.body, /lugn trafik/);
     assert.doesNotMatch(home.body, /Dags att komma ut/);
     assert.doesNotMatch(home.body, /Bjud in den som kör med dig/);
+    await app.close();
+  });
+
+  it("takes a signed-in supervisor off the chooser and keeps Resa there", async () => {
+    const parent = await continueWithOAuth({
+      provider: "apple",
+      subject: "apple-parent-stuck-tabs",
+      displayName: "Pontus",
+      email: "pontus@burman.cc",
+    });
+    const app = await createTestApp();
+    const cookies = session(parent.userId);
+
+    const chooser = await injectWithSession(app, cookies, {
+      method: "GET",
+      url: "/onboarding",
+    });
+    assert.equal(chooser.statusCode, 200);
+    assert.match(chooser.body, /Vad vill du göra/);
+    assert.match(chooser.body, /href="\/onboarding\/handledare"/);
+    assert.match(chooser.body, /href="\/onboarding\/elev"/);
+    assert.doesNotMatch(chooser.body, /href="\/onboarding\?som=handledare"/);
+
+    const handledare = await injectWithSession(app, cookies, {
+      method: "GET",
+      url: "/onboarding/handledare",
+    });
+    assert.equal(handledare.statusCode, 200);
+    assert.match(handledare.body, /Få in den som tar körkort/);
+    assert.match(handledare.body, /Resa, Nästa och Utveckling/);
+    assert.match(handledare.body, /href="\/onboarding\?byt=1"/);
+    const jar = mergeCookies(cookies, handledare);
+    assert.equal(jar.korpasset_onboarding_track, "handledare");
+
+    for (const url of ["/resa", "/nasta", "/utveckling", "/app", "/onboarding"]) {
+      const response = await injectWithSession(app, jar, { method: "GET", url });
+      assert.equal(response.statusCode, 302, url);
+      assert.equal(response.headers.location, "/onboarding/handledare", url);
+    }
+
+    const reset = await injectWithSession(app, jar, {
+      method: "GET",
+      url: "/onboarding?byt=1",
+    });
+    assert.equal(reset.statusCode, 200);
+    assert.match(reset.body, /Vad vill du göra/);
     await app.close();
   });
 

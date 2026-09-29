@@ -12,6 +12,7 @@ import { acceptInvitation } from "../services/invitations.js";
 import { getReusableSessionUserId, getUserById } from "../services/users.js";
 import { createOAuthHandoff } from "../services/oauth-handoff.js";
 import { signedInRedirectPath } from "./navigation.js";
+import { readOnboardingTrack } from "./onboarding-track.js";
 import { allowRequest, OAUTH_RATE_LIMIT } from "./rate-limit.js";
 
 function isOAuthProvider(value: string): value is OAuthProvider {
@@ -179,7 +180,7 @@ async function completeOAuthLogin(
       },
     );
   }
-  let redirectTo = await signedInRedirectPath(result.userId);
+  let redirectTo = await signedInRedirectPath(result.userId, readOnboardingTrack(request));
   const inviteToken = parseInviteReturnTo(input.returnTo);
   if (inviteToken) {
     try {
@@ -231,7 +232,7 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
     }
     return reply.send({
       authenticated: true,
-      redirectTo: await signedInRedirectPath(sessionUserId),
+      redirectTo: await signedInRedirectPath(sessionUserId, readOnboardingTrack(request)),
     });
   });
 

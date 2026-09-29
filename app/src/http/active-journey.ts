@@ -145,6 +145,7 @@ export async function redirectToActiveJourney(
 ): Promise<void> {
   const { getSessionUserId } = await import("../auth/session.js");
   const { signedInRedirectPath } = await import("./navigation.js");
+  const { readOnboardingTrack } = await import("./onboarding-track.js");
   const userId = getSessionUserId(request);
   if (!userId) {
     reply.redirect("/app");
@@ -152,7 +153,7 @@ export async function redirectToActiveJourney(
   }
   const resolved = await resolveActiveJourney(userId, readActiveJourneyId(request));
   if (!resolved) {
-    reply.redirect(await signedInRedirectPath(userId));
+    reply.redirect(await signedInRedirectPath(userId, readOnboardingTrack(request)));
     return;
   }
   setActiveJourneyCookie(reply, resolved.journey.id);

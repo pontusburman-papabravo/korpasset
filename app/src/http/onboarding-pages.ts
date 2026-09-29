@@ -1,6 +1,11 @@
 import { PRACTICE_STAGES, practiceStageLabel } from "../services/journeys.js";
 import { STUDENT_HANDOFF_VIA } from "./handoff-context.js";
 import { escapeHtml, errorBanner, primaryButton, publicUrl } from "./layout.js";
+import {
+  ONBOARDING_CHOOSER_RESET_PATH,
+  STUDENT_ONBOARDING_PATH,
+  SUPERVISOR_ONBOARDING_PATH,
+} from "./onboarding-track.js";
 
 export const STUDENT_START_PATH = `/onboarding?som=elev&via=${STUDENT_HANDOFF_VIA}`;
 
@@ -44,11 +49,11 @@ export function onboardingChooser(signedInHtml = ""): string {
              : ""
          }
          <div class="stack">
-           <a class="card journey-choice" href="/onboarding?som=elev">
+           <a class="card journey-choice" href="${STUDENT_ONBOARDING_PATH}">
              <strong>Jag tar körkort</strong>
              <span class="muted">Skapa din egen körkortsresa — inte barnets — och bjud in handledare.</span>
            </a>
-           <a class="card journey-choice" href="/onboarding?som=handledare">
+           <a class="card journey-choice" href="${SUPERVISOR_ONBOARDING_PATH}">
              <strong>Jag är handledare eller förälder</strong>
              <span class="muted">Du kan sätta igång. Eleven skapar resan. Du ansluts som handledare.</span>
            </a>
@@ -71,8 +76,10 @@ export function supervisorOnboardingPage(signedInHtml = ""): string {
          </ol>
          ${copyableUrlField("student-start-url", studentStartUrl(), "Länk till eleven")}
          <p>Du kan följa flera elever, till exempel två barn eller partner och barn. Varje elev har en egen resa.</p>
+         <p class="muted">Resa, Nästa och Utveckling öppnas när eleven har skapat resan och bjudit in dig.</p>
          <p class="muted">Tar du själv körkort? Då ska du skapa en egen resa.</p>
-         <p><a class="btn btn-secondary" href="/onboarding?som=elev">Jag tar körkort</a></p>`;
+         <p><a class="btn btn-secondary" href="${STUDENT_ONBOARDING_PATH}">Jag tar körkort</a></p>
+         <p><a class="btn-link" href="${ONBOARDING_CHOOSER_RESET_PATH}">Tillbaka till valet</a></p>`;
 }
 
 export function studentOnboardingForm(
@@ -107,5 +114,5 @@ export function studentOnboardingForm(
            </fieldset>
            ${primaryButton("Starta min körkortsresa")}
          </form>
-         <p><a class="btn-link" href="/onboarding?som=handledare">Jag är handledare eller förälder</a></p>`;
+         <p><a class="btn-link" href="${SUPERVISOR_ONBOARDING_PATH}">Jag är handledare eller förälder</a></p>`;
 }

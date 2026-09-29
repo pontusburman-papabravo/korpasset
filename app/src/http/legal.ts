@@ -53,6 +53,7 @@ function nativeCookiesPage(options: PublicConsentOptions): string {
        <li><strong>bilklar_session</strong> — håller dig inloggad. HttpOnly. Upp till 1 år.</li>
        <li><strong>korpasset_native</strong> — känner igen att du öppnat produkten i appen. Värdet är 1.</li>
        <li>En tillfällig HttpOnly-cookie kan sättas i upp till sju dagar när en elev öppnar handledarens startlänk. En vanlig inbjudningslänk sätter den inte.</li>
+       <li><strong>korpasset_onboarding_track</strong> — kommer ihåg om du valt elev eller handledare i onboarding, så att Resa, Nästa och Utveckling inte tappar valet. HttpOnly. Upp till sju dagar. Inte en roll på kontot.</li>
      </ul>
      <p>Valfria cookies, cookieval och tredjepartsverktyg används inte i appen. På den publika webbplatsen korpasset.se i en vanlig webbläsare kan du läsa den fullständiga cookiepolicyn för webbplatsen.</p>
      <p>Frågor: <a href="mailto:support@korpasset.se">support@korpasset.se</a>.</p>`,
@@ -364,6 +365,7 @@ export function cookiesPage(options: PublicConsentOptions = {}): string {
        <li><strong>bilklar_session</strong> — håller dig inloggad i produkten. HttpOnly. Upp till 1 år. Innehåller en signerad hänvisning till ditt användar-id, inte namn eller e-post.</li>
        <li><strong>korpasset_native</strong> — känner igen att du öppnat produkten eller en inbjudan via appen. Värdet är 1. Inte HttpOnly.</li>
        <li>En tillfällig HttpOnly-cookie kan sättas i upp till sju dagar när en elev öppnar handledarens startlänk, så att den tekniska händelsen kan räknas. En vanlig inbjudningslänk sätter den inte.</li>
+       <li><strong>korpasset_onboarding_track</strong> — kommer ihåg om du valt elev eller handledare i onboarding, så att Resa, Nästa och Utveckling inte tappar valet. HttpOnly. Upp till sju dagar. Inte en roll på kontot.</li>
        <li><strong>korpasset_admin</strong> — inloggning i administrationsdelen. HttpOnly. Upp till 12 timmar. Bara under /admin.</li>
      </ul>
 

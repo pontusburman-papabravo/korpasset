@@ -277,7 +277,7 @@ describe("app entry (GET /app) and production onboarding", () => {
       url: "/mer",
     });
     assert.match(mer.body, /Starta min körkortsresa/);
-    assert.match(mer.body, /href="\/onboarding\?som=elev"/);
+    assert.match(mer.body, /href="\/onboarding\/elev"/);
 
     const elev = await injectWithSession(app, cookies, {
       method: "GET",
