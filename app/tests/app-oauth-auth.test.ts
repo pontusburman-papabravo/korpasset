@@ -599,7 +599,7 @@ describe("Android Google auth lifecycle", () => {
     assert.equal(client.win.KORPASSET_AUTH.isInProgress(), false);
     assert.equal(findTrace(client.traces, "google_browser_fallback"), undefined);
     assert.deepEqual(client.errors, [
-      "Google krävde en extra kontroll för Körpasset. Slutför Googles ruta på telefonen, eller tryck Fortsätt med Google igen.",
+      "Google stoppade inloggningen. Det visades inget att godkänna. Tryck Fortsätt med Google igen.",
     ]);
     assert.equal(client.hint.hidden, true);
     assert.equal(client.reauth.hidden, false);
@@ -634,7 +634,7 @@ describe("Android Google auth lifecycle", () => {
     );
     assert.equal(
       client.errors.includes(
-        "Google krävde en extra kontroll för Körpasset. Slutför Googles ruta på telefonen, eller tryck Fortsätt med Google igen.",
+        "Google stoppade inloggningen. Det visades inget att godkänna. Tryck Fortsätt med Google igen.",
       ),
       true,
     );
@@ -831,7 +831,7 @@ describe("Android Google auth lifecycle", () => {
     await flush();
     assert.equal(client.hint.hidden, false);
     assert.equal(client.reauth.hidden, true);
-    assert.match(client.hint.textContent, /Google som kräver det/);
+    assert.match(client.hint.textContent, /Google som gör det/);
     assert.equal(findTrace(client.traces, "google_device_hint_shown")?.reason, "once");
     await client.tapGoogle();
     assert.equal(client.hint.hidden, false);
@@ -857,10 +857,9 @@ describe("Android Google auth lifecycle", () => {
       client.traces.filter((item) => item.step === "google_device_hint_shown").length,
       1,
     );
-    assert.match(client.errors.at(-1) || "", /Slutför Googles ruta på telefonen/);
-    assert.match(client.reauthHow.textContent, /vi känner inte igen den här enheten/);
+    assert.match(client.errors.at(-1) || "", /Det visades inget att godkänna/);
+    assert.match(client.reauthHow.textContent, /utan en ruta att godkänna/);
     assert.match(client.reauthHow.textContent, /Fortsätt med Google igen/);
-    assert.match(client.reauthHow.textContent, /oftast inget mejl/);
     assert.equal(client.openedUrls.length, 0);
     assert.equal(findTrace(client.traces, "google_reauth_gmail_opened"), undefined);
     assert.equal(client.logins.length, 1);

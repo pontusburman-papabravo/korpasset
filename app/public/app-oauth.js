@@ -5,11 +5,11 @@
   const AUTH_KEY = "korpasset.pendingAuth";
   const GOOGLE_HINT_KEY = "korpasset.googleDeviceHint";
   const GOOGLE_HINT_TEXT =
-    "Google kan kräva en extra kontroll första gången du använder Körpasset, även på en telefon du redan använder. Det är Google som kräver det, inte Körpasset.";
+    "Första gången med Körpasset kan Google stoppa inloggningen, även på en telefon du redan använder. Det är Google som gör det, inte Körpasset.";
   const GOOGLE_REAUTH_ERROR =
-    "Google krävde en extra kontroll för Körpasset. Slutför Googles ruta på telefonen, eller tryck Fortsätt med Google igen.";
+    "Google stoppade inloggningen. Det visades inget att godkänna. Tryck Fortsätt med Google igen.";
   const GOOGLE_REAUTH_HOW =
-    "Samma Google-konto och samma telefon räcker inte. Google frågar ändå första gången Körpasset får logga in. Om rutan “vi känner inte igen den här enheten” syns: slutför den där. Stängde du den: tryck Fortsätt med Google igen. Det kommer oftast inget mejl.";
+    "Google avbröt efter kontoväljaren utan mejl och utan en ruta att godkänna. Tryck Fortsätt med Google igen. Samma sak en gång till betyder att Google nekar Körpasset på den här telefonen just nu — inte att du missat en knapp.";
   const TOKEN = /^[A-Za-z0-9_-]+$/;
   const AUTH_SETTLE_MS = 40;
   const authRuntime = {
