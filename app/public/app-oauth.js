@@ -30,11 +30,21 @@
     return cap.Plugins[name] || null;
   }
 
+  function oauthErrorVisible() {
+    try {
+      const el = document.getElementById && document.getElementById("oauth-error");
+      return Boolean(el && !el.hidden && String(el.textContent || "").trim());
+    } catch (error) {
+      return false;
+    }
+  }
+
   function showError(message) {
     const el = document.getElementById("oauth-error");
     if (!el) return;
     el.hidden = false;
     el.textContent = message;
+    hideGoogleDeviceHint();
   }
 
   function idTokenFrom(result) {
@@ -833,6 +843,10 @@
   function showGoogleDeviceHintOnce() {
     if (platform() !== "android" || !nativeApp()) return false;
     if (!isLoginSurface()) return false;
+    if (oauthErrorVisible()) {
+      hideGoogleDeviceHint();
+      return false;
+    }
     if (googleDeviceHintAlreadyShown()) {
       hideGoogleDeviceHint();
       return false;
