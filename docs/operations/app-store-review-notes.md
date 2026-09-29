@@ -8,6 +8,6 @@ The public website korpasset.se may still show a cookie choice in Safari after t
 
 The iOS app therefore does not use App Tracking Transparency and should not be declared as tracking users. There is no ATT permission dialog because there is no tracking to permit.
 
-No login is required to verify this: open the app and confirm that the first screen has no cookie prompt and that no requests are made to `connect.facebook.net`, `facebook.com/tr`, or `googletagmanager.com`. Cookie policy in the app (Mer → Cookies, or Konto → Cookies) states that the app does not track users and does not show a tracking-cookie prompt.
+No login is required to verify this: open the app and confirm that the first screen has no cookie prompt and that no requests are made to `connect.facebook.net`, `facebook.com/tr`, or `googletagmanager.com`. In-app legal pages (Mer → Integritet, Konto → Cookies) describe only necessary first-party cookies and do not name advertising or analytics SDKs.
 
 Account deletion: More → Delete account → type RADERA → Delete my account. In the app that is Mer → Radera konto → skriv RADERA → Radera mitt konto. No email to support and no separate website login are required. For a Sign in with Apple account that has a stored refresh token, the server revokes that token with Apple before the Körpasset account is deleted. A reviewer can create an account with Sign in with Apple and delete it from Mer → Radera konto.

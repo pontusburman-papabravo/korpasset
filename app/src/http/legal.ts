@@ -1,6 +1,69 @@
 import { renderLegalPage, type PublicConsentOptions } from "./landing.js";
 
+function nativePrivacyPage(options: PublicConsentOptions): string {
+  return renderLegalPage(
+    "Integritetspolicy",
+    `<h1>Integritetspolicy</h1>
+     <p>Senast uppdaterad: 29 september 2026</p>
+     <p>Papa Bravo AB är personuppgiftsansvarig för Körpasset, en digital tjänst för privat övningskörning mot svenskt B-körkort.</p>
+     <p>Vi samlar in så lite personuppgifter som möjligt. Vi säljer inte dina personuppgifter. I Körpasset-appen spårar vi inte användare och visar ingen cookiebanner.</p>
+     <p>Du kan kontakta oss på:</p>
+     <ul>
+       <li>Allmänt: <a href="mailto:info@korpasset.se">info@korpasset.se</a></li>
+       <li>Dataskydd och support: <a href="mailto:support@korpasset.se">support@korpasset.se</a></li>
+     </ul>
+
+     <h2>När du använder appen</h2>
+     <p>När du använder Körpasset behandlar vi de uppgifter som behövs för konto och körkortsresa, till exempel visningsnamn, e-postadress när den lämnas, användar-id från inloggningsleverantören, session, körpass, observationer och tekniska produkthändelser.</p>
+     <p>Den rättsliga grunden för behandling som är nödvändig för att tillhandahålla Körpasset är att fullgöra avtalet om tjänsten.</p>
+     <p>Produkthändelser kopplas till interna id:n. De används för att driva och förstå betan, inte för reklam.</p>
+
+     <h2>Inloggning med Apple eller Google</h2>
+     <p>Inloggning sker med Sign in with Apple eller Sign in with Google.</p>
+     <p>När du loggar in kan vi få e-postadress, namn och ett unikt användar-id från Apple eller Google. Körpasset använder leverantörens unika användar-id som identitetsnyckel.</p>
+
+     <h2>Vad vi inte samlar in</h2>
+     <p>Körpasset samlar inte in personnummer, GPS-spår från körningen eller hälsodata.</p>
+     <p>Appen använder inte reklamspårning, inte analysverktyg från tredje part och inte cookies för att koppla dig till data hos andra företag.</p>
+
+     <h2>Cookies i appen</h2>
+     <p>I appen används bara nödvändiga förstapartscookies för inloggning och för att känna igen att du är i appen. Vi ber inte om samtycke till valfria cookies i appen, eftersom de inte används där.</p>
+     <p>En fullständig beskrivning av den publika webbplatsen finns på korpasset.se när du öppnar den i en vanlig webbläsare.</p>
+
+     <h2>Radera konto</h2>
+     <p>Du kan radera ditt Körpasset-konto via Mer → Radera konto. Utan appen: <a href="/radera-konto">Radera konto</a>.</p>
+     <p>Om du är elev raderas din körkortsresa. Om du är handledare behålls historiken hos eleven, utan ditt namn och utan koppling till ditt konto.</p>
+
+     <h2>Dina rättigheter</h2>
+     <p>Du kan begära tillgång, rättelse, radering och begränsning via <a href="mailto:support@korpasset.se">support@korpasset.se</a>. Du kan också lämna klagomål till Integritetsskyddsmyndigheten, IMY.</p>`,
+    "/integritet",
+    "Hur Körpasset behandlar personuppgifter i appen. Vi säljer inte dina uppgifter och spårar inte användare i iOS- eller Android-appen.",
+    options,
+  );
+}
+
+function nativeCookiesPage(options: PublicConsentOptions): string {
+  return renderLegalPage(
+    "Cookies",
+    `<h1>Cookiepolicy</h1>
+     <p>Senast uppdaterad: 29 september 2026</p>
+     <p>I Körpasset-appen finns ingen cookiebanner. Appen spårar inte användare och samlar inte cookies för reklam, analys eller delning med tredje part.</p>
+     <p>Bara nödvändiga förstapartscookies kan användas:</p>
+     <ul>
+       <li><strong>bilklar_session</strong> — håller dig inloggad. HttpOnly. Upp till 1 år.</li>
+       <li><strong>korpasset_native</strong> — känner igen att du öppnat produkten i appen. Värdet är 1.</li>
+       <li>En tillfällig HttpOnly-cookie kan sättas i upp till sju dagar när en elev öppnar handledarens startlänk. En vanlig inbjudningslänk sätter den inte.</li>
+     </ul>
+     <p>Valfria cookies, cookieval och tredjepartsverktyg används inte i appen. På den publika webbplatsen korpasset.se i en vanlig webbläsare kan du läsa den fullständiga cookiepolicyn för webbplatsen.</p>
+     <p>Frågor: <a href="mailto:support@korpasset.se">support@korpasset.se</a>.</p>`,
+    "/cookies",
+    "I Körpasset-appen används bara nödvändiga cookies för inloggning. Appen spårar inte användare.",
+    options,
+  );
+}
+
 export function privacyPage(options: PublicConsentOptions = {}): string {
+  if (options.consent === false) return nativePrivacyPage(options);
   return renderLegalPage(
     "Integritetspolicy",
     `<h1>Integritetspolicy</h1>
@@ -274,14 +337,8 @@ export function termsPage(options: PublicConsentOptions = {}): string {
 }
 
 export function cookiesPage(options: PublicConsentOptions = {}): string {
-  const inApp = options.consent === false;
-  const choiceSection = inApp
-    ? `<h2>Så väljer du</h2>
-     <p>I Körpasset-appen finns ingen cookiebanner och inga cookieinställningar för spårning. Appen spårar inte användare, inte för reklam och inte genom att koppla data till tredje part.</p>
-     <p>Bara nödvändiga förstapartscookies för inloggning och appen kan användas. Analys- och marknadsföringscookies används inte i appen.</p>
-     <p>På den publika webbplatsen korpasset.se i en vanlig webbläsare kan du välja analys och marknadsföring. Det valet gäller inte iOS-appen.</p>
-     <p>Mer om personuppgifter finns i <a href="/integritet">integritetspolicyn</a>.</p>`
-    : `<h2>Så väljer du</h2>
+  if (options.consent === false) return nativeCookiesPage(options);
+  const choiceSection = `<h2>Så väljer du</h2>
      <p>Första gången du besöker en sida med cookiebannern kan du:</p>
      <ul>
        <li>godkänna alla cookies</li>

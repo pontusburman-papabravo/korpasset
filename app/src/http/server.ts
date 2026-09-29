@@ -8,7 +8,12 @@ import { fileURLToPath } from "node:url";
 import { UnauthorizedError } from "../errors.js";
 import { config, isProduction } from "../config.js";
 import { getPool } from "../db/pool.js";
-import { clearSessionCookie, getSessionUserId } from "../auth/session.js";
+import {
+  clearSessionCookie,
+  getSessionUserId,
+  isNativeProductPath,
+  setNativeAppCookie,
+} from "../auth/session.js";
 import { rememberActiveJourney } from "./active-journey.js";
 import { getReusableSessionUserId } from "../services/users.js";
 import { redactRequestPath } from "./log.js";
@@ -95,6 +100,13 @@ export async function buildServer() {
   await app.register(fastifyStatic, {
     root: join(__dirname, "../../public"),
     prefix: "/",
+  });
+
+  app.addHook("onRequest", async (request, reply) => {
+    const path = (request.url ?? "").split("?")[0];
+    if (isNativeProductPath(path)) {
+      setNativeAppCookie(reply);
+    }
   });
 
   app.addHook("preHandler", async (request, reply) => {

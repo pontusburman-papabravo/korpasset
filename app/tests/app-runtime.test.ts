@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { describe, it } from "node:test";
+import { isNativeProductPath } from "../src/auth/session.js";
 import {
   appRuntimeFromCapacitor,
   readCapacitorNative,
@@ -75,6 +76,17 @@ describe("app runtime tracking policy", () => {
       isNativeApp: false,
       nativePlatform: "",
     });
+  });
+
+  it("treats product and invite paths as native, not the public website", () => {
+    assert.equal(isNativeProductPath("/app"), true);
+    assert.equal(isNativeProductPath("/konto"), true);
+    assert.equal(isNativeProductPath("/onboarding?som=elev"), true);
+    assert.equal(isNativeProductPath("/invite/abc"), true);
+    assert.equal(isNativeProductPath("/journey/00000000-0000-0000-0000-000000000000/nasta"), true);
+    assert.equal(isNativeProductPath("/"), false);
+    assert.equal(isNativeProductPath("/cookies"), false);
+    assert.equal(isNativeProductPath("/integritet"), false);
   });
 
   it("does not add ATT and keeps the Capacitor gate next to Meta init", () => {
