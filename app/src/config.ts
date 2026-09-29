@@ -127,7 +127,7 @@ export const config = {
   /**
    * Meta Pixel id. Empty unless the value is numeric, so a placeholder
    * never reaches the page. The pixel is not loaded until marketing consent
-   * on the public website or native Android. Native iOS never loads it.
+   * on the public website. Native app WebViews never load it.
    */
   get metaPixelId() {
     const value = (process.env.META_PIXEL_ID ?? "").trim();

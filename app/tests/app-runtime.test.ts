@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { describe, it } from "node:test";
+import { isNativeProductPath } from "../src/auth/session.js";
 import {
   appRuntimeFromCapacitor,
   readCapacitorNative,
@@ -14,7 +15,7 @@ const infoPlist = fs.readFileSync(
 );
 
 describe("app runtime tracking policy", () => {
-  it("keeps website and Android marketing/analytics on, and turns both off for native iOS", () => {
+  it("keeps website marketing/analytics on, and turns both off in any native app WebView", () => {
     assert.deepEqual(trackingPolicy({ isNativeApp: false, nativePlatform: "" }), {
       isNativeApp: false,
       nativePlatform: "",
@@ -26,14 +27,22 @@ describe("app runtime tracking policy", () => {
     assert.deepEqual(trackingPolicy({ isNativeApp: true, nativePlatform: "android" }), {
       isNativeApp: true,
       nativePlatform: "android",
-      allowMarketingTracking: true,
-      allowAnalyticsTracking: true,
-      showConsentBanner: true,
-      showMarketingConsent: true,
+      allowMarketingTracking: false,
+      allowAnalyticsTracking: false,
+      showConsentBanner: false,
+      showMarketingConsent: false,
     });
     assert.deepEqual(trackingPolicy({ isNativeApp: true, nativePlatform: "ios" }), {
       isNativeApp: true,
       nativePlatform: "ios",
+      allowMarketingTracking: false,
+      allowAnalyticsTracking: false,
+      showConsentBanner: false,
+      showMarketingConsent: false,
+    });
+    assert.deepEqual(trackingPolicy({ isNativeApp: true, nativePlatform: "unknown" }), {
+      isNativeApp: true,
+      nativePlatform: "unknown",
       allowMarketingTracking: false,
       allowAnalyticsTracking: false,
       showConsentBanner: false,
@@ -67,6 +76,17 @@ describe("app runtime tracking policy", () => {
       isNativeApp: false,
       nativePlatform: "",
     });
+  });
+
+  it("treats product and invite paths as native, not the public website", () => {
+    assert.equal(isNativeProductPath("/app"), true);
+    assert.equal(isNativeProductPath("/konto"), true);
+    assert.equal(isNativeProductPath("/onboarding?som=elev"), true);
+    assert.equal(isNativeProductPath("/invite/abc"), true);
+    assert.equal(isNativeProductPath("/journey/00000000-0000-0000-0000-000000000000/nasta"), true);
+    assert.equal(isNativeProductPath("/"), false);
+    assert.equal(isNativeProductPath("/cookies"), false);
+    assert.equal(isNativeProductPath("/integritet"), false);
   });
 
   it("does not add ATT and keeps the Capacitor gate next to Meta init", () => {

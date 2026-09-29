@@ -82,6 +82,37 @@ export function isNativeAppRequest(request: FastifyRequest): boolean {
   return request.cookies[config.nativeCookieName] === "1";
 }
 
+/** Product surfaces the Capacitor shell can open, including deep links. */
+export function isNativeProductPath(pathname: string): boolean {
+  const path = pathname.split("?")[0] || "/";
+  if (
+    path === "/app" ||
+    path === "/onboarding" ||
+    path === "/konto" ||
+    path === "/mer" ||
+    path === "/resa" ||
+    path === "/nasta" ||
+    path === "/utveckling" ||
+    path === "/hjalp" ||
+    path === "/logout"
+  ) {
+    return true;
+  }
+  return (
+    path.startsWith("/app/") ||
+    path.startsWith("/konto/") ||
+    path.startsWith("/onboarding/") ||
+    path.startsWith("/invite/") ||
+    path.startsWith("/journey/") ||
+    path.startsWith("/hjalp/")
+  );
+}
+
+/** Public website cookie banner. Off inside the native app WebView. */
+export function wantsPublicCookieConsent(request: FastifyRequest): boolean {
+  return !isNativeAppRequest(request);
+}
+
 export function getSessionUserId(request: FastifyRequest): string | null {
   const token = request.cookies[config.sessionCookieName];
   const session = parseSessionToken(token);

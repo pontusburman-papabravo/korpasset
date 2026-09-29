@@ -1,13 +1,15 @@
 /**
  * Central tracking policy for Körpasset surfaces.
  *
- * Client detection lives in `app/public/consent.js` (`window.KORPASSET_RUNTIME`)
- * and uses Capacitor (`isNativePlatform` / `getPlatform`), not User-Agent.
- * This module is the same decision table so tests and docs stay aligned.
+ * Client detection lives in `app/public/consent.js` (`window.KORPASSET_RUNTIME`).
+ * It uses Capacitor (`isNativePlatform` / `getPlatform`) and, if Capacitor is
+ * missing, the first-party `korpasset_native` cookie set by `/app` and invites.
+ * It does not use User-Agent.
  *
- * Native iOS: no advertising/marketing tracking and no GA4 until we can
- * treat analytics as first-party measurement outside Apple's ATT definition.
- * The public website and native Android keep the existing consent model.
+ * Native app WebView (iOS and Android): no advertising/marketing tracking, no
+ * GA4, and no cookie-consent UI. Apple Guideline 5.1.2(i) treats a cookie
+ * prompt that offers tracking as tracking. The public website in a browser
+ * keeps the existing consent model, including optional Meta Pixel and GA4.
  */
 export type NativePlatform = "ios" | "android" | "unknown" | "";
 
@@ -58,14 +60,13 @@ export function trackingPolicy(detected: CapacitorNativeSignal): AppRuntime {
   const nativePlatform: NativePlatform = isNativeApp
     ? detected.nativePlatform || "unknown"
     : "";
-  const nativeIos = isNativeApp && nativePlatform === "ios";
   return {
     isNativeApp,
     nativePlatform,
-    allowMarketingTracking: !nativeIos,
-    allowAnalyticsTracking: !nativeIos,
-    showConsentBanner: !nativeIos,
-    showMarketingConsent: !nativeIos,
+    allowMarketingTracking: !isNativeApp,
+    allowAnalyticsTracking: !isNativeApp,
+    showConsentBanner: !isNativeApp,
+    showMarketingConsent: !isNativeApp,
   };
 }
 

@@ -72,6 +72,7 @@ function appNav(options: AppLayoutOptions = {}): string {
   </nav>`;
 }
 
+/** Product pages. No public cookie banner — Apple Review loads this in the iOS WebView. */
 export function layout(title: string, body: string, options: AppLayoutOptions = {}): string {
   return `<!DOCTYPE html>
 <html lang="sv">
@@ -82,7 +83,6 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
   <meta name="robots" content="noindex, nofollow">
   ${faviconLink()}
   <link rel="stylesheet" href="/app.css">
-  ${consentHead()}
 </head>
 <body class="app">
   <header class="app-bar">
@@ -125,7 +125,6 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
   </script>
   <script>window.KORPASSET_OAUTH = ${JSON.stringify(publicOAuthConfig())};</script>
   <script src="/app-oauth.js" defer></script>
-  ${consentBody()}
 </body>
 </html>`;
 }

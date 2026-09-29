@@ -1,4 +1,5 @@
-import type { FastifyInstance, FastifyReply } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { wantsPublicCookieConsent } from "../auth/session.js";
 import { config } from "../config.js";
 import { AppError } from "../errors.js";
 import { META_LEAD_COOKIE_NAME } from "./consent.js";
@@ -45,6 +46,10 @@ function formValues(body: Record<string, unknown>) {
   };
 }
 
+function publicConsent(request: FastifyRequest) {
+  return { consent: wantsPublicCookieConsent(request) };
+}
+
 export async function registerMarketingRoutes(app: FastifyInstance): Promise<void> {
   app.get("/robots.txt", async (_request, reply) => {
     return reply
@@ -60,28 +65,28 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
       .send(sitemapXml());
   });
 
-  app.get("/integritet", async (_request, reply) => {
-    return reply.type("text/html").send(privacyPage());
+  app.get("/integritet", async (request, reply) => {
+    return reply.type("text/html").send(privacyPage(publicConsent(request)));
   });
 
-  app.get("/cookies", async (_request, reply) => {
-    return reply.type("text/html").send(cookiesPage());
+  app.get("/cookies", async (request, reply) => {
+    return reply.type("text/html").send(cookiesPage(publicConsent(request)));
   });
 
-  app.get("/villkor", async (_request, reply) => {
-    return reply.type("text/html").send(termsPage());
+  app.get("/villkor", async (request, reply) => {
+    return reply.type("text/html").send(termsPage(publicConsent(request)));
   });
 
-  app.get("/kontakt", async (_request, reply) => {
-    return reply.type("text/html").send(contactPage());
+  app.get("/kontakt", async (request, reply) => {
+    return reply.type("text/html").send(contactPage(publicConsent(request)));
   });
 
-  app.get("/radera-konto", async (_request, reply) => {
-    return reply.type("text/html").send(accountDeletionPage());
+  app.get("/radera-konto", async (request, reply) => {
+    return reply.type("text/html").send(accountDeletionPage(publicConsent(request)));
   });
 
-  app.get("/interest/tack", async (_request, reply) => {
-    return reply.type("text/html").send(renderInterestThanksPage());
+  app.get("/interest/tack", async (request, reply) => {
+    return reply.type("text/html").send(renderInterestThanksPage(publicConsent(request)));
   });
 
   app.post("/interest", async (request, reply) => {
@@ -97,6 +102,7 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
           "För många försök. Vänta en stund och prova igen.",
           formValues((request.body ?? {}) as Record<string, unknown>),
           await countBetaWaitlist(),
+          publicConsent(request),
         ),
       );
     }
@@ -109,6 +115,7 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
           "Bekräfta att du vill bli kontaktad om betan.",
           values,
           await countBetaWaitlist(),
+          publicConsent(request),
         ),
       );
     }
@@ -136,7 +143,7 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
       const message =
         error instanceof AppError ? error.message : "Kunde inte spara anmälan.";
       return reply.status(400).type("text/html").send(
-        renderInterestFormError(message, values, await countBetaWaitlist()),
+        renderInterestFormError(message, values, await countBetaWaitlist(), publicConsent(request)),
       );
     }
   });
