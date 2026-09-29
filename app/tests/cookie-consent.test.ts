@@ -23,6 +23,41 @@ describe("cookie consent", () => {
     else process.env.META_PIXEL_ID = previousMeta;
   });
 
+  it("does not put a cookie prompt on the native app shell", async () => {
+    const app = await createTestApp();
+    const page = await app.inject({ method: "GET", url: "/app" });
+    assert.equal(page.statusCode, 200);
+    assert.doesNotMatch(page.body, /data-consent-root/);
+    assert.doesNotMatch(page.body, /Godkänn alla/);
+    assert.doesNotMatch(page.body, /Cookieinställningar/);
+    assert.doesNotMatch(page.body, /consent\.js/);
+    assert.doesNotMatch(page.body, /Meta Pixel/);
+    assert.doesNotMatch(page.body, /Google Analytics/);
+    await app.close();
+  });
+
+  it("omits the public cookie banner when the native app cookie is set", async () => {
+    const app = await createTestApp();
+    const native = { korpasset_native: "1" };
+    const home = await app.inject({ method: "GET", url: "/", cookies: native });
+    assert.doesNotMatch(home.body, /data-consent-root/);
+    assert.doesNotMatch(home.body, /Godkänn alla/);
+    assert.doesNotMatch(home.body, /Cookieinställningar/);
+    assert.match(home.body, /href="\/cookies"/);
+
+    const cookies = await app.inject({
+      method: "GET",
+      url: "/cookies",
+      cookies: native,
+    });
+    assert.doesNotMatch(cookies.body, /data-consent-root/);
+    assert.doesNotMatch(cookies.body, /Godkänn alla/);
+    assert.doesNotMatch(cookies.body, /Cookieinställningar/);
+    assert.match(cookies.body, /ingen cookiebanner/);
+    assert.match(cookies.body, /spårar inte användare/);
+    await app.close();
+  });
+
   it("asks for consent before any analytics tag and treats reject as a peer of accept", async () => {
     const app = await createTestApp();
     const home = await app.inject({ method: "GET", url: "/" });

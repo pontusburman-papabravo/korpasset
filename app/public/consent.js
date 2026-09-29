@@ -23,21 +23,34 @@
     return { isNativeApp: isNativeApp, nativePlatform: platform };
   }
 
+  function hasNativeAppCookie() {
+    var parts = document.cookie ? document.cookie.split("; ") : [];
+    for (var i = 0; i < parts.length; i += 1) {
+      if (parts[i].indexOf("korpasset_native=") === 0) {
+        return parts[i].slice("korpasset_native=".length) === "1";
+      }
+    }
+    return false;
+  }
+
   function trackingPolicy(detected) {
     var isNativeApp = Boolean(detected && detected.isNativeApp);
     var nativePlatform = isNativeApp ? detected.nativePlatform || "unknown" : "";
-    var nativeIos = isNativeApp && nativePlatform === "ios";
     return {
       isNativeApp: isNativeApp,
       nativePlatform: nativePlatform,
-      allowMarketingTracking: !nativeIos,
-      allowAnalyticsTracking: !nativeIos,
-      showConsentBanner: !nativeIos,
-      showMarketingConsent: !nativeIos,
+      allowMarketingTracking: !isNativeApp,
+      allowAnalyticsTracking: !isNativeApp,
+      showConsentBanner: !isNativeApp,
+      showMarketingConsent: !isNativeApp,
     };
   }
 
-  var runtime = trackingPolicy(readCapacitorNative());
+  var detected = readCapacitorNative();
+  if (!detected.isNativeApp && hasNativeAppCookie()) {
+    detected = { isNativeApp: true, nativePlatform: "unknown" };
+  }
+  var runtime = trackingPolicy(detected);
   window.KORPASSET_RUNTIME = runtime;
 
   var VERSION = Number(config.version) || 1;

@@ -1,12 +1,12 @@
-import { renderLegalPage } from "./landing.js";
+import { renderLegalPage, type PublicConsentOptions } from "./landing.js";
 
-export function privacyPage(): string {
+export function privacyPage(options: PublicConsentOptions = {}): string {
   return renderLegalPage(
     "Integritetspolicy",
     `<h1>Integritetspolicy</h1>
-     <p>Senast uppdaterad: 27 september 2026</p>
+     <p>Senast uppdaterad: 29 september 2026</p>
      <p>Papa Bravo AB är personuppgiftsansvarig för Körpasset, en digital tjänst för privat övningskörning mot svenskt B-körkort.</p>
-     <p>Vi samlar in så lite personuppgifter som möjligt. Vi säljer inte dina personuppgifter. På den publika webbplatsen korpasset.se kan annonsmätning via Meta Pixel ske bara om du samtycker till marknadsföringscookies. iOS-appen Körpasset använder inte reklam- eller marknadsföringsspårning och laddar inte Meta Pixel.</p>
+     <p>Vi samlar in så lite personuppgifter som möjligt. Vi säljer inte dina personuppgifter. På den publika webbplatsen korpasset.se kan annonsmätning via Meta Pixel ske bara om du samtycker till marknadsföringscookies. iOS-appen Körpasset använder inte reklam- eller marknadsföringsspårning, laddar inte Meta Pixel och visar ingen cookiebanner.</p>
      <p>Du kan kontakta oss på:</p>
      <ul>
        <li>Allmänt: <a href="mailto:info@korpasset.se">info@korpasset.se</a></li>
@@ -143,10 +143,11 @@ export function privacyPage(): string {
      <p>Datumet högst upp på sidan visar när policyn senast uppdaterades. Vid större förändringar informerar vi på ett tydligt sätt i tjänsten.</p>`,
     "/integritet",
     "Hur Körpasset och Papa Bravo AB behandlar personuppgifter i betan och i produkten. Vi säljer inte dina uppgifter.",
+    options,
   );
 }
 
-export function termsPage(): string {
+export function termsPage(options: PublicConsentOptions = {}): string {
   return renderLegalPage(
     "Användarvillkor",
     `<h1>Användarvillkor</h1>
@@ -268,19 +269,19 @@ export function termsPage(): string {
      <p>Support: <a href="mailto:support@korpasset.se">support@korpasset.se</a></p>`,
     "/villkor",
     "Användarvillkor för Körpasset. Privat övningskörning mot B-körkort: stöd för handledare och elev som ska ta körkort, inte ett betyg inför uppkörning.",
+    options,
   );
 }
 
-export function cookiesPage(): string {
-  return renderLegalPage(
-    "Cookies",
-    `<h1>Cookiepolicy</h1>
-     <p>Senast uppdaterad: 27 september 2026</p>
-     <p>Papa Bravo AB använder cookies och liknande lagring på korpasset.se. Den här sidan beskriver vilka, varför och hur du väljer.</p>
-     <p>Den publika webbplatsen kan använda valfria analys- och marknadsföringscookies efter samtycke i webbläsaren. iOS-appen Körpasset använder inte reklam- eller marknadsföringsspårning, inte Meta Pixel och inte Google Analytics.</p>
-     <p>En cookie är en liten textfil som webbplatsen sparar i din webbläsare. Liknande teknik, till exempel localStorage, behandlas på samma sätt.</p>
-
-     <h2>Så väljer du</h2>
+export function cookiesPage(options: PublicConsentOptions = {}): string {
+  const inApp = options.consent === false;
+  const choiceSection = inApp
+    ? `<h2>Så väljer du</h2>
+     <p>I Körpasset-appen finns ingen cookiebanner och inga cookieinställningar för spårning. Appen spårar inte användare, inte för reklam och inte genom att koppla data till tredje part.</p>
+     <p>Bara nödvändiga förstapartscookies för inloggning och appen kan användas. Analys- och marknadsföringscookies används inte i appen.</p>
+     <p>På den publika webbplatsen korpasset.se i en vanlig webbläsare kan du välja analys och marknadsföring. Det valet gäller inte iOS-appen.</p>
+     <p>Mer om personuppgifter finns i <a href="/integritet">integritetspolicyn</a>.</p>`
+    : `<h2>Så väljer du</h2>
      <p>Första gången du besöker en sida med cookiebannern kan du:</p>
      <ul>
        <li>godkänna alla cookies</li>
@@ -289,7 +290,15 @@ export function cookiesPage(): string {
      </ul>
      <p>Valfria rutor är inte ifyllda i förväg. Fortsatt surfande räknas inte som samtycke. Webbplatsen går att använda om du avvisar valfria cookies.</p>
      <p>Valet sparas i upp till sex månader. Du kan ändra eller återkalla det när som helst via <button type="button" class="consent-footer-link" data-consent-open>Cookieinställningar</button>. Återkallelse stoppar fortsatt användning av de valfria verktygen. Behandling som redan skett påverkas inte.</p>
-     <p>Mer om personuppgifter finns i <a href="/integritet">integritetspolicyn</a>.</p>
+     <p>Mer om personuppgifter finns i <a href="/integritet">integritetspolicyn</a>.</p>`;
+  return renderLegalPage(
+    "Cookies",
+    `<h1>Cookiepolicy</h1>
+     <p>Senast uppdaterad: 29 september 2026</p>
+     <p>Papa Bravo AB använder cookies och liknande lagring på korpasset.se. Den här sidan beskriver vilka, varför och hur du väljer.</p>
+     <p>Den publika webbplatsen kan använda valfria analys- och marknadsföringscookies efter samtycke i webbläsaren. iOS-appen Körpasset använder inte reklam- eller marknadsföringsspårning, inte Meta Pixel och inte Google Analytics.</p>
+     <p>En cookie är en liten textfil som webbplatsen sparar i din webbläsare. Liknande teknik, till exempel localStorage, behandlas på samma sätt.</p>
+     ${choiceSection}
 
      <h2>Nödvändiga</h2>
      <p>Dessa behövs för att tjänsten ska fungera. De kräver inte samtycke och kan inte stängas av i bannern.</p>
@@ -302,7 +311,7 @@ export function cookiesPage(): string {
      </ul>
 
      <h2>iOS-appen</h2>
-     <p>När Körpasset körs i iOS-appen laddas inte Google Analytics, inte Meta Pixel och inte andra reklam- eller marknadsföringsverktyg. Cookiebannern som erbjuder analys- och marknadsföringsval visas inte där. Nödvändiga förstapartscookies för inloggning och appen kan fortfarande användas.</p>
+     <p>När Körpasset körs i iOS-appen laddas inte Google Analytics, inte Meta Pixel och inte andra reklam- eller marknadsföringsverktyg. Cookiebannern som erbjuder analys- och marknadsföringsval visas inte där. Appen spårar inte användare och samlar inte cookies för spårning. App Tracking Transparency används inte, eftersom den funktionen inte finns. Nödvändiga förstapartscookies för inloggning och appen kan fortfarande användas.</p>
 
      <h2>Analys</h2>
      <p>Används bara på den publika webbplatsen om du godkänner analys. Rättslig grund är ditt samtycke. Gäller inte iOS-appen.</p>
@@ -320,10 +329,11 @@ export function cookiesPage(): string {
      <p>Du kan också lämna klagomål till Integritetsskyddsmyndigheten, IMY.</p>`,
     "/cookies",
     "Så använder Körpasset cookies. Nödvändiga cookies krävs för tjänsten. Google Analytics och andra tredjepartsverktyg används bara efter samtycke.",
+    options,
   );
 }
 
-export function contactPage(): string {
+export function contactPage(options: PublicConsentOptions = {}): string {
   return renderLegalPage(
     "Kontakt",
     `<h1>Kontakt</h1>
@@ -337,10 +347,11 @@ export function contactPage(): string {
      <p>Körpasset är en fristående tjänst och är inte utvecklad av, ansluten till eller godkänd av Transportstyrelsen eller Trafikverket.</p>`,
     "/kontakt",
     "Kontakta Körpasset om privat övningskörning, handledare, körkortselev och betan. Support och personuppgiftsfrågor till Papa Bravo AB.",
+    options,
   );
 }
 
-export function accountDeletionPage(): string {
+export function accountDeletionPage(options: PublicConsentOptions = {}): string {
   return renderLegalPage(
     "Radera konto",
     `<h1>Radera ditt Körpasset-konto</h1>
@@ -380,5 +391,6 @@ export function accountDeletionPage(): string {
      <p>Mer i <a href="/integritet">integritetspolicyn</a>.</p>`,
     "/radera-konto",
     "Radera ditt Körpasset-konto och tillhörande data. Papa Bravo AB tar emot begäran i appen eller via e-post.",
+    options,
   );
 }

@@ -113,9 +113,14 @@ const LANDING_FAQ: Array<FaqItem & { answerHtml?: string }> = [
   },
 ];
 
+export interface PublicConsentOptions {
+  consent?: boolean;
+}
+
 export function renderLandingPage(options: {
   errorMessage?: string;
   betaFilled?: number;
+  consent?: boolean;
   values?: {
     name?: string;
     email?: string;
@@ -158,11 +163,12 @@ export function renderLandingPage(options: {
        ${faq()}
        ${interestSection(formError, values, betaFilled)}
      </main>
-     ${siteFooter()}`,
+     ${siteFooter({ cookieSettings: options.consent !== false })}`,
     {
       description: LANDING_DESCRIPTION,
       path: "/",
       documentTitle: LANDING_DOCUMENT_TITLE,
+      consent: options.consent !== false,
       jsonLd: publicPageJsonLd({
         path: "/",
         title: LANDING_DOCUMENT_TITLE,
@@ -174,7 +180,7 @@ export function renderLandingPage(options: {
   );
 }
 
-export function renderInterestThanksPage(): string {
+export function renderInterestThanksPage(options: PublicConsentOptions = {}): string {
   return siteLayout(
     "Tack för din anmälan",
     `${siteHeader()}
@@ -188,11 +194,12 @@ export function renderInterestThanksPage(): string {
          </div>
        </section>
      </main>
-     ${siteFooter()}`,
+     ${siteFooter({ cookieSettings: options.consent !== false })}`,
     {
       description: "Tack för din intresseanmälan till Körpassets beta.",
       path: "/interest/tack",
       robots: "noindex, follow",
+      consent: options.consent !== false,
     },
   );
 }
@@ -202,6 +209,7 @@ export function renderLegalPage(
   body: string,
   path = "/",
   description?: string,
+  options: PublicConsentOptions = {},
 ): string {
   const pageDescription = description ?? SITE_DESCRIPTION;
   const documentTitle = `${title} · Körpasset`;
@@ -215,10 +223,11 @@ export function renderLegalPage(
          </div>
        </article>
      </main>
-     ${siteFooter()}`,
+     ${siteFooter({ cookieSettings: options.consent !== false })}`,
     {
       path,
       description: pageDescription,
+      consent: options.consent !== false,
       jsonLd: publicPageJsonLd({
         path,
         title: documentTitle,
@@ -266,12 +275,15 @@ export function siteHeader(
   </header>`;
 }
 
-export function siteFooter(options: { consent?: boolean } = {}): string {
-  const cookieLinks =
-    options.consent === false
+export function siteFooter(
+  options: { cookiePolicy?: boolean; cookieSettings?: boolean } = {},
+): string {
+  const cookiePolicy =
+    options.cookiePolicy === false ? "" : `<a href="/cookies">Cookies</a>`;
+  const cookieSettings =
+    options.cookieSettings === false
       ? ""
-      : `<a href="/cookies">Cookies</a>
-        <button type="button" class="consent-footer-link" data-consent-open>Cookieinställningar</button>`;
+      : `<button type="button" class="consent-footer-link" data-consent-open>Cookieinställningar</button>`;
   return `<footer class="site-footer">
     <div class="site-inner site-footer__grid">
       <div>
@@ -280,7 +292,8 @@ export function siteFooter(options: { consent?: boolean } = {}): string {
       </div>
       <div>
         <a href="/integritet">Integritet</a>
-        ${cookieLinks}
+        ${cookiePolicy}
+        ${cookieSettings}
         <a href="/villkor">Villkor</a>
         <a href="/kontakt">Kontakt</a>
         <a href="/radera-konto">Radera konto</a>
@@ -590,6 +603,12 @@ export function renderInterestFormError(
     platformAndroid?: boolean;
   },
   betaFilled = 0,
+  options: PublicConsentOptions = {},
 ): string {
-  return renderLandingPage({ errorMessage: message, values, betaFilled });
+  return renderLandingPage({
+    errorMessage: message,
+    values,
+    betaFilled,
+    consent: options.consent,
+  });
 }

@@ -45,7 +45,7 @@
     );
   }
 
-  // @capgo/capacitor-social-login 8.5.10 (the plugin in iOS 1.0 build 6)
+  // @capgo/capacitor-social-login 8.5.10 (the plugin in iOS 1.0 build 7)
   // leaves useProperTokenExchange false unless initialize asks for it.
   // In that mode authorizationCode is nil and the raw authorization code
   // is accessToken.token. redirectUrl stays empty, so the plugin does not

@@ -52,7 +52,9 @@ describe("public legal pages", () => {
     assert.match(home.body, /href="\/cookies"/);
     assert.match(home.body, /data-consent-open/);
     assert.match(account.body, /href="\/cookies"/);
-    assert.match(account.body, /data-consent-open/);
+    assert.doesNotMatch(account.body, /data-consent-open/);
+    assert.doesNotMatch(account.body, /Cookieinställningar/);
+    assert.doesNotMatch(account.body, /data-consent-root/);
     assert.match(account.body, /href="\/radera-konto"/);
     assert.match(account.body, /action="\/konto\/radera"/);
 

@@ -14,7 +14,7 @@ const infoPlist = fs.readFileSync(
 );
 
 describe("app runtime tracking policy", () => {
-  it("keeps website and Android marketing/analytics on, and turns both off for native iOS", () => {
+  it("keeps website marketing/analytics on, and turns both off in any native app WebView", () => {
     assert.deepEqual(trackingPolicy({ isNativeApp: false, nativePlatform: "" }), {
       isNativeApp: false,
       nativePlatform: "",
@@ -26,14 +26,22 @@ describe("app runtime tracking policy", () => {
     assert.deepEqual(trackingPolicy({ isNativeApp: true, nativePlatform: "android" }), {
       isNativeApp: true,
       nativePlatform: "android",
-      allowMarketingTracking: true,
-      allowAnalyticsTracking: true,
-      showConsentBanner: true,
-      showMarketingConsent: true,
+      allowMarketingTracking: false,
+      allowAnalyticsTracking: false,
+      showConsentBanner: false,
+      showMarketingConsent: false,
     });
     assert.deepEqual(trackingPolicy({ isNativeApp: true, nativePlatform: "ios" }), {
       isNativeApp: true,
       nativePlatform: "ios",
+      allowMarketingTracking: false,
+      allowAnalyticsTracking: false,
+      showConsentBanner: false,
+      showMarketingConsent: false,
+    });
+    assert.deepEqual(trackingPolicy({ isNativeApp: true, nativePlatform: "unknown" }), {
+      isNativeApp: true,
+      nativePlatform: "unknown",
       allowMarketingTracking: false,
       allowAnalyticsTracking: false,
       showConsentBanner: false,

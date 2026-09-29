@@ -82,6 +82,11 @@ export function isNativeAppRequest(request: FastifyRequest): boolean {
   return request.cookies[config.nativeCookieName] === "1";
 }
 
+/** Public website cookie banner. Off inside the native app WebView. */
+export function wantsPublicCookieConsent(request: FastifyRequest): boolean {
+  return !isNativeAppRequest(request);
+}
+
 export function getSessionUserId(request: FastifyRequest): string | null {
   const token = request.cookies[config.sessionCookieName];
   const session = parseSessionToken(token);

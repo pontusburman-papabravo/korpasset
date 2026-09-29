@@ -618,8 +618,8 @@ describe("cookie consent does not block auth completion", () => {
   });
 });
 
-describe("native Android keeps website consent and Meta", () => {
-  it("still loads Meta after marketing consent and ignores iOS-only suppression", () => {
+describe("native Android disables advertising tracking", () => {
+  it("never loads Meta or the cookie banner in the Android WebView", () => {
     const page = boot({
       metaPixelId: META_PIXEL_ID,
       capacitor: { isNativePlatform: true, getPlatform: "android" },
@@ -632,20 +632,33 @@ describe("native Android keeps website consent and Meta", () => {
     };
     assert.equal(runtime.isNativeApp, true);
     assert.equal(runtime.nativePlatform, "android");
-    assert.equal(runtime.allowMarketingTracking, true);
-    assert.equal(runtime.showConsentBanner, true);
-    assert.equal((page.__root as { hidden: boolean }).hidden, false);
-    assert.equal((page.__marketingChoice as { hidden: boolean }).hidden, false);
+    assert.equal(runtime.allowMarketingTracking, false);
+    assert.equal(runtime.showConsentBanner, false);
+    assert.equal((page.__root as { hidden: boolean }).hidden, true);
+    assert.equal((page.__banner as { hidden: boolean }).hidden, true);
     click(page, "[data-consent-accept]");
-    assert.equal(metaRequests(page).length, 1);
-    assert.deepEqual(
-      fbqCalls(page).filter((call) => call[0] === "init"),
-      [["init", META_PIXEL_ID]],
-    );
-    assert.equal(
-      fbqCalls(page).some((call) => call[0] === "track" && call[1] === "PageView"),
-      true,
-    );
+    assert.equal(page.fbq, undefined);
+    assert.equal(metaRequests(page).length, 0);
+  });
+});
+
+describe("native app cookie hides consent when Capacitor is missing", () => {
+  it("treats korpasset_native=1 as a native WebView and does not open the banner", () => {
+    const page = boot({
+      metaPixelId: META_PIXEL_ID,
+      cookies: [{ name: "korpasset_native", value: "1", domain: "" }],
+    });
+    const runtime = page.KORPASSET_RUNTIME as {
+      isNativeApp: boolean;
+      allowMarketingTracking: boolean;
+      showConsentBanner: boolean;
+    };
+    assert.equal(runtime.isNativeApp, true);
+    assert.equal(runtime.allowMarketingTracking, false);
+    assert.equal(runtime.showConsentBanner, false);
+    assert.equal((page.__root as { hidden: boolean }).hidden, true);
+    assert.equal(page.fbq, undefined);
+    assert.equal(metaRequests(page).length, 0);
   });
 });
 

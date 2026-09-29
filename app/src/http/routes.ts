@@ -6,6 +6,7 @@ import {
   requireSessionUserId,
   setNativeAppCookie,
   setSessionCookie,
+  wantsPublicCookieConsent,
 } from "../auth/session.js";
 import { createInvitation, acceptInvitation, getInvitationByToken } from "../services/invitations.js";
 import {
@@ -325,9 +326,12 @@ function canCreateStudentJourney(accountState: string | null | undefined): boole
 }
 
 export async function registerRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/", async (_request, reply) => {
+  app.get("/", async (request, reply) => {
     return reply.type("text/html").send(
-      renderLandingPage({ betaFilled: await countBetaWaitlist() }),
+      renderLandingPage({
+        betaFilled: await countBetaWaitlist(),
+        consent: wantsPublicCookieConsent(request),
+      }),
     );
   });
 
