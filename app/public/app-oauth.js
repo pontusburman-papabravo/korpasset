@@ -30,11 +30,27 @@
     return cap.Plugins[name] || null;
   }
 
-  function showError(message) {
+  function oauthErrorVisible() {
+    try {
+      const el = document.getElementById && document.getElementById("oauth-error");
+      return Boolean(el && !el.hidden && String(el.textContent || "").trim());
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function showError(message, options) {
     const el = document.getElementById("oauth-error");
     if (!el) return;
     el.hidden = false;
     el.textContent = message;
+    hideGoogleDeviceHint();
+    try {
+      if (options && options.googleReauth) showGoogleReauthHelp();
+      else hideGoogleReauthHelp();
+    } catch (error) {
+      /* Login must still fail cleanly if the help row cannot be drawn. */
+    }
   }
 
   function idTokenFrom(result) {
@@ -414,7 +430,9 @@
             error,
           );
         }
-        showError(googleNativeErrorMessage(error));
+        showError(googleNativeErrorMessage(error), {
+          googleReauth: pluginFailureCode(error) === "16",
+        });
         failAuth(
           cancelled
             ? "cancelled"
@@ -828,11 +846,91 @@
     }
   }
 
+  function hideGoogleReauthHelp() {
+    try {
+      const el = document.getElementById && document.getElementById("oauth-google-reauth");
+      if (el) el.hidden = true;
+    } catch (error) {
+      /* ignore */
+    }
+  }
+
+  function ensureGoogleReauthHelp() {
+    try {
+      let el = document.getElementById && document.getElementById("oauth-google-reauth");
+      if (el) return el;
+      if (!document.createElement) return null;
+      el = document.createElement("div");
+      el.id = "oauth-google-reauth";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.id = "oauth-open-gmail";
+      button.className = "btn btn-secondary";
+      button.textContent = "Öppna Gmail och godkänn";
+      if (el.appendChild) el.appendChild(button);
+      const error = document.getElementById && document.getElementById("oauth-error");
+      if (error && error.parentNode && error.nextSibling && error.parentNode.insertBefore) {
+        error.parentNode.insertBefore(el, error.nextSibling);
+      } else if (error && error.parentNode && error.parentNode.appendChild) {
+        error.parentNode.appendChild(el);
+      } else if (document.body && document.body.appendChild) {
+        document.body.appendChild(el);
+      }
+      return el;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function showGoogleReauthHelp() {
+    try {
+      const el = ensureGoogleReauthHelp();
+      if (!el) return false;
+      el.hidden = false;
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  // We cannot show Google's own "approve this device" prompt. The closest
+  // action is to open Gmail in the system browser so they can tap Approve.
+  function openGoogleMail() {
+    const url = "https://mail.google.com/";
+    try {
+      if (typeof window.open === "function") {
+        window.open(url, "_blank", "noopener,noreferrer");
+        oauthTrace("google_reauth_gmail_opened", { reason: "gmail" });
+        return true;
+      }
+    } catch (error) {
+      /* fall through */
+    }
+    try {
+      const link = document.createElement && document.createElement("a");
+      if (!link) return false;
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      if (document.body && document.body.appendChild) document.body.appendChild(link);
+      if (typeof link.click === "function") link.click();
+      if (link.parentNode && link.parentNode.removeChild) link.parentNode.removeChild(link);
+      oauthTrace("google_reauth_gmail_opened", { reason: "gmail" });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
   // One-time, Android-only. Google's device check can look like a second
   // login; say so once, then never again on this install.
   function showGoogleDeviceHintOnce() {
     if (platform() !== "android" || !nativeApp()) return false;
     if (!isLoginSurface()) return false;
+    if (oauthErrorVisible()) {
+      hideGoogleDeviceHint();
+      return false;
+    }
     if (googleDeviceHintAlreadyShown()) {
       hideGoogleDeviceHint();
       return false;
@@ -1391,8 +1489,18 @@
     hint.className = "muted";
     hint.hidden = true;
     hint.textContent = GOOGLE_HINT_TEXT;
+    const reauth = document.createElement("div");
+    reauth.id = "oauth-google-reauth";
+    reauth.hidden = true;
+    const openGmail = document.createElement("button");
+    openGmail.type = "button";
+    openGmail.id = "oauth-open-gmail";
+    openGmail.className = "btn btn-secondary";
+    openGmail.textContent = "Öppna Gmail och godkänn";
+    reauth.appendChild(openGmail);
     wrap.appendChild(intro);
     wrap.appendChild(error);
+    wrap.appendChild(reauth);
     wrap.appendChild(status);
     wrap.appendChild(hint);
     wrap.appendChild(apple);
@@ -1474,7 +1582,15 @@
   };
 
   document.addEventListener("click", function (event) {
-    const button = event.target.closest("[data-oauth-provider]");
+    const target = event.target && event.target.closest ? event.target : null;
+    if (!target) return;
+    const gmail = target.closest("#oauth-open-gmail");
+    if (gmail) {
+      event.preventDefault();
+      openGoogleMail();
+      return;
+    }
+    const button = target.closest("[data-oauth-provider]");
     if (!button) return;
     event.preventDefault();
     if (button.disabled || button.getAttribute("aria-busy") === "true") return;
