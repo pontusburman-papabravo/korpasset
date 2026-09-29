@@ -45,8 +45,12 @@
     el.hidden = false;
     el.textContent = message;
     hideGoogleDeviceHint();
-    if (options && options.googleReauth) showGoogleReauthHelp();
-    else hideGoogleReauthHelp();
+    try {
+      if (options && options.googleReauth) showGoogleReauthHelp();
+      else hideGoogleReauthHelp();
+    } catch (error) {
+      /* Login must still fail cleanly if the help row cannot be drawn. */
+    }
   }
 
   function idTokenFrom(result) {
@@ -852,38 +856,41 @@
   }
 
   function ensureGoogleReauthHelp() {
-    let el = null;
     try {
-      el = document.getElementById && document.getElementById("oauth-google-reauth");
+      let el = document.getElementById && document.getElementById("oauth-google-reauth");
+      if (el) return el;
+      if (!document.createElement) return null;
+      el = document.createElement("div");
+      el.id = "oauth-google-reauth";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.id = "oauth-open-gmail";
+      button.className = "btn btn-secondary";
+      button.textContent = "Öppna Gmail och godkänn";
+      if (el.appendChild) el.appendChild(button);
+      const error = document.getElementById && document.getElementById("oauth-error");
+      if (error && error.parentNode && error.nextSibling && error.parentNode.insertBefore) {
+        error.parentNode.insertBefore(el, error.nextSibling);
+      } else if (error && error.parentNode && error.parentNode.appendChild) {
+        error.parentNode.appendChild(el);
+      } else if (document.body && document.body.appendChild) {
+        document.body.appendChild(el);
+      }
+      return el;
     } catch (error) {
-      el = null;
+      return null;
     }
-    if (el) return el;
-    if (!document.createElement) return null;
-    el = document.createElement("div");
-    el.id = "oauth-google-reauth";
-    const button = document.createElement("button");
-    button.type = "button";
-    button.id = "oauth-open-gmail";
-    button.className = "btn btn-secondary";
-    button.textContent = "Öppna Gmail och godkänn";
-    el.appendChild(button);
-    const error = document.getElementById && document.getElementById("oauth-error");
-    if (error && error.parentNode && error.nextSibling) {
-      error.parentNode.insertBefore(el, error.nextSibling);
-    } else if (error && error.parentNode) {
-      error.parentNode.appendChild(el);
-    } else if (document.body && document.body.appendChild) {
-      document.body.appendChild(el);
-    }
-    return el;
   }
 
   function showGoogleReauthHelp() {
-    const el = ensureGoogleReauthHelp();
-    if (!el) return false;
-    el.hidden = false;
-    return true;
+    try {
+      const el = ensureGoogleReauthHelp();
+      if (!el) return false;
+      el.hidden = false;
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
   // We cannot show Google's own "approve this device" prompt. The closest
