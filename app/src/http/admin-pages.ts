@@ -1,4 +1,5 @@
 import type { AdminBetaStats, DayCount } from "../services/admin-stats.js";
+import type { AdminUsage, UsageCount, UsageJourney } from "../services/admin-usage.js";
 import type { DirectoryUser } from "../services/admin-directory.js";
 import {
   DIRECTORY_ACCOUNT_STATES,
@@ -18,6 +19,7 @@ import {
   siteLayout,
   successBanner,
 } from "./layout.js";
+import { csvCell } from "./csv.js";
 import { siteFooter, siteHeader } from "./landing.js";
 
 export type AdminNav = "overview" | "signups" | "users" | "statistik" | "support";
@@ -411,7 +413,183 @@ export function signupDetailPage(signup: InterestSignup): string {
   );
 }
 
-export function statistikPage(stats: AdminBetaStats): string {
+const USAGE_SOURCE_LABELS: Record<string, string> = {
+  direct: "Eleven själv",
+  parent_handoff: "Via handledare",
+  unknown: "Okänd",
+};
+
+const USAGE_STAGE_LABELS: Record<string, string> = {
+  unknown: "Inte angivet",
+  just_started: "Precis börjat",
+  building: "Bygger på",
+  near_test: "Nära uppkörning",
+};
+
+const USAGE_TRANSMISSION_LABELS: Record<string, string> = {
+  unknown: "Inte angivet",
+  manual: "Manuell",
+  automatic_only: "Automat",
+};
+
+const USAGE_SUPERVISOR_LABELS: Record<string, string> = {
+  "0": "Ingen handledare",
+  "1": "En handledare",
+  "2+": "Flera handledare",
+};
+
+const USAGE_FURTHEST_LABELS: Record<string, string> = {
+  journey: "Bara resan",
+  supervisor: "Handledare kopplad",
+  drive: "Körpass startat",
+  rated: "Bedömt körpass",
+  second: "Andra bedömda passet",
+};
+
+const USAGE_ASSESSMENT_LABELS: Record<string, string> = {
+  needs_help: "Behöver hjälp",
+  with_support: "Med stöd",
+  independent: "Självständigt",
+};
+
+const USAGE_CONTEXT_LABELS: Record<string, string> = {
+  residential: "Villaområde",
+  urban: "Tätort",
+  rural: "Landsväg",
+  highway: "Motorväg",
+  daylight: "Dagsljus",
+  dusk_dawn: "Skymning",
+  night: "Mörker",
+  dry: "Torrt",
+  rain: "Regn",
+  snow_ice: "Snö eller halka",
+  fog: "Dimma",
+  light: "Lätt trafik",
+  moderate: "Måttlig trafik",
+  heavy: "Tät trafik",
+};
+
+const USAGE_EVENT_LABELS: Record<string, string> = {
+  onboarding_student: "Sidinträde, elevspår",
+  onboarding_supervisor: "Sidinträde, handledarspår",
+  student_handoff_started: "Eleven öppnade handledarens länk",
+  recap_viewed: "Recap visad",
+  next_drive_plan_created: "Plan för nästa pass skapad",
+  next_drive_plan_updated: "Plan för nästa pass uppdaterad",
+  training_guidance_opened: "Övningsguide öppnad",
+  stale_drive_nudge_shown: "Påminnelse om vilande pass",
+};
+
+function usageLabel(labels: Record<string, string>, key: string): string {
+  return labels[key] ?? key;
+}
+
+function countTable(caption: string, rows: UsageCount[], labels: Record<string, string>): string {
+  const body = rows
+    .map(
+      (row) =>
+        `<tr><td>${escapeHtml(usageLabel(labels, row.key))}</td><td>${row.count}</td></tr>`,
+    )
+    .join("");
+  return `<h3>${escapeHtml(caption)}</h3>
+  <table class="admin-table">
+    <thead><tr><th>Grupp</th><th>Antal</th></tr></thead>
+    <tbody>${body}</tbody>
+  </table>`;
+}
+
+function contextTable(
+  caption: string,
+  rows: UsageCount[],
+  missing: number,
+  missingLabel: string,
+): string {
+  return countTable(caption, [...rows, { key: missingLabel, count: missing }], {
+    ...USAGE_CONTEXT_LABELS,
+    [missingLabel]: missingLabel,
+  });
+}
+
+function journeyRows(journeys: UsageJourney[]): string {
+  return journeys
+    .map((journey) => {
+      const supervisors =
+        journey.supervisors.length === 0
+          ? "—"
+          : journey.supervisors
+              .map((person) => {
+                const name = person.removed ? `${person.name} (borttagen)` : person.name;
+                return `<a href="/admin/users/${escapeHtml(person.userId)}">${escapeHtml(name)}</a>`;
+              })
+              .join("<br>");
+      const waitlist = journey.waitlist
+        ? `<a href="/admin/signups/${escapeHtml(journey.waitlist.id)}">${escapeHtml(STATUS_LABELS[journey.waitlist.status as InterestStatus] ?? journey.waitlist.status)}</a>`
+        : "—";
+      return `<tr>
+        <td><a href="/admin/users/${escapeHtml(journey.student.userId)}">${escapeHtml(journey.student.name)}</a></td>
+        <td>${supervisors}</td>
+        <td>${escapeHtml(usageLabel(USAGE_SOURCE_LABELS, journey.source))}</td>
+        <td>${escapeHtml(usageLabel(USAGE_STAGE_LABELS, journey.practiceStage))}</td>
+        <td>${escapeHtml(usageLabel(USAGE_TRANSMISSION_LABELS, journey.transmission))}</td>
+        <td>${journey.drivesCompleted} / ${journey.drivesStarted}</td>
+        <td>${journey.ratedDrives}</td>
+        <td>${escapeHtml(usageLabel(USAGE_FURTHEST_LABELS, journey.furthest))}</td>
+        <td>${escapeHtml(formatWhen(journey.lastActivityAt))}</td>
+        <td>${waitlist}</td>
+      </tr>`;
+    })
+    .join("");
+}
+
+export function usageCsv(journeys: UsageJourney[]): string {
+  const header = [
+    "senaste",
+    "skapad",
+    "journey_id",
+    "elev",
+    "elev_id",
+    "handledare",
+    "vag_in",
+    "ovningslage",
+    "vaxel",
+    "korpass_genomforda",
+    "korpass_startade",
+    "bedomda",
+    "langst",
+    "anmalan_status",
+    "anmalan_id",
+  ].join(",");
+  const lines = journeys.map((journey) =>
+    [
+      journey.lastActivityAt,
+      journey.createdAt,
+      journey.journeyId,
+      csvCell(journey.student.name),
+      journey.student.userId,
+      csvCell(
+        journey.supervisors
+          .map((person) => (person.removed ? `${person.name} (borttagen)` : person.name))
+          .join("; "),
+      ),
+      csvCell(usageLabel(USAGE_SOURCE_LABELS, journey.source)),
+      csvCell(usageLabel(USAGE_STAGE_LABELS, journey.practiceStage)),
+      csvCell(usageLabel(USAGE_TRANSMISSION_LABELS, journey.transmission)),
+      String(journey.drivesCompleted),
+      String(journey.drivesStarted),
+      String(journey.ratedDrives),
+      csvCell(usageLabel(USAGE_FURTHEST_LABELS, journey.furthest)),
+      csvCell(
+        journey.waitlist
+          ? (STATUS_LABELS[journey.waitlist.status as InterestStatus] ?? journey.waitlist.status)
+          : "",
+      ),
+      journey.waitlist?.id ?? "",
+    ].join(","),
+  );
+  return [header, ...lines].join("\n");
+}
+
+export function statistikPage(stats: AdminBetaStats, usage: AdminUsage): string {
   const funnel = [
     ["journey_created", stats.funnel.journeyCreated],
     ["supervisor_connected", stats.funnel.supervisorConnected],
@@ -422,9 +600,9 @@ export function statistikPage(stats: AdminBetaStats): string {
 
   return adminPage(
     "Statistik",
-    `<main class="admin-shell">
+    `<main class="admin-shell admin-shell--wide">
        <h1>Statistik</h1>
-       <p>Beräknat från domäntabeller i Europe/Stockholm. Ingen separat analyticsdatabas.</p>
+       <p>Beta-puls från körpass och bedömningar. Tabellen visar vilka som använder appen och hur långt varje elevresa kommit. Europe/Stockholm.</p>
        <section class="admin-kpis">
          ${kpi("Nya intresseanmälningar 7/30", `${stats.waitlistNew7d} / ${stats.waitlistNew30d}`)}
          ${kpi("Aktiva elevresor", `${stats.activeJourneys} / ${stats.betaGateTarget}`)}
@@ -460,6 +638,67 @@ export function statistikPage(stats: AdminBetaStats): string {
        <section class="admin-charts">
          ${barChart("Skapade körpass per dag, 30 dagar", stats.drivesCreatedPerDay)}
          ${barChart("Genomförda körpass per dag, 30 dagar", stats.drivesCompletedPerDay)}
+       </section>
+       <section>
+         <h2>Vilka som använder appen</h2>
+         <p>${usage.studentAccounts} elevkonton · ${usage.supervisorAccounts} handledarkonton · ${usage.accountsWithoutJourney} konton utan resa.</p>
+         <p class="muted">${usage.journeys.length} av ${usage.journeyTotal} elevresor, senast aktiva först. Anmälan visas när samma e-post finns på väntelistan. Det är en adressmatchning, inte ett bevis på att hushållet är detsamma.</p>
+         <p><a href="/admin/statistik.csv">Ladda ner resorna som CSV</a></p>
+         <div class="admin-table-wrap">
+           <table class="admin-table">
+             <thead>
+               <tr>
+                 <th>Elev</th><th>Handledare</th><th>Väg in</th><th>Övningsläge</th><th>Växel</th>
+                 <th>Körpass</th><th>Bedömda</th><th>Längst</th><th>Senaste</th><th>Anmälan</th>
+               </tr>
+             </thead>
+             <tbody>
+               ${journeyRows(usage.journeys) || `<tr><td colspan="10">Inga elevresor ännu.</td></tr>`}
+             </tbody>
+           </table>
+         </div>
+         <p class="muted">Körpass är genomförda / startade. Bedömda är avslutade pass med en handledarbedömning som inte skrivits över.</p>
+       </section>
+       <section>
+         <h2>På vilket sätt</h2>
+         <div class="admin-table-wrap">
+           ${countTable("Väg in i resan", usage.bySource, USAGE_SOURCE_LABELS)}
+           ${countTable("Var i övningen", usage.byPracticeStage, USAGE_STAGE_LABELS)}
+           ${countTable("Växellåda", usage.byTransmission, USAGE_TRANSMISSION_LABELS)}
+           ${countTable("Handledare på resan", usage.bySupervisorCount, USAGE_SUPERVISOR_LABELS)}
+         </div>
+         <p>Körpass startade av eleven: ${usage.drivesStartedByStudent}. Av en handledare: ${usage.drivesStartedBySupervisor}.</p>
+         ${countTable("Hur passen bedömts", usage.byAssessment, USAGE_ASSESSMENT_LABELS)}
+         <h3>Moment som valts till körpass</h3>
+         <table class="admin-table">
+           <thead><tr><th>Moment</th><th>Körpass</th></tr></thead>
+           <tbody>
+             ${
+               usage.focusSkills.length === 0
+                 ? `<tr><td colspan="2">Inga moment valda ännu.</td></tr>`
+                 : usage.focusSkills
+                     .map(
+                       (skill) =>
+                         `<tr><td>${escapeHtml(skill.title)}</td><td>${skill.drives}</td></tr>`,
+                     )
+                     .join("")
+             }
+           </tbody>
+         </table>
+         ${usage.otherFocusSkills > 0 ? `<p class="muted">${usage.otherFocusSkills} ytterligare moment finns i datan.</p>` : ""}
+         <h3>Sammanhang på körpassen</h3>
+         <p class="muted">Ett pass kan räknas i flera miljöer. Inte angivet betyder att fältet lämnades tomt.</p>
+         <div class="admin-table-wrap">
+           ${contextTable("Miljö", usage.byEnvironment, usage.environmentMissing, "Miljö inte angiven")}
+           ${contextTable("Ljus", usage.byLight, usage.lightMissing, "Ljus inte angivet")}
+           ${contextTable("Väder", usage.byWeather, usage.weatherMissing, "Väder inte angivet")}
+           ${contextTable("Trafik", usage.byTraffic, usage.trafficMissing, "Trafik inte angiven")}
+         </div>
+       </section>
+       <section>
+         <h2>Sidinträden</h2>
+         <p class="muted">Det här är antal händelser, inte unika personer. Ett sidinträde och en senare resa går inte att koppla till samma människa.</p>
+         ${countTable("Händelser", usage.events, USAGE_EVENT_LABELS)}
        </section>
      </main>`,
     { signedIn: true, nav: "statistik" },
