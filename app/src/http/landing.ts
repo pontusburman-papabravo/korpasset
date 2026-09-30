@@ -115,12 +115,14 @@ const LANDING_FAQ: Array<FaqItem & { answerHtml?: string }> = [
 
 export interface PublicConsentOptions {
   consent?: boolean;
+  interestAction?: string;
 }
 
 export function renderLandingPage(options: {
   errorMessage?: string;
   betaFilled?: number;
   consent?: boolean;
+  interestAction?: string;
   values?: {
     name?: string;
     email?: string;
@@ -161,7 +163,7 @@ export function renderLandingPage(options: {
        ${whyItExists()}
        ${officialRules()}
        ${faq()}
-       ${interestSection(formError, values, betaFilled)}
+       ${interestSection(formError, values, betaFilled, options.interestAction || "/interest")}
      </main>
      ${siteFooter({ cookieSettings: options.consent !== false })}`,
     {
@@ -521,6 +523,7 @@ function interestSection(
     platformAndroid?: boolean;
   },
   betaFilled: number,
+  action = "/interest",
 ): string {
   const roleOptions = (Object.entries(ROLE_LABELS) as [InterestRole, string][])
     .map(([value, label]) => {
@@ -534,14 +537,14 @@ function interestSection(
       ? "Första gruppen är fylld, men du kan skriva upp dig för nästa plats."
       : "Vi söker just nu våra första 25 elever och handledare som vill hjälpa oss testa tjänsten.";
 
-  return `<section class="site-section site-section--cta" id="intresse">
+  return `<section class="site-section site-section--cta" id="intresse" data-interest-form>
     <div class="site-inner site-inner--narrow">
       <p class="eyebrow">Beta</p>
       <h2>Vill du testa Körpasset i er övningskörning?</h2>
       <p class="lede">${escapeHtml(cohortNote)}</p>
       <p>Produkten utvecklas fortfarande. Deltagare kan få frågor om hur det fungerar att övningsköra med Körpasset. Ingen betalning under betan.</p>
       ${formError}
-      <form method="post" action="/interest" class="interest-form" novalidate>
+      <form method="post" action="${escapeHtml(action)}" class="interest-form" novalidate>
         <div class="hp" aria-hidden="true">
           <label for="website">Webbplats</label>
           <input id="website" name="website" type="text" tabindex="-1" autocomplete="off">
@@ -610,5 +613,6 @@ export function renderInterestFormError(
     values,
     betaFilled,
     consent: options.consent,
+    interestAction: options.interestAction,
   });
 }

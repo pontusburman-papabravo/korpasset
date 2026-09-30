@@ -70,6 +70,10 @@
   var gaLoaded = false;
   var metaLoaded = false;
   var leadSent = false;
+  var gaLeadSent = false;
+  var interestFormVisible = false;
+  var interestViewSent = false;
+  var GA_LEAD_STORAGE = "korpasset_ga_lead";
   var root = document.querySelector("[data-consent-root]");
   var banner = document.querySelector(".consent__banner");
   var panel = document.querySelector(".consent__panel");
@@ -239,7 +243,7 @@
   function trackMetaLead() {
     if (!runtime.allowMarketingTracking) return;
     if (!metaLoaded || leadSent || typeof window.fbq !== "function") return;
-    if (readNamedCookie(LEAD_COOKIE) !== "1") return;
+    if (!pendingLeadToken()) return;
     window.fbq("track", "Lead");
     leadSent = true;
     clearLeadCookie();
@@ -255,8 +259,80 @@
     return "";
   }
 
+  function pendingLeadToken() {
+    var value = readNamedCookie(LEAD_COOKIE);
+    if (value === "1" || value.indexOf("1.") === 0) return value;
+    return "";
+  }
+
   function hasPendingLead() {
-    return readNamedCookie(LEAD_COOKIE) === "1";
+    return pendingLeadToken() !== "";
+  }
+
+  function gaLeadAlreadySent(token) {
+    try {
+      if (!window.sessionStorage) return false;
+      return window.sessionStorage.getItem(GA_LEAD_STORAGE) === token;
+    } catch (ignore) {
+      return false;
+    }
+  }
+
+  function rememberGaLead(token) {
+    try {
+      if (window.sessionStorage) window.sessionStorage.setItem(GA_LEAD_STORAGE, token);
+    } catch (ignore) {}
+  }
+
+  function trackPendingAnalyticsLead() {
+    if (!runtime.allowAnalyticsTracking || !GA_ID || gaLeadSent) return;
+    if (window["ga-disable-" + GA_ID] === true) return;
+    if (typeof window.gtag !== "function") return;
+    var token = pendingLeadToken();
+    if (!token) return;
+    if (gaLeadAlreadySent(token)) {
+      gaLeadSent = true;
+      return;
+    }
+    window.gtag("event", "generate_lead", {
+      form_name: "beta_interest",
+      lead_type: "beta_waitlist",
+    });
+    gaLeadSent = true;
+    rememberGaLead(token);
+  }
+
+  function trackVisibleInterestForm() {
+    if (!interestFormVisible || interestViewSent) return;
+    if (!runtime.allowAnalyticsTracking || !GA_ID) return;
+    if (window["ga-disable-" + GA_ID] === true) return;
+    var choice = current();
+    if (!choice.analytics || typeof window.gtag !== "function") return;
+    interestViewSent = true;
+    window.gtag("event", "view_interest_form", {
+      form_name: "beta_interest",
+      lead_type: "beta_waitlist",
+    });
+  }
+
+  function watchInterestForm() {
+    if (!runtime.allowAnalyticsTracking) return;
+    var section = document.querySelector("[data-interest-form]");
+    if (!section || typeof IntersectionObserver !== "function") return;
+    var observer = new IntersectionObserver(
+      function (entries) {
+        for (var i = 0; i < entries.length; i += 1) {
+          if (entries[i] && entries[i].isIntersecting) {
+            observer.disconnect();
+            interestFormVisible = true;
+            trackVisibleInterestForm();
+            return;
+          }
+        }
+      },
+      { threshold: 0.25 },
+    );
+    observer.observe(section);
   }
 
   function clearLeadCookie() {
@@ -318,7 +394,9 @@
       clearMatching(/^_fb[pc]$/);
     }
     syncGoogle(next);
+    trackPendingAnalyticsLead();
     if (next.marketing) runMarketingTools(next);
+    trackVisibleInterestForm();
     notify();
   }
 
@@ -499,4 +577,5 @@
       window.korpassetConsent.when("marketing", trackMetaLead);
     }
   }
+  watchInterestForm();
 })();

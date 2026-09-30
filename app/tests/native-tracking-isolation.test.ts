@@ -70,6 +70,7 @@ describe("native WebView tracking isolation", () => {
       "/kontakt",
       "/radera-konto",
       "/",
+      "/interest/tack",
     ]) {
       const page = await app.inject({ method: "GET", url, cookies: native });
       assert.equal(page.statusCode, 200, url);

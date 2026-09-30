@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { AppError } from "../errors.js";
 import {
   getSessionUserId,
+  loginReturnFromQuery,
   requireSessionUserId,
   setNativeAppCookie,
   setSessionCookie,
@@ -119,6 +120,7 @@ import {
 } from "./handoff-context.js";
 import { supervisorGuideForSkillKey } from "../domain/supervisor-guide.js";
 import { renderLandingPage } from "./landing.js";
+import { campaignSearch } from "./marketing.js";
 import {
   coachingStepsForSkillKey,
   parseFormStringList,
@@ -316,12 +318,12 @@ function oauthHandoffQuery(query: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
-function appLoginPage(errorMessage?: string): string {
+function appLoginPage(errorMessage?: string, returnTo = "/app"): string {
   return layout(
     "Körpasset",
     `${errorMessage ? errorBanner(errorMessage) : ""}
      <h1>Fortsätt in i Körpasset</h1>
-     ${oauthContinuePanel()}`,
+     ${oauthContinuePanel(undefined, returnTo)}`,
   );
 }
 
@@ -336,6 +338,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       renderLandingPage({
         betaFilled: await countBetaWaitlist(),
         consent: wantsPublicCookieConsent(request),
+        interestAction: `/interest${campaignSearch(request.query)}`,
       }),
     );
   });
@@ -358,12 +361,17 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         );
       }
       return reply.type("text/html").send(
-        appLoginPage("Inloggningen gick inte att slutföra. Försök igen."),
+        appLoginPage(
+          "Inloggningen gick inte att slutföra. Försök igen.",
+          loginReturnFromQuery(request.query),
+        ),
       );
     }
     const sessionUserId = await getReusableSessionUserId(getSessionUserId(request));
     if (!sessionUserId) {
-      return reply.type("text/html").send(appLoginPage());
+      return reply
+        .type("text/html")
+        .send(appLoginPage(undefined, loginReturnFromQuery(request.query)));
     }
 
     const home = await signedInHome(sessionUserId);

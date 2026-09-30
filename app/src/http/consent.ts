@@ -3,7 +3,10 @@ import { config } from "../config.js";
 /** Bump when purposes or vendors change so earlier choices are asked again. */
 export const CONSENT_VERSION = 2;
 
-/** One-shot signal that a new waitlist row was stored. Not a tracking cookie. */
+/**
+ * One-shot signal that a new waitlist row was stored. Not a tracking cookie.
+ * Value is `1.<nonce>` so a refresh can be told apart from a later signup.
+ */
 export const META_LEAD_COOKIE_NAME = "korpasset_meta_lead";
 
 export const CONSENT_COOKIE_NAME = "korpasset_consent";

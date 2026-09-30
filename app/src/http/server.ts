@@ -12,12 +12,12 @@ import {
   clearSessionCookie,
   getSessionUserId,
   isNativeProductPath,
+  loginRedirectFor,
   setNativeAppCookie,
 } from "../auth/session.js";
 import { rememberActiveJourney } from "./active-journey.js";
 import { getReusableSessionUserId } from "../services/users.js";
 import { redactRequestPath } from "./log.js";
-import { missingSessionPage } from "./layout.js";
 import { registerAdminRoutes } from "./admin.js";
 import { registerMarketingRoutes } from "./marketing.js";
 import { registerResendWebhook } from "./resend-webhook.js";
@@ -153,13 +153,18 @@ export async function buildServer() {
   app.setErrorHandler((error: Error & { statusCode?: number }, request, reply) => {
     const status = error.statusCode ?? 500;
     if (error instanceof UnauthorizedError || status === 401) {
-      if (wantsJson(request)) {
+      const path = (request.url ?? "").split("?")[0];
+      if (wantsJson(request) || path.startsWith("/api/")) {
         return reply.status(401).send({
           error: "Session required",
           requestId: request.id,
         });
       }
-      return reply.status(401).type("text/html").send(missingSessionPage());
+      const target =
+        request.method === "GET" || request.method === "HEAD"
+          ? loginRedirectFor(request.url)
+          : "/app";
+      return reply.redirect(target);
     }
     if (status >= 500) {
       request.log.error({ err: error }, "unhandled request error");

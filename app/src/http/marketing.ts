@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { wantsPublicCookieConsent } from "../auth/session.js";
 import { config } from "../config.js";
@@ -19,8 +20,39 @@ import {
 import { robotsTxt, sitemapXml } from "./seo.js";
 import { INTEREST_RATE_LIMIT, allowRequest } from "./rate-limit.js";
 
+const CAMPAIGN_KEYS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "utm_id",
+] as const;
+
+const CAMPAIGN_VALUE = /^[\p{L}\p{N}._~+:@-]{1,80}$/u;
+
+/** Allowlisted campaign params only. Dropped values never reach the redirect or the form. */
+export function campaignSearch(query: unknown): string {
+  if (!query || typeof query !== "object") return "";
+  const source = query as Record<string, unknown>;
+  const params = new URLSearchParams();
+  for (const key of CAMPAIGN_KEYS) {
+    const raw = source[key];
+    if (typeof raw !== "string") continue;
+    const value = raw.trim();
+    if (!CAMPAIGN_VALUE.test(value)) continue;
+    params.append(key, value);
+  }
+  const serialized = params.toString();
+  return serialized ? `?${serialized}` : "";
+}
+
+function thanksLocation(query: unknown): string {
+  return `/interest/tack${campaignSearch(query)}`;
+}
+
 function markSavedLead(reply: FastifyReply): void {
-  reply.setCookie(META_LEAD_COOKIE_NAME, "1", {
+  reply.setCookie(META_LEAD_COOKIE_NAME, `1.${randomBytes(9).toString("base64url")}`, {
     path: "/interest/tack",
     httpOnly: false,
     sameSite: "lax",
@@ -48,6 +80,13 @@ function formValues(body: Record<string, unknown>) {
 
 function publicConsent(request: FastifyRequest) {
   return { consent: wantsPublicCookieConsent(request) };
+}
+
+function interestPageOptions(request: FastifyRequest) {
+  return {
+    consent: wantsPublicCookieConsent(request),
+    interestAction: `/interest${campaignSearch(request.query)}`,
+  };
 }
 
 export async function registerMarketingRoutes(app: FastifyInstance): Promise<void> {
@@ -102,7 +141,7 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
           "För många försök. Vänta en stund och prova igen.",
           formValues((request.body ?? {}) as Record<string, unknown>),
           await countBetaWaitlist(),
-          publicConsent(request),
+          interestPageOptions(request),
         ),
       );
     }
@@ -115,7 +154,7 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
           "Bekräfta att du vill bli kontaktad om betan.",
           values,
           await countBetaWaitlist(),
-          publicConsent(request),
+          interestPageOptions(request),
         ),
       );
     }
@@ -126,7 +165,7 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
         honeypot: typeof body.website === "string" ? body.website : "",
       });
       if (!result) {
-        return reply.redirect("/interest/tack");
+        return reply.redirect(thanksLocation(request.query));
       }
       if (result.created) markSavedLead(reply);
       try {
@@ -138,12 +177,17 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
           request.log.error({ err: error }, "waitlist notify failed");
         }
       }
-      return reply.redirect("/interest/tack");
+      return reply.redirect(thanksLocation(request.query));
     } catch (error) {
       const message =
         error instanceof AppError ? error.message : "Kunde inte spara anmälan.";
       return reply.status(400).type("text/html").send(
-        renderInterestFormError(message, values, await countBetaWaitlist(), publicConsent(request)),
+        renderInterestFormError(
+          message,
+          values,
+          await countBetaWaitlist(),
+          interestPageOptions(request),
+        ),
       );
     }
   });

@@ -129,17 +129,6 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
 </html>`;
 }
 
-export function missingSessionPage(): string {
-  return layout(
-    "Session saknas",
-    `${errorBanner("Vi känner inte igen den här enheten.")}
-     <h1>Öppna Körpasset igen</h1>
-     <p>Om du tar körkort kan du starta eller fortsätta din körkortsresa här. Om du är handledare eller förälder: öppna inbjudningslänken från eleven, eller be om en ny.</p>
-     <a class="btn btn-primary" href="/app">Öppna Körpasset</a>
-     <p class="muted">Inbjudningslänken ser ut som korpasset.se/invite/…</p>`,
-  );
-}
-
 export function invitationAlreadyUsedPage(studentName: string): string {
   return layout(
     "Inbjudan redan använd",
