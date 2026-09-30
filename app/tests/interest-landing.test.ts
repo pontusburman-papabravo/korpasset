@@ -10,6 +10,7 @@ import {
   saveInterestSignup,
   updateInterestSignup,
 } from "../src/services/interest.js";
+import { LEAD_SIGNAL_MAX_AGE_SECONDS } from "../src/http/consent.js";
 import { TRANSPORTSTYRELSEN_LINKS } from "../src/http/landing.js";
 import { createTestApp } from "./helpers.js";
 import { formBody } from "./http-helpers.js";
@@ -238,6 +239,9 @@ describe("landing and interest waitlist", () => {
     assert.equal(gaLead?.value, lead?.value);
     assert.equal(lead?.path, "/interest/tack");
     assert.equal(gaLead?.path, "/interest/tack");
+    assert.equal(LEAD_SIGNAL_MAX_AGE_SECONDS, 30 * 60);
+    assert.equal(lead?.maxAge, LEAD_SIGNAL_MAX_AGE_SECONDS);
+    assert.equal(gaLead?.maxAge, LEAD_SIGNAL_MAX_AGE_SECONDS);
 
     const thanks = await app.inject({ method: "GET", url: "/interest/tack" });
     assert.match(thanks.body, /Tack — vi hör av oss/);

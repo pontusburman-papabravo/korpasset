@@ -3,7 +3,11 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { wantsPublicCookieConsent } from "../auth/session.js";
 import { config } from "../config.js";
 import { AppError } from "../errors.js";
-import { GA_LEAD_COOKIE_NAME, META_LEAD_COOKIE_NAME } from "./consent.js";
+import {
+  GA_LEAD_COOKIE_NAME,
+  LEAD_SIGNAL_MAX_AGE_SECONDS,
+  META_LEAD_COOKIE_NAME,
+} from "./consent.js";
 import { EmailSendError, notifyWaitlistSignup } from "../services/email.js";
 import { countBetaWaitlist, saveInterestSignup } from "../services/interest.js";
 import {
@@ -60,7 +64,7 @@ function markSavedLead(reply: FastifyReply): void {
       sameSite: "lax",
       secure: config.cookieSecure,
       signed: false,
-      maxAge: 120,
+      maxAge: LEAD_SIGNAL_MAX_AGE_SECONDS,
     });
   }
 }

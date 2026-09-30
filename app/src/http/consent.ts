@@ -11,6 +11,9 @@ export const CONSENT_VERSION = 2;
 export const META_LEAD_COOKIE_NAME = "korpasset_meta_lead";
 export const GA_LEAD_COOKIE_NAME = "korpasset_ga_lead";
 
+/** Long enough that a later consent choice on the thanks page can still finish. */
+export const LEAD_SIGNAL_MAX_AGE_SECONDS = 30 * 60;
+
 export const CONSENT_COOKIE_NAME = "korpasset_consent";
 
 /** Six months. Visitors can change or withdraw the choice at any time before that. */
