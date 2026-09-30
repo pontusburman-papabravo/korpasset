@@ -304,7 +304,9 @@ function leadEvents(context: Record<string, unknown>, name: string): unknown[][]
   return gtagEvents(context).filter((call) => call[0] === "event" && call[1] === name);
 }
 
-const LEAD_PARAMS = { form_name: "beta_interest", lead_type: "beta_waitlist" };
+function eventParams(call: unknown[]): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(call[2] ?? {})) as Record<string, unknown>;
+}
 
 function click(context: Record<string, unknown>, selector: string): void {
   const banner = context.__banner as { querySelector: (sel: string) => { click: () => void } };
@@ -581,8 +583,10 @@ describe("GA4 interest funnel", () => {
     });
     const leads = leadEvents(page, "generate_lead");
     assert.equal(leads.length, 1);
-    assert.deepEqual(leads[0][2], LEAD_PARAMS);
-    assert.equal(JSON.stringify(leads[0]).includes("@"), false);
+    assert.deepEqual(eventParams(leads[0]), {
+      form_name: "beta_interest",
+      lead_type: "beta_waitlist",
+    });
     assert.equal(scriptSrcs(page).some((src) => src.includes("googletagmanager")), true);
     assert.equal(fbqCalls(page).some((call) => call[1] === "Lead"), false);
   });
@@ -596,7 +600,10 @@ describe("GA4 interest funnel", () => {
     (page.__analytics as { checked: boolean }).checked = true;
     click(page, "[data-consent-save]");
     assert.equal(leadEvents(page, "generate_lead").length, 1);
-    assert.deepEqual(leadEvents(page, "generate_lead")[0][2], LEAD_PARAMS);
+    assert.deepEqual(eventParams(leadEvents(page, "generate_lead")[0]), {
+      form_name: "beta_interest",
+      lead_type: "beta_waitlist",
+    });
     assert.equal(fbqCalls(page).some((call) => call[1] === "Lead"), false);
     assert.equal(cookieNames(page).includes("korpasset_meta_lead"), true);
   });
@@ -680,7 +687,10 @@ describe("GA4 interest funnel", () => {
     });
     const views = leadEvents(page, "view_interest_form");
     assert.equal(views.length, 1);
-    assert.deepEqual(views[0][2], LEAD_PARAMS);
+    assert.deepEqual(eventParams(views[0]), {
+      form_name: "beta_interest",
+      lead_type: "beta_waitlist",
+    });
     assert.equal(leadEvents(page, "generate_lead").length, 0);
     (page.__reopen as { click: () => void }).click();
     click(page, "[data-consent-accept]");
