@@ -5,7 +5,11 @@ import { createSessionToken } from "../src/auth/session.js";
 import { config } from "../src/config.js";
 import { getPool } from "../src/db/pool.js";
 import { createAdminUser } from "../src/services/admin-users.js";
-import { getAdminUsage } from "../src/services/admin-usage.js";
+import {
+  filterUsageJourneys,
+  getAdminUsage,
+  type UsageJourney,
+} from "../src/services/admin-usage.js";
 import { saveInterestSignup } from "../src/services/interest.js";
 import { acceptInvitation, createInvitation } from "../src/services/invitations.js";
 import { createJourneyForStudent } from "../src/services/journeys.js";
@@ -24,6 +28,83 @@ async function skill(): Promise<{ id: string; title: string }> {
   );
   return { id: String(row.rows[0].id), title: String(row.rows[0].title) };
 }
+
+function usageRow(overrides: Partial<UsageJourney> & Pick<UsageJourney, "lastActivityAt" | "stuck" | "drivesCompleted" | "student">): UsageJourney {
+  return {
+    journeyId: "journey",
+    supervisors: [],
+    createdAt: overrides.lastActivityAt,
+    source: "unknown",
+    practiceStage: "unknown",
+    transmission: "unknown",
+    activeSupervisors: 0,
+    drivesStarted: overrides.drivesCompleted,
+    ratedDrives: 0,
+    waitlist: null,
+    ...overrides,
+  };
+}
+
+describe("usage list filter", () => {
+  it("keeps the senast aktiv order and the four selections", () => {
+    const now = new Date("2026-09-30T12:00:00.000Z");
+    const week = 7 * 24 * 60 * 60 * 1000;
+    const recent = new Date(now.getTime() - week).toISOString();
+    const older = new Date(now.getTime() - week - 1).toISOString();
+    const journeys = [
+      usageRow({
+        lastActivityAt: recent,
+        stuck: "through",
+        drivesCompleted: 2,
+        student: {
+          userId: "a",
+          name: "Ella",
+          removed: false,
+          client: { platform: null, appVersion: null, appBuild: null },
+        },
+      }),
+      usageRow({
+        lastActivityAt: older,
+        stuck: "no_second",
+        drivesCompleted: 2,
+        student: {
+          userId: "b",
+          name: "Bo",
+          removed: false,
+          client: { platform: null, appVersion: null, appBuild: null },
+        },
+      }),
+      usageRow({
+        lastActivityAt: recent,
+        stuck: "no_journey",
+        drivesCompleted: 0,
+        student: {
+          userId: "c",
+          name: "Anna",
+          removed: false,
+          client: { platform: null, appVersion: null, appBuild: null },
+        },
+      }),
+    ];
+
+    assert.deepEqual(
+      filterUsageJourneys(journeys, "all", now).map((row) => row.student.name),
+      ["Ella", "Bo", "Anna"],
+    );
+    assert.deepEqual(
+      filterUsageJourneys(journeys, "active7", now).map((row) => row.student.name),
+      ["Ella", "Anna"],
+    );
+    assert.deepEqual(
+      filterUsageJourneys(journeys, "stuck", now).map((row) => row.student.name),
+      ["Bo", "Anna"],
+    );
+    assert.deepEqual(
+      filterUsageJourneys(journeys, "two", now).map((row) => row.student.name),
+      ["Ella", "Bo"],
+    );
+  });
+});
 
 describe("admin usage", () => {
   beforeEach(async () => {
@@ -104,6 +185,7 @@ describe("admin usage", () => {
     assert.equal(ella.practiceStage, "building");
     assert.equal(ella.transmission, "manual");
     assert.equal(ella.drivesStarted, 2);
+    assert.equal(ella.drivesCompleted, 2);
     assert.equal(ella.ratedDrives, 2);
     assert.equal(ella.stuck, "through");
     assert.equal(ella.waitlist?.status, "new");
@@ -153,6 +235,11 @@ describe("admin usage", () => {
     assert.equal(annaRow?.stuck, "no_journey");
     assert.equal(annaRow?.journeyId, "");
 
+    await getPool().query(
+      `UPDATE driving_journeys SET created_at = now() - interval '10 days' WHERE id = $1`,
+      [quiet.journey.id],
+    );
+
     const admin = await createAdminUser("ops@korpasset.se", "korrekt-losen-12");
     const app = await createTestApp();
     const hidden = await app.inject({ method: "GET", url: "/admin/statistik.csv" });
@@ -172,6 +259,14 @@ describe("admin usage", () => {
     assert.match(page.body, /Bygger på/);
     assert.match(page.body, /Manuell/);
     assert.match(page.body, /Senast aktiv/);
+    assert.match(page.body, /data-usage-filter="all" aria-pressed="true"/);
+    assert.match(page.body, /Alla \(3\)/);
+    assert.match(page.body, /Aktiva senaste 7 dagarna \(2\)/);
+    assert.match(page.body, /Fastnat \(2\)/);
+    assert.match(page.body, /2\+ pass \(1\)/);
+    assert.match(page.body, /data-stuck="through"/);
+    assert.match(page.body, /data-stuck="no_supervisor"/);
+    assert.match(page.body, /data-stuck="no_journey"/);
     assert.match(page.body, /Fastnat: resan är inte skapad/);
     assert.match(page.body, /Fastnat: handledaren är inte ansluten/);
     assert.match(page.body, /Andra passet gjort/);
@@ -195,6 +290,44 @@ describe("admin usage", () => {
     assert.match(csv.body, /Andra passet gjort/);
     assert.match(csv.body, /iOS 1\.0\.7 \(7\)/);
     assert.match(csv.body, new RegExp(signup.signup.id));
+    assert.match(csv.body, /Nora/);
+    assert.match(csv.body, /Anna/);
+
+    const stuckCsv = await app.inject({
+      method: "GET",
+      url: "/admin/statistik.csv?filter=stuck",
+      cookies: { korpasset_admin: token },
+    });
+    assert.match(stuckCsv.body, /Nora/);
+    assert.match(stuckCsv.body, /Anna/);
+    assert.doesNotMatch(stuckCsv.body, /Ella/);
+    assert.doesNotMatch(stuckCsv.body, /Andra passet gjort/);
+
+    const twoCsv = await app.inject({
+      method: "GET",
+      url: "/admin/statistik.csv?filter=two",
+      cookies: { korpasset_admin: token },
+    });
+    assert.match(twoCsv.body, /Ella/);
+    assert.doesNotMatch(twoCsv.body, /Nora/);
+    assert.doesNotMatch(twoCsv.body, /Anna/);
+
+    const recentCsv = await app.inject({
+      method: "GET",
+      url: "/admin/statistik.csv?filter=active7",
+      cookies: { korpasset_admin: token },
+    });
+    assert.match(recentCsv.body, /Ella/);
+    assert.match(recentCsv.body, /Anna/);
+    assert.doesNotMatch(recentCsv.body, /Nora/);
+
+    const unknownCsv = await app.inject({
+      method: "GET",
+      url: "/admin/statistik.csv?filter=other",
+      cookies: { korpasset_admin: token },
+    });
+    assert.match(unknownCsv.body, /Ella/);
+    assert.match(unknownCsv.body, /Nora/);
 
     const ignored = await app.inject({
       method: "POST",

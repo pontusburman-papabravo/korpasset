@@ -140,6 +140,38 @@ function asTransmission(value: unknown): UsageTransmission {
     : "unknown";
 }
 
+/** Table filters on Statistik. Applied to journeys already loaded for the page. */
+export const USAGE_LIST_FILTERS = ["all", "active7", "stuck", "two"] as const;
+export type UsageListFilter = (typeof USAGE_LIST_FILTERS)[number];
+
+export const USAGE_ACTIVE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function usageListFilter(value: string | undefined): UsageListFilter {
+  return USAGE_LIST_FILTERS.includes(value as UsageListFilter)
+    ? (value as UsageListFilter)
+    : "all";
+}
+
+/**
+ * Keeps the existing Senast aktiv order.
+ * active7: last activity within 7 days.
+ * stuck: not yet “Andra passet gjort”.
+ * two: at least two completed drives.
+ */
+export function filterUsageJourneys(
+  journeys: UsageJourney[],
+  filter: UsageListFilter,
+  now = new Date(),
+): UsageJourney[] {
+  if (filter === "all") return journeys;
+  const cutoff = now.getTime() - USAGE_ACTIVE_WINDOW_MS;
+  return journeys.filter((journey) => {
+    if (filter === "active7") return Date.parse(journey.lastActivityAt) >= cutoff;
+    if (filter === "stuck") return journey.stuck !== "through";
+    return journey.drivesCompleted >= 2;
+  });
+}
+
 export function usageStuck(input: {
   hasJourney: boolean;
   activeSupervisors: number;

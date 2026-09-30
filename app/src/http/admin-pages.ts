@@ -1,5 +1,12 @@
 import type { AdminBetaStats, DayCount } from "../services/admin-stats.js";
-import type { AdminUsage, UsageCount, UsageJourney } from "../services/admin-usage.js";
+import {
+  filterUsageJourneys,
+  USAGE_ACTIVE_WINDOW_MS,
+  type AdminUsage,
+  type UsageCount,
+  type UsageJourney,
+  type UsageListFilter,
+} from "../services/admin-usage.js";
 import type { DirectoryUser } from "../services/admin-directory.js";
 import {
   DIRECTORY_ACCOUNT_STATES,
@@ -578,7 +585,7 @@ function journeyRows(journeys: UsageJourney[]): string {
       const waitlist = journey.waitlist
         ? `<a href="/admin/signups/${escapeHtml(journey.waitlist.id)}">${escapeHtml(STATUS_LABELS[journey.waitlist.status as InterestStatus] ?? journey.waitlist.status)}</a>`
         : "—";
-      return `<tr>
+      return `<tr data-last-active="${escapeHtml(journey.lastActivityAt)}" data-stuck="${escapeHtml(journey.stuck)}" data-completed="${journey.drivesCompleted}">
         <td><a href="/admin/users/${escapeHtml(journey.student.userId)}">${escapeHtml(journey.student.name)}</a></td>
         <td>${escapeHtml(formatLastActive(journey.lastActivityAt))}</td>
         <td>${escapeHtml(usageLabel(USAGE_STUCK_LABELS, journey.stuck))}</td>
@@ -648,6 +655,66 @@ export function usageCsv(journeys: UsageJourney[]): string {
   return [header, ...lines].join("\n");
 }
 
+const USAGE_FILTERS: Array<[UsageListFilter, string]> = [
+  ["all", "Alla"],
+  ["active7", "Aktiva senaste 7 dagarna"],
+  ["stuck", "Fastnat"],
+  ["two", "2+ pass"],
+];
+
+function usageFilterBar(journeys: UsageJourney[]): string {
+  const buttons = USAGE_FILTERS.map(([value, label]) => {
+    const count = filterUsageJourneys(journeys, value).length;
+    const pressed = value === "all" ? "true" : "false";
+    return `<button type="button" data-usage-filter="${value}" aria-pressed="${pressed}">${escapeHtml(label)} (${count})</button>`;
+  }).join("");
+  return `<div class="admin-usage-filter" role="group" aria-label="Filtrera tabellen">${buttons}</div>`;
+}
+
+function usageFilterScript(): string {
+  return `<script>
+    (function () {
+      var table = document.getElementById("usage-journeys");
+      if (!table) return;
+      var rows = Array.prototype.filter.call(table.querySelectorAll("tbody tr"), function (row) {
+        return row.hasAttribute("data-stuck");
+      });
+      var none = table.querySelector("[data-usage-none]");
+      var buttons = document.querySelectorAll("[data-usage-filter]");
+      var csv = document.querySelector("[data-usage-csv]");
+      var week = ${USAGE_ACTIVE_WINDOW_MS};
+      function match(row, filter) {
+        if (filter === "active7") {
+          return Date.now() - Date.parse(row.getAttribute("data-last-active")) <= week;
+        }
+        if (filter === "stuck") return row.getAttribute("data-stuck") !== "through";
+        if (filter === "two") return Number(row.getAttribute("data-completed")) >= 2;
+        return true;
+      }
+      function apply(filter) {
+        var shown = 0;
+        Array.prototype.forEach.call(rows, function (row) {
+          var ok = match(row, filter);
+          row.hidden = !ok;
+          if (ok) shown += 1;
+        });
+        if (none) none.hidden = shown !== 0;
+        Array.prototype.forEach.call(buttons, function (button) {
+          button.setAttribute("aria-pressed", button.getAttribute("data-usage-filter") === filter ? "true" : "false");
+        });
+        if (csv) {
+          csv.setAttribute("href", filter === "all" ? "/admin/statistik.csv" : "/admin/statistik.csv?filter=" + encodeURIComponent(filter));
+        }
+      }
+      Array.prototype.forEach.call(buttons, function (button) {
+        button.addEventListener("click", function () {
+          apply(button.getAttribute("data-usage-filter"));
+        });
+      });
+    })();
+  </script>`;
+}
+
 export function statistikPage(stats: AdminBetaStats, usage: AdminUsage): string {
   const funnel = [
     ["journey_created", stats.funnel.journeyCreated],
@@ -702,19 +769,29 @@ export function statistikPage(stats: AdminBetaStats, usage: AdminUsage): string 
          <h2>Vilka som använder appen</h2>
          <p>${usage.studentAccounts} elevkonton · ${usage.supervisorAccounts} handledarkonton · ${usage.accountsWithoutJourney} konton utan resa.</p>
          <p class="muted">${usage.journeyTotal} elevresor, senast aktiva först. Senast aktiv är senaste appöppning, handledarkoppling, körpass eller bedömning. Plattform och build kommer från appen. “Anmälan:” är vad de kryssade i på väntelistan.</p>
-         <p><a href="/admin/statistik.csv">Ladda ner resorna som CSV</a></p>
+         ${usageFilterBar(usage.journeys)}
+         <p><a href="/admin/statistik.csv" data-usage-csv>Ladda ner resorna som CSV</a></p>
          <div class="admin-table-wrap">
-           <table class="admin-table">
+           <table class="admin-table" id="usage-journeys">
              <thead>
                <tr>
                  <th>Elev</th><th>Senast aktiv</th><th>Fastnat</th><th>Plattform</th><th>Handledare</th><th>Anmälan</th>
                </tr>
              </thead>
              <tbody>
-               ${journeyRows(usage.journeys) || `<tr><td colspan="6">Ingen användning ännu.</td></tr>`}
+               ${
+                 journeyRows(usage.journeys) ||
+                 `<tr><td colspan="6">Ingen användning ännu.</td></tr>`
+               }
+               ${
+                 usage.journeys.length > 0
+                   ? `<tr data-usage-none hidden><td colspan="6">Inga rader i det här urvalet.</td></tr>`
+                   : ""
+               }
              </tbody>
            </table>
          </div>
+         ${usageFilterScript()}
        </section>
        <section>
          <h2>På vilket sätt</h2>

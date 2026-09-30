@@ -29,7 +29,7 @@ import {
   getAdminBetaStats,
   listRecentInterestSignups,
 } from "../services/admin-stats.js";
-import { getAdminUsage } from "../services/admin-usage.js";
+import { filterUsageJourneys, getAdminUsage, usageListFilter } from "../services/admin-usage.js";
 import {
   getSupportUserView,
   searchSupport,
@@ -410,11 +410,13 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   app.get("/admin/statistik.csv", async (request, reply) => {
     if (!(await requireAdmin(request, reply))) return;
+    const query = request.query as { filter?: string };
     const usage = await getAdminUsage();
+    const journeys = filterUsageJourneys(usage.journeys, usageListFilter(query.filter));
     return reply
       .type("text/csv; charset=utf-8")
       .header("content-disposition", "attachment; filename=korpasset-anvandning.csv")
-      .send(usageCsv(usage.journeys));
+      .send(usageCsv(journeys));
   });
 
   app.get("/admin/users", async (request, reply) => {
