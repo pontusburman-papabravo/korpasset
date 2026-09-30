@@ -54,6 +54,9 @@ Actor/person. Guest och registrerad delar samma modell.
 | `account_state` | `account_state` | `guest` vid QR-handoff |
 | `created_at` | `timestamptz` | |
 | `updated_at` | `timestamptz` | |
+| `marketing_email_opt_in` | `boolean` | Nyhetsbrev. `false` som standard, även för befintliga rader. Inte inloggning och inte väntelista |
+| `marketing_email_consent_at` | `timestamptz` | Nullable. Sätts när personen slår på nyhetsbrev |
+| `marketing_email_opt_out_at` | `timestamptz` | Nullable. Sätts när personen slår av nyhetsbrev |
 
 ### `auth_identities`
 

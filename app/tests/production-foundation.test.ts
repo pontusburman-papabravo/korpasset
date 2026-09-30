@@ -127,6 +127,10 @@ describe("production foundation", () => {
       redactRequestPath("/app?oauth_handoff=abc.def_token"),
       "/app?oauth_handoff=[redacted]",
     );
+    assert.equal(
+      redactRequestPath("/avregistrera/secret-token"),
+      "/avregistrera/[redacted]",
+    );
   });
 
   it("rejects production boot with missing or default secrets", () => {
@@ -248,6 +252,7 @@ describe("production foundation / fresh database migrate", () => {
       "0016_auth_identity_apple_refresh_token.sql",
       "0017_oauth_handoffs.sql",
       "0018_user_client_seen.sql",
+      "0019_marketing_email.sql",
     ]);
     assert.deepEqual(first.stamped, []);
 
@@ -329,6 +334,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
       "0016_auth_identity_apple_refresh_token.sql",
       "0017_oauth_handoffs.sql",
       "0018_user_client_seen.sql",
+      "0019_marketing_email.sql",
     ]);
     assert.deepEqual(first.skipped, []);
 
@@ -367,6 +373,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
         "0016_auth_identity_apple_refresh_token.sql",
         "0017_oauth_handoffs.sql",
         "0018_user_client_seen.sql",
+        "0019_marketing_email.sql",
       ],
     );
 

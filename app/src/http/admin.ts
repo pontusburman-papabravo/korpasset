@@ -68,6 +68,7 @@ import {
   usageCsv,
   usersListPage,
 } from "./admin-pages.js";
+import { registerAdminBroadcastRoutes } from "./admin-broadcasts.js";
 import {
   ADMIN_LOGIN_RATE_LIMIT,
   ADMIN_RESET_RATE_LIMIT,
@@ -85,7 +86,7 @@ function parseStatus(value: string | undefined): InterestStatus | undefined {
 }
 
 function directoryCsv(users: DirectoryUser[]): string {
-  const header = "created_at,id,display_name,contact_email,emails,account_state,roles,providers";
+  const header = "created_at,id,display_name,contact_email,emails,account_state,roles,providers,marketing_news";
   const lines = users.map((user) =>
     [
       user.createdAt,
@@ -96,6 +97,7 @@ function directoryCsv(users: DirectoryUser[]): string {
       user.accountState,
       csvCell(user.roles.join(" ")),
       csvCell(user.providers.join(" ")),
+      user.marketingEmailOptIn ? "ja" : "nej",
     ].join(","),
   );
   return [header, ...lines].join("\n");
@@ -107,7 +109,7 @@ function parsePage(value: string | undefined): number {
   return page;
 }
 
-async function requireAdmin(
+export async function requireAdmin(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<AdminUser | null> {
@@ -675,4 +677,6 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       );
     }
   });
+
+  await registerAdminBroadcastRoutes(app, requireAdmin);
 }

@@ -117,6 +117,11 @@ export function privacyPage(options: PublicConsentOptions = {}): string {
      <p>Körpasset använder leverantörens unika användar-id som identitetsnyckel. E-postadressen sparas när den lämnas till oss så att vi kan administrera kontot och tjänsten.</p>
      <p>Apple och Google behandlar också uppgifter enligt sina egna villkor och integritetspolicyer.</p>
 
+     <h2>Nyheter via e-post</h2>
+     <p>Nyheter, tips och erbjudanden skickas bara om du själv väljer det under Konto. Rutan är av från början. En anmälan till betan är inte ett ja till nyhetsbrev.</p>
+     <p>Du kan stänga av det när som helst under Konto eller via länken i mejlet. Meddelanden som behövs för konto, säkerhet eller tjänsten styrs inte av det valet.</p>
+     <p>Nyhetsbreven innehåller ingen spårningspixel och vi mäter inte om mejlet öppnas.</p>
+
      <h2>Uppgifter inom en körkortsresa</h2>
      <p>En körkortsresa kan delas mellan eleven och en eller flera handledare.</p>
      <p>Det innebär att uppgifter om en person ibland kan registreras av en annan deltagare i samma körkortsresa. En handledare kan till exempel registrera ett genomfört körpass eller en observation om vad ni tränade på.</p>
@@ -136,7 +141,7 @@ export function privacyPage(options: PublicConsentOptions = {}): string {
      <p>Vi använder externa leverantörer när det behövs för att driva Körpasset:</p>
      <ul>
        <li>server och databas hos en hostingleverantör inom EU/EES</li>
-       <li>e-post via Resend, för bekräftelse på intresseanmälan och administratörsmejl</li>
+       <li>e-post via Resend, för bekräftelse på intresseanmälan, administratörsmejl och mejl om tjänsten eller nyheter när du bett om dem</li>
        <li>inloggning och identitet via Sign in with Apple och Sign in with Google</li>
      </ul>
      <p>Sådana leverantörer får bara behandla personuppgifter i den omfattning som behövs för respektive tjänst och enligt tillämpliga avtal och dataskyddsregler.</p>
@@ -178,6 +183,7 @@ export function privacyPage(options: PublicConsentOptions = {}): string {
      <p>När ett konto raderas gör tjänsten följande i dag:</p>
      <ul>
        <li>Visningsnamn och eventuell kontakt-e-post nollas.</li>
+       <li>Valet om nyhetsbrev nollas och avregistreringslänkar tas bort.</li>
        <li>Inloggningskopplingar till Apple och Google tas bort. Du kan inte logga in på samma konto igen.</li>
        <li>Sessionen på den enhet där du raderar rensas. På andra enheter slutar den gamla sessionen gälla nästa gång tjänsten läser kontot, eftersom kontot är markerat som raderat.</li>
        <li>Om du är elev raderas din körkortsresa med körpass, observationer, träningsfokus och inbjudningar.</li>

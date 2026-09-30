@@ -57,6 +57,8 @@ const ROBOTS_DISALLOW = [
   "/journey/",
   "/konto",
   "/konto/",
+  "/avregistrera",
+  "/avregistrera/",
   "/onboarding",
   "/start",
   "/app",

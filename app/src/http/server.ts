@@ -23,6 +23,7 @@ import { registerMarketingRoutes } from "./marketing.js";
 import { registerResendWebhook } from "./resend-webhook.js";
 import { registerHelpRoutes } from "./help.js";
 import { registerAccountRoutes } from "./account.js";
+import { registerUnsubscribeRoutes } from "./unsubscribe.js";
 import { registerOAuthRoutes } from "./oauth.js";
 import { registerAppleNotificationRoutes } from "./apple-notifications.js";
 import { registerRoutes } from "./routes.js";
@@ -184,6 +185,7 @@ export async function buildServer() {
   await registerAppleNotificationRoutes(app);
   await registerHelpRoutes(app);
   await registerAccountRoutes(app);
+  await registerUnsubscribeRoutes(app);
   await registerMarketingRoutes(app);
   await registerAdminRoutes(app);
   await registerRoutes(app);

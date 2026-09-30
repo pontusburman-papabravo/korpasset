@@ -163,6 +163,11 @@ export async function deleteProductAccount(
     );
 
     await client.query(
+      `DELETE FROM marketing_unsubscribe_tokens WHERE user_id = $1`,
+      [userId],
+    );
+
+    await client.query(
       `UPDATE users
        SET account_state = 'deleted',
            display_name = NULL,
@@ -172,6 +177,9 @@ export async function deleteProductAccount(
            client_platform = NULL,
            client_app_version = NULL,
            client_app_build = NULL,
+           marketing_email_opt_in = false,
+           marketing_email_consent_at = NULL,
+           marketing_email_opt_out_at = NULL,
            updated_at = now()
        WHERE id = $1`,
       [userId],
@@ -226,5 +234,6 @@ export function formatDeletionAuditSummary(summary: AccountDeletionSummary): str
     `product_events=${summary.unlinked.productEvents}`,
     `waitlist_orörd=true`,
     `historik_frikopplad=true`,
+    `marketing_cleared=true`,
   ].join("; ");
 }

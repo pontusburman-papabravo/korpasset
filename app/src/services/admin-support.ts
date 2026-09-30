@@ -1,4 +1,5 @@
 import { getPool } from "../db/pool.js";
+import { marketingPreferenceFromRow } from "./marketing-preferences.js";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -58,6 +59,9 @@ export interface SupportUserView {
   completedDriveCount: number;
   observationCount: number;
   relatedWaitlist: SupportWaitlistHit[];
+  marketingEmailOptIn: boolean;
+  marketingEmailConsentAt: string | null;
+  marketingEmailOptOutAt: string | null;
 }
 
 function mapWaitlist(row: Record<string, unknown>): SupportWaitlistHit {
@@ -189,7 +193,9 @@ function actorLabel(accountState: string, role: "student" | "supervisor", displa
 
 export async function getSupportUserView(userId: string): Promise<SupportUserView | null> {
   const userResult = await getPool().query(
-    `SELECT id, display_name, contact_email, account_state, created_at FROM users WHERE id = $1`,
+    `SELECT id, display_name, contact_email, account_state, created_at,
+            marketing_email_opt_in, marketing_email_consent_at, marketing_email_opt_out_at
+     FROM users WHERE id = $1`,
     [userId],
   );
   const user = userResult.rows[0] as
@@ -199,6 +205,9 @@ export async function getSupportUserView(userId: string): Promise<SupportUserVie
         contact_email: string | null;
         account_state: string;
         created_at: Date | string;
+        marketing_email_opt_in: boolean;
+        marketing_email_consent_at: Date | string | null;
+        marketing_email_opt_out_at: Date | string | null;
       }
     | undefined;
   if (!user) return null;
@@ -294,6 +303,7 @@ export async function getSupportUserView(userId: string): Promise<SupportUserVie
   }
 
   const deleted = user.account_state === "deleted";
+  const marketing = marketingPreferenceFromRow(user);
 
   return {
     id: user.id,
@@ -314,6 +324,9 @@ export async function getSupportUserView(userId: string): Promise<SupportUserVie
     completedDriveCount: Number(counts.rows[0]?.completed_drives ?? 0),
     observationCount: Number(counts.rows[0]?.observations ?? 0),
     relatedWaitlist,
+    marketingEmailOptIn: marketing.optIn,
+    marketingEmailConsentAt: marketing.consentAt,
+    marketingEmailOptOutAt: marketing.optOutAt,
   };
 }
 
