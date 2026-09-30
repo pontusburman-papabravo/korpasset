@@ -66,11 +66,11 @@ describe("handoff and stale-drive observation", () => {
 
     const studentChoice = await injectWithSession(app, session(student.userId), {
       method: "GET",
-      url: "/onboarding?som=elev",
+      url: "/onboarding/elev",
     });
     const parentChoice = await injectWithSession(app, session(parent.userId), {
       method: "GET",
-      url: "/onboarding?som=handledare",
+      url: "/onboarding/handledare",
     });
     assert.equal(studentChoice.statusCode, 200);
     assert.equal(parentChoice.statusCode, 200);

@@ -9,6 +9,10 @@ import {
   renderJourneyIdentity,
   supervisorJourneyTitle,
 } from "./journey-identity.js";
+import {
+  STUDENT_ONBOARDING_PATH,
+  type OnboardingTrack,
+} from "./onboarding-track.js";
 
 export type SignedInHome =
   | { kind: "onboarding" }
@@ -24,10 +28,13 @@ export async function signedInHome(userId: string): Promise<SignedInHome> {
   return { kind: "picker", journeys };
 }
 
-export async function signedInRedirectPath(userId: string): Promise<string> {
+export async function signedInRedirectPath(
+  userId: string,
+  track?: OnboardingTrack | null,
+): Promise<string> {
   const home = await signedInHome(userId);
   if (home.kind === "journey") return `/journey/${home.journeyId}`;
-  if (home.kind === "onboarding") return "/onboarding";
+  if (home.kind === "onboarding") return track ? "/resa" : "/onboarding";
   return "/app";
 }
 
@@ -75,7 +82,7 @@ export function renderMorePage(options: {
       ? `<p><a class="btn btn-secondary" href="/app">Byt körkortsresa</a></p>`
       : "";
   const startOwn = options.canStartOwnJourney
-    ? `<p><a class="btn btn-secondary" href="/onboarding?som=elev">Starta min körkortsresa</a></p>`
+    ? `<p><a class="btn btn-secondary" href="${STUDENT_ONBOARDING_PATH}">Starta min körkortsresa</a></p>`
     : "";
   return `${identity}
     ${switcher}

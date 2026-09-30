@@ -1,13 +1,22 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { config } from "../config.js";
+import { getSessionUserId } from "../auth/session.js";
 import type { JourneyRole } from "../services/authorization.js";
 import { getJourneyAccess } from "../services/authorization.js";
 import { recordProductEventSafe } from "../services/product-events.js";
+import { readOnboardingTrack } from "./onboarding-track.js";
 import {
   listAccessibleActiveJourneys,
   type AccessibleJourney,
 } from "../services/journeys.js";
+import { listSkillsForTaxonomy } from "../services/skills.js";
 import { layout, type AppLayoutOptions, type AppTab } from "./layout.js";
+import {
+  renderWaitingNastaPage,
+  renderWaitingResaPage,
+  renderWaitingUtvecklingPage,
+  waitingIdentity,
+} from "./waiting-pages.js";
 
 const JOURNEY_ID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -122,6 +131,7 @@ export function tabForPath(path: string): AppTab | null {
   ) {
     return "nasta";
   }
+  if (p === "/guide" || p.startsWith("/guide/")) return "resa";
   if (p === "/resa" || /^\/journey\/[^/]+$/.test(p)) return "resa";
   return null;
 }
@@ -143,8 +153,6 @@ export async function redirectToActiveJourney(
   reply: FastifyReply,
   suffix: "" | "/nasta" | "/utveckling",
 ): Promise<void> {
-  const { getSessionUserId } = await import("../auth/session.js");
-  const { signedInRedirectPath } = await import("./navigation.js");
   const userId = getSessionUserId(request);
   if (!userId) {
     reply.redirect("/app");
@@ -152,7 +160,25 @@ export async function redirectToActiveJourney(
   }
   const resolved = await resolveActiveJourney(userId, readActiveJourneyId(request));
   if (!resolved) {
-    reply.redirect(await signedInRedirectPath(userId));
+    const track = readOnboardingTrack(request);
+    const skills = await listSkillsForTaxonomy();
+    const body =
+      suffix === "/nasta"
+        ? renderWaitingNastaPage({ track, skills })
+        : suffix === "/utveckling"
+          ? renderWaitingUtvecklingPage({ track, skills })
+          : renderWaitingResaPage({ track, skills });
+    const title =
+      suffix === "/nasta"
+        ? "Nästa körpass"
+        : suffix === "/utveckling"
+          ? "Utveckling"
+          : "Körkortsresan";
+    reply.type("text/html").send(
+      layoutForRequest(request, title, body, {
+        role: waitingIdentity(track).role,
+      }),
+    );
     return;
   }
   setActiveJourneyCookie(reply, resolved.journey.id);

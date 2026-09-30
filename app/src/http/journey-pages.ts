@@ -18,6 +18,21 @@ import {
 import { coachingStepsForSkillKey } from "../domain/coaching-steps.js";
 import type { NextDrivePlan } from "../services/next-drive-plan.js";
 import { escapeHtml, primaryButton } from "./layout.js";
+
+function guidePaths(journeyId: string | null | undefined): {
+  guideBase: string;
+  homeHref: string;
+  planHref: string;
+} {
+  if (journeyId) {
+    return {
+      guideBase: `/journey/${journeyId}/guide`,
+      homeHref: `/journey/${journeyId}`,
+      planHref: `/journey/${journeyId}/drive/new`,
+    };
+  }
+  return { guideBase: "/guide", homeHref: "/resa", planHref: "/nasta" };
+}
 import { TRANSPORTSTYRELSEN_LINKS } from "./landing.js";
 import {
   journeyIdentityForRole,
@@ -365,7 +380,7 @@ export function renderJourneyHome(options: {
 }
 
 export function renderDevelopmentPage(options: {
-  journeyId: string;
+  journeyId: string | null;
   studentName: string;
   identityTitle: string;
   identityRole: string;
@@ -379,6 +394,7 @@ export function renderDevelopmentPage(options: {
     label: string;
   }[];
 }): string {
+  const paths = guidePaths(options.journeyId);
   const groups = new Map<string, { areaTitle: string; skills: typeof options.skills }>();
   for (const skill of options.skills) {
     const existing = groups.get(skill.areaKey);
@@ -401,7 +417,7 @@ export function renderDevelopmentPage(options: {
           ${group.skills
             .map(
               (skill) => `<li>
-                <a class="development-title" href="/journey/${escapeHtml(options.journeyId)}/guide/${escapeHtml(skill.skillKey)}">${escapeHtml(skill.title)}</a>
+                <a class="development-title" href="${escapeHtml(paths.guideBase)}/${escapeHtml(skill.skillKey)}">${escapeHtml(skill.title)}</a>
                 <span class="development-label">${escapeHtml(skill.label)}</span>
               </li>`,
             )
@@ -426,7 +442,7 @@ export function renderDevelopmentPage(options: {
     </div>
     <p class="muted">${escapeHtml(options.studentName)} — läge per kapitel från era bedömningar, inte ett officiellt körkortsresultat.</p>
     ${areas}
-    <p><a class="btn btn-secondary" href="/journey/${escapeHtml(options.journeyId)}">Tillbaka till resan</a></p>`;
+    <p><a class="btn btn-secondary" href="${escapeHtml(paths.homeHref)}">Tillbaka till resan</a></p>`;
 }
 
 export const FEEDBACK_TOPICS = [
@@ -453,10 +469,11 @@ export function renderSupervisorGuideCues(skillKey: string): string {
 }
 
 export function renderSupervisorGuideIndex(options: {
-  journeyId: string;
+  journeyId?: string | null;
   studentName: string;
   skills: SkillWithDefinition[];
 }): string {
+  const paths = guidePaths(options.journeyId);
   const groups = new Map<string, { areaTitle: string; skills: SkillWithDefinition[] }>();
   for (const skill of options.skills) {
     const existing = groups.get(skill.areaKey);
@@ -481,7 +498,7 @@ export function renderSupervisorGuideIndex(options: {
           ${group.skills
             .map(
               (skill) => `<li>
-                <a href="/journey/${escapeHtml(options.journeyId)}/guide/${escapeHtml(skill.skillKey)}">${escapeHtml(skill.title)}</a>
+                <a href="${escapeHtml(paths.guideBase)}/${escapeHtml(skill.skillKey)}">${escapeHtml(skill.title)}</a>
               </li>`,
             )
             .join("")}
@@ -499,13 +516,14 @@ export function renderSupervisorGuideIndex(options: {
       ${areas}
     </section>
     <p class="muted">Råden bygger på Transportstyrelsens vägledning för privat övningskörning. Körpasset är en fristående tjänst — inte en myndighetsbok och inte någon annans handledarbok. <a href="${escapeHtml(TRANSPORTSTYRELSEN_LINKS.planera)}" rel="noopener noreferrer" target="_blank">Planera övningskörningen</a></p>
-    <p><a class="btn btn-secondary" href="/journey/${escapeHtml(options.journeyId)}">Tillbaka till resan</a></p>`;
+    <p><a class="btn btn-secondary" href="${escapeHtml(paths.homeHref)}">Tillbaka till resan</a></p>`;
 }
 
 export function renderSupervisorGuideSkill(options: {
-  journeyId: string;
+  journeyId?: string | null;
   skill: SkillWithDefinition;
 }): string {
+  const paths = guidePaths(options.journeyId);
   const guide = supervisorGuideForSkillKey(options.skill.skillKey);
   const steps = coachingStepsForSkillKey(options.skill.skillKey);
   const lookFor = (guide?.lookFor ?? [])
@@ -557,7 +575,7 @@ export function renderSupervisorGuideSkill(options: {
            </section>`
         : ""
     }
-    <p><a class="btn btn-primary" href="/journey/${escapeHtml(options.journeyId)}/drive/new">Ta med i nästa körpass</a></p>
-    <p><a class="btn btn-secondary" href="/journey/${escapeHtml(options.journeyId)}/guide">Alla moment</a></p>
+    <p><a class="btn btn-primary" href="${escapeHtml(paths.planHref)}">Ta med i nästa körpass</a></p>
+    <p><a class="btn btn-secondary" href="${escapeHtml(paths.guideBase)}">Alla moment</a></p>
     <p class="muted">Träningsstöd från kursplan och körprov — inte ett officiellt resultat.</p>`;
 }

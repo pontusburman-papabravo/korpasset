@@ -82,6 +82,7 @@ describe("cookie consent", () => {
     assert.equal(page.statusCode, 200);
     assert.match(page.body, /Cookiepolicy/);
     assert.match(page.body, /korpasset_consent/);
+    assert.match(page.body, /korpasset_onboarding_track/);
     assert.match(page.body, /Google Analytics 4/);
     assert.match(page.body, /iOS-appen Körpasset använder inte reklam- eller marknadsföringsspårning/);
     assert.match(page.body, /Cookiebannern som erbjuder analys- och marknadsföringsval visas inte där/);

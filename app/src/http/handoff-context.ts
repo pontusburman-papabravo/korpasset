@@ -8,8 +8,12 @@ const HANDOFF_COOKIE_VALUE = "parent";
 /** Attribution window after the student opens the handoff URL. Consumed on POST /start. */
 export const HANDOFF_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
-export function isParentHandoffQuery(query: { som?: string; via?: string }): boolean {
-  return query.som === "elev" && query.via === STUDENT_HANDOFF_VIA;
+export function isParentHandoffQuery(
+  query: { som?: string; via?: string },
+  track?: "elev" | "handledare" | "val",
+): boolean {
+  const student = query.som === "elev" || track === "elev";
+  return student && query.via === STUDENT_HANDOFF_VIA;
 }
 
 export function readJourneyCreatedSource(request: FastifyRequest): JourneyCreatedSource {
