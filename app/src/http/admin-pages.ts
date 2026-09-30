@@ -800,6 +800,19 @@ function directoryName(user: DirectoryUser): string {
   return user.displayName?.trim() || "Produktanvändare";
 }
 
+function directoryRemoveForm(user: DirectoryUser, returnState?: string): string {
+  if (user.accountState !== "guest" && user.accountState !== "deleted") return "—";
+  const question =
+    user.accountState === "deleted"
+      ? "Ta bort den raderade raden från listan?"
+      : "Ta bort gästen från listan? Sitter hen på en resa frikopplas hen.";
+  return `<form method="post" action="/admin/users/${escapeHtml(user.id)}/remove-from-list" class="admin-row-delete" onsubmit='return confirm(${JSON.stringify(question)});'>
+    <input type="hidden" name="confirm" value="yes">
+    <input type="hidden" name="return_state" value="${escapeHtml(returnState ?? "")}">
+    <button type="submit" class="btn-link">Ta bort</button>
+  </form>`;
+}
+
 export function usersListPage(options: {
   users: DirectoryUser[];
   total: number;
@@ -808,8 +821,9 @@ export function usersListPage(options: {
   query: string;
   state?: string;
   successMessage?: string;
+  errorMessage?: string;
 }): string {
-  const { users, total, page, pageSize, query, state, successMessage } = options;
+  const { users, total, page, pageSize, query, state, successMessage, errorMessage } = options;
   const rows = users
     .map((user) => {
       const emails = user.emails.length > 0 ? user.emails.join(", ") : "—";
@@ -822,18 +836,25 @@ export function usersListPage(options: {
         <td>${escapeHtml(roles)}</td>
         <td>${escapeHtml(user.providers.map(providerLabel).join(", ") || "—")}</td>
         <td>${escapeHtml(formatWhen(user.createdAt))}</td>
+        <td>${directoryRemoveForm(user, state)}</td>
       </tr>`;
     })
     .join("");
 
-  const filters = ["all", ...DIRECTORY_ACCOUNT_STATES]
-    .map((value) => {
+  const filters = [
+    ["", "Konton"],
+    ["active", "Aktiv"],
+    ["suspended", "Avstängd"],
+    ["guest", "Gäst"],
+    ["deleted", "Raderad"],
+    ["all", "Alla"],
+  ]
+    .map(([value, label]) => {
       const href = usersQuery({
         q: query || undefined,
-        state: value === "all" ? undefined : value,
+        state: value || undefined,
       });
-      const label = value === "all" ? "Alla" : accountStateLabel(value);
-      const current = (value === "all" && !state) || value === state;
+      const current = (value === "" && !state) || value === state;
       return `<a href="${escapeHtml(href)}"${current ? ' aria-current="page"' : ""}>${escapeHtml(label)}</a>`;
     })
     .join(" · ");
@@ -849,10 +870,16 @@ export function usersListPage(options: {
     page < pageCount
       ? `<a href="${escapeHtml(usersQuery({ q: query || undefined, state, page: page + 1 }))}">Nästa</a>`
       : `<span class="muted">Nästa</span>`;
-  const stateOptions = ["", ...DIRECTORY_ACCOUNT_STATES]
-    .map((value) => {
+  const stateOptions = [
+    ["", "Konton"],
+    ["active", "Aktiv"],
+    ["suspended", "Avstängd"],
+    ["guest", "Gäst"],
+    ["deleted", "Raderad"],
+    ["all", "Alla"],
+  ]
+    .map(([value, label]) => {
       const selected = value === (state ?? "") ? " selected" : "";
-      const label = value ? accountStateLabel(value) : "Alla statusar";
       return `<option value="${escapeHtml(value)}"${selected}>${escapeHtml(label)}</option>`;
     })
     .join("");
@@ -861,8 +888,9 @@ export function usersListPage(options: {
     "Användare",
     `<main class="admin-shell admin-shell--wide">
        <h1>Användare</h1>
-       <p>Alla produktkonton, även de som inte anmält sig till betan. Intresseanmälningar utan konto ligger under Intresseanmälningar.</p>
+       <p>Listan visar konton. Gäster och raderade syns under de filtren, och där tar du bort raden själv. Sitter gästen på en resa frikopplas hen. Aktiva konton raderas inne på kontot.</p>
        ${successMessage ? successBanner(successMessage) : ""}
+       ${errorMessage ? errorBanner(errorMessage) : ""}
        <p>${from}–${to} av ${total}${query ? ` · sökning “${escapeHtml(query)}”` : ""}</p>
        <form method="get" action="/admin/users" class="admin-search" role="search">
          <label for="q">Sök användare</label>
@@ -879,10 +907,10 @@ export function usersListPage(options: {
        <div class="admin-table-wrap">
          <table class="admin-table">
            <thead>
-             <tr><th>Namn</th><th>E-post</th><th>Status</th><th>Roll</th><th>Inloggning</th><th>Skapad</th></tr>
+             <tr><th>Namn</th><th>E-post</th><th>Status</th><th>Roll</th><th>Inloggning</th><th>Skapad</th><th>Åtgärd</th></tr>
            </thead>
            <tbody>
-             ${rows || `<tr><td colspan="6">Inga användare matchar.</td></tr>`}
+             ${rows || `<tr><td colspan="7">Inga användare matchar.</td></tr>`}
            </tbody>
          </table>
        </div>

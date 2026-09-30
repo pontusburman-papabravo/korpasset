@@ -1,5 +1,6 @@
 import { AppError, NotFoundError } from "../errors.js";
 import { getPool } from "../db/pool.js";
+import { deleteProductAccount } from "./account-lifecycle.js";
 import { optionalIdentityEmail, sanitizeDisplayName } from "./oauth-accounts.js";
 
 export const DIRECTORY_PAGE_SIZE = 50;
@@ -30,6 +31,15 @@ export interface DirectoryUser {
 
 export function isDirectoryAccountState(value: string | undefined): value is DirectoryAccountState {
   return DIRECTORY_ACCOUNT_STATES.includes(value as DirectoryAccountState);
+}
+
+/** Default list is real accounts. `all` includes guests and tombstones. */
+export type DirectoryListScope = "accounts" | "all" | DirectoryAccountState;
+
+export function directoryListScope(value: string | undefined): DirectoryListScope {
+  if (value === "all") return "all";
+  if (isDirectoryAccountState(value)) return value;
+  return "accounts";
 }
 
 export function isEditableAccountState(value: string | undefined): value is EditableAccountState {
@@ -70,9 +80,13 @@ function directoryFilter(input: { q?: string; state?: string }): {
   params: unknown[];
 } {
   const q = (input.q ?? "").trim().slice(0, 120);
-  const state = isDirectoryAccountState(input.state) ? input.state : null;
+  const scope = directoryListScope(input.state);
   return {
-    where: `WHERE ($1::text IS NULL OR u.account_state::text = $1)
+    where: `WHERE (
+        $1::text = 'all'
+        OR ($1::text = 'accounts' AND u.account_state IN ('active', 'suspended'))
+        OR u.account_state::text = $1
+      )
       AND (
         $2::text IS NULL
         OR u.display_name ILIKE $3 ESCAPE '\\'
@@ -89,7 +103,7 @@ function directoryFilter(input: { q?: string; state?: string }): {
             )
         )
       )`,
-    params: [state, q || null, q ? `%${escapeLike(q)}%` : null],
+    params: [scope, q || null, q ? `%${escapeLike(q)}%` : null],
   };
 }
 
@@ -234,4 +248,77 @@ export async function updateDirectoryUser(
   const updated = await getDirectoryUser(userId);
   if (!updated) throw new NotFoundError("Användaren hittades inte");
   return updated;
+}
+
+const UNATTACHED_USER_SQL = `
+  NOT EXISTS (SELECT 1 FROM driving_journeys j WHERE j.student_user_id = u.id)
+  AND NOT EXISTS (SELECT 1 FROM journey_collaborators c WHERE c.user_id = u.id)
+  AND NOT EXISTS (
+    SELECT 1 FROM journey_invitations i
+    WHERE i.invited_by_user_id = u.id OR i.accepted_by_user_id = u.id
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM drives d
+    WHERE d.started_by_user_id = u.id OR d.supervisor_user_id = u.id
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM drive_observations o WHERE o.observer_user_id = u.id
+  )
+`;
+
+async function userIsUnattached(userId: string): Promise<boolean> {
+  const result = await getPool().query(
+    `SELECT 1
+     FROM users u
+     WHERE u.id = $1
+       AND ${UNATTACHED_USER_SQL}`,
+    [userId],
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+/**
+ * Removes one guest or tombstone from the account list.
+ * A guest who still sits on a journey is unlinked first, then the row goes.
+ */
+export async function removeDirectoryRow(userId: string): Promise<{
+  accountState: "guest" | "deleted";
+  unlinked: boolean;
+}> {
+  const existing = await getPool().query(
+    `SELECT account_state FROM users WHERE id = $1`,
+    [userId],
+  );
+  const state = existing.rows[0]?.account_state;
+  if (!state) throw new NotFoundError("Användaren hittades inte");
+  if (state !== "guest" && state !== "deleted") {
+    throw new AppError(
+      "Aktiva och avstängda konton raderas inne på kontot.",
+      400,
+      "not_list_removable",
+    );
+  }
+
+  let unlinked = false;
+  if (state === "guest" && !(await userIsUnattached(userId))) {
+    await deleteProductAccount(userId);
+    unlinked = true;
+  }
+
+  const removed = await getPool().query(
+    `DELETE FROM users u
+     WHERE u.id = $1
+       AND u.account_state IN ('guest', 'deleted')
+       AND ${UNATTACHED_USER_SQL}
+     RETURNING id`,
+    [userId],
+  );
+  if ((removed.rowCount ?? 0) === 0) {
+    throw new AppError(
+      "Raden pekas fortfarande på och ligger kvar.",
+      409,
+      "still_attached",
+    );
+  }
+  return { accountState: state, unlinked };
 }

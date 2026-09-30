@@ -19,8 +19,9 @@ import { recordAdminAudit } from "../services/admin-audit.js";
 import {
   DIRECTORY_PAGE_SIZE,
   getDirectoryUser,
-  isDirectoryAccountState,
+  directoryListScope,
   listDirectoryUsers,
+  removeDirectoryRow,
   updateDirectoryUser,
   type DirectoryUser,
 } from "../services/admin-directory.js";
@@ -418,8 +419,15 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   app.get("/admin/users", async (request, reply) => {
     if (!(await requireAdmin(request, reply))) return;
-    const query = request.query as { q?: string; state?: string; page?: string; deleted?: string };
-    const state = isDirectoryAccountState(query.state) ? query.state : undefined;
+    const query = request.query as {
+      q?: string;
+      state?: string;
+      page?: string;
+      deleted?: string;
+      removed?: string;
+    };
+    const scope = directoryListScope(query.state);
+    const state = scope === "accounts" ? undefined : scope;
     const page = parsePage(query.page);
     const offset = (page - 1) * DIRECTORY_PAGE_SIZE;
     const { users, total } = await listDirectoryUsers({
@@ -437,7 +445,11 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
         query: (query.q ?? "").trim(),
         state,
         successMessage:
-          query.deleted === "1" ? "Kontot är raderat enligt account-lifecycle." : undefined,
+          query.removed === "1"
+            ? "Raden är borttagen från listan."
+            : query.deleted === "1"
+              ? "Kontot är raderat enligt account-lifecycle."
+              : undefined,
       }),
     );
   });
@@ -445,12 +457,59 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   app.get("/admin/users.csv", async (request, reply) => {
     if (!(await requireAdmin(request, reply))) return;
     const query = request.query as { q?: string; state?: string };
-    const state = isDirectoryAccountState(query.state) ? query.state : undefined;
+    const scope = directoryListScope(query.state);
+    const state = scope === "accounts" ? undefined : scope;
     const { users } = await listDirectoryUsers({ q: query.q, state });
     return reply
       .type("text/csv; charset=utf-8")
       .header("content-disposition", "attachment; filename=korpasset-anvandare.csv")
       .send(directoryCsv(users));
+  });
+
+  app.post("/admin/users/:id/remove-from-list", async (request, reply) => {
+    const admin = await requireAdmin(request, reply);
+    if (!admin) return;
+    const { id } = request.params as { id: string };
+    const body = request.body as { confirm?: string; return_state?: string };
+    const scope = directoryListScope(body.return_state);
+    const back = scope === "accounts" ? "/admin/users" : `/admin/users?state=${scope}`;
+    if (body.confirm !== "yes") {
+      return reply.redirect(back);
+    }
+    try {
+      const removed = await removeDirectoryRow(id);
+      await recordAdminAudit({
+        adminUserId: admin.id,
+        operation: "directory_row_removed",
+        targetType: "user",
+        targetId: id,
+        summary: `account_state=${removed.accountState}; unlinked=${removed.unlinked}`,
+      });
+      const joiner = back.includes("?") ? "&" : "?";
+      return reply.redirect(`${back}${joiner}removed=1`);
+    } catch (error) {
+      const message = error instanceof AppError ? error.message : "Kunde inte ta bort raden";
+      const page = parsePage(undefined);
+      const { users, total } = await listDirectoryUsers({
+        state: scope === "accounts" ? undefined : scope,
+        limit: DIRECTORY_PAGE_SIZE,
+        offset: 0,
+      });
+      return reply
+        .status(error instanceof AppError ? error.statusCode : 400)
+        .type("text/html")
+        .send(
+          usersListPage({
+            users,
+            total,
+            page,
+            pageSize: DIRECTORY_PAGE_SIZE,
+            query: "",
+            state: scope === "accounts" ? undefined : scope,
+            errorMessage: message,
+          }),
+        );
+    }
   });
 
   app.get("/admin/users/:id", async (request, reply) => {
