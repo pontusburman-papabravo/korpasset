@@ -53,6 +53,7 @@ describe("waitlist hardening", () => {
   it("rate-limits POST /interest per IP", async () => {
     const app = await createTestApp();
     let lastStatus = 0;
+    let lastLead = false;
     for (let i = 0; i < INTEREST_RATE_LIMIT.limit + 1; i += 1) {
       const response = await app.inject({
         method: "POST",
@@ -67,8 +68,13 @@ describe("waitlist hardening", () => {
         }),
       });
       lastStatus = response.statusCode;
+      lastLead = response.cookies.some(
+        (cookie) =>
+          cookie.name === "korpasset_meta_lead" || cookie.name === "korpasset_ga_lead",
+      );
     }
     assert.equal(lastStatus, 429);
+    assert.equal(lastLead, false);
     const count = await getPool().query(`SELECT count(*)::int AS n FROM interest_signups`);
     assert.equal(count.rows[0].n, INTEREST_RATE_LIMIT.limit);
     await app.close();

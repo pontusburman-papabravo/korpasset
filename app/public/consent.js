@@ -65,11 +65,17 @@
       ? config.metaPixelId
       : "";
   var LEAD_COOKIE = config.leadCookieName || "korpasset_meta_lead";
+  var GA_LEAD_COOKIE = config.gaLeadCookieName || "korpasset_ga_lead";
   var listeners = [];
   var marketingTools = [];
   var gaLoaded = false;
   var metaLoaded = false;
   var leadSent = false;
+  var gaLeadSent = false;
+  var interestFormVisible = false;
+  var interestViewSent = false;
+  var META_LEAD_STORAGE = "korpasset_meta_lead_sent";
+  var GA_LEAD_STORAGE = "korpasset_ga_lead_sent";
   var root = document.querySelector("[data-consent-root]");
   var banner = document.querySelector(".consent__banner");
   var panel = document.querySelector(".consent__panel");
@@ -239,10 +245,17 @@
   function trackMetaLead() {
     if (!runtime.allowMarketingTracking) return;
     if (!metaLoaded || leadSent || typeof window.fbq !== "function") return;
-    if (readNamedCookie(LEAD_COOKIE) !== "1") return;
+    var token = leadToken(LEAD_COOKIE);
+    if (!token) return;
+    if (storedLead(META_LEAD_STORAGE) === token) {
+      leadSent = true;
+      clearNamedCookie(LEAD_COOKIE);
+      return;
+    }
     window.fbq("track", "Lead");
     leadSent = true;
-    clearLeadCookie();
+    rememberLead(META_LEAD_STORAGE, token);
+    clearNamedCookie(LEAD_COOKIE);
   }
 
   function readNamedCookie(name) {
@@ -255,18 +268,92 @@
     return "";
   }
 
-  function hasPendingLead() {
-    return readNamedCookie(LEAD_COOKIE) === "1";
+  function leadToken(name) {
+    var value = readNamedCookie(name);
+    if (value === "1" || value.indexOf("1.") === 0) return value;
+    return "";
   }
 
-  function clearLeadCookie() {
+  function hasPendingLead() {
+    return leadToken(LEAD_COOKIE) !== "";
+  }
+
+  function storedLead(key) {
+    try {
+      if (!window.sessionStorage) return "";
+      return window.sessionStorage.getItem(key) || "";
+    } catch (ignore) {
+      return "";
+    }
+  }
+
+  function rememberLead(key, token) {
+    try {
+      if (window.sessionStorage) window.sessionStorage.setItem(key, token);
+    } catch (ignore) {}
+  }
+
+  function trackPendingAnalyticsLead() {
+    if (!runtime.allowAnalyticsTracking || !GA_ID || gaLeadSent) return;
+    if (window["ga-disable-" + GA_ID] === true) return;
+    if (typeof window.gtag !== "function") return;
+    var token = leadToken(GA_LEAD_COOKIE);
+    if (!token) return;
+    if (storedLead(GA_LEAD_STORAGE) === token) {
+      gaLeadSent = true;
+      clearNamedCookie(GA_LEAD_COOKIE);
+      return;
+    }
+    window.gtag("event", "generate_lead", {
+      form_name: "beta_interest",
+      lead_type: "beta_waitlist",
+    });
+    gaLeadSent = true;
+    rememberLead(GA_LEAD_STORAGE, token);
+    clearNamedCookie(GA_LEAD_COOKIE);
+  }
+
+  function trackVisibleInterestForm() {
+    if (!interestFormVisible || interestViewSent) return;
+    if (!runtime.allowAnalyticsTracking || !GA_ID) return;
+    if (window["ga-disable-" + GA_ID] === true) return;
+    var choice = current();
+    if (!choice.analytics || typeof window.gtag !== "function") return;
+    interestViewSent = true;
+    window.gtag("event", "view_interest_form", {
+      form_name: "beta_interest",
+      lead_type: "beta_waitlist",
+    });
+  }
+
+  function watchInterestForm() {
+    if (!runtime.allowAnalyticsTracking) return;
+    var section = document.querySelector("[data-interest-form]");
+    if (!section || typeof IntersectionObserver !== "function") return;
+    var observer = new IntersectionObserver(
+      function (entries) {
+        for (var i = 0; i < entries.length; i += 1) {
+          if (entries[i] && entries[i].isIntersecting) {
+            observer.disconnect();
+            interestFormVisible = true;
+            trackVisibleInterestForm();
+            return;
+          }
+        }
+      },
+      { threshold: 0.25 },
+    );
+    observer.observe(section);
+  }
+
+  function clearNamedCookie(name) {
     var domains = cookieDomains(location.hostname);
     var paths = ["/", "/interest/tack"];
     for (var i = 0; i < domains.length; i += 1) {
       var domain = domains[i] ? "; Domain=" + domains[i] : "";
       for (var p = 0; p < paths.length; p += 1) {
         document.cookie =
-          LEAD_COOKIE + "=; Path=" + paths[p] + "; Max-Age=0; SameSite=Lax" + domain;
+          name + "=; Path=" + paths[p] + "; Max-Age=0; SameSite=Lax" + domain;
       }
     }
   }
@@ -318,7 +405,9 @@
       clearMatching(/^_fb[pc]$/);
     }
     syncGoogle(next);
+    trackPendingAnalyticsLead();
     if (next.marketing) runMarketingTools(next);
+    trackVisibleInterestForm();
     notify();
   }
 
@@ -499,4 +588,5 @@
       window.korpassetConsent.when("marketing", trackMetaLead);
     }
   }
+  watchInterestForm();
 })();

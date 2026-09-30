@@ -59,7 +59,9 @@ describe("account state is a central product-session rule", () => {
       { bilklar_session: createSessionToken(userId) },
       { method: "GET", url: "/konto" },
     );
-    assert.equal(account.statusCode, 401);
+    assert.equal(account.statusCode, 302);
+    assert.equal(account.headers.location, "/app?next=%2Fkonto");
+    assert.doesNotMatch(String(account.body), /Session saknas/);
     await app.close();
   });
 
@@ -76,7 +78,8 @@ describe("account state is a central product-session rule", () => {
       { bilklar_session: createSessionToken(userId) },
       { method: "GET", url: "/konto" },
     );
-    assert.equal(account.statusCode, 401);
+    assert.equal(account.statusCode, 302);
+    assert.equal(account.headers.location, "/app?next=%2Fkonto");
     const cleared = account.cookies.find((cookie) => cookie.name === "bilklar_session");
     assert.ok(cleared);
     assert.equal(cleared.value, "");

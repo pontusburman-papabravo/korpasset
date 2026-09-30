@@ -221,7 +221,8 @@ describe("konto UI", () => {
     );
     assert.equal(identities.rows[0].n, 1);
     const konto = await app.inject({ method: "GET", url: "/konto" });
-    assert.equal(konto.statusCode, 401);
+    assert.equal(konto.statusCode, 302);
+    assert.equal(konto.headers.location, "/app?next=%2Fkonto");
     await app.close();
   });
 

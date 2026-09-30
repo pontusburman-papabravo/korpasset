@@ -128,3 +128,36 @@ export function requireSessionUserId(request: FastifyRequest): string {
   }
   return userId;
 }
+
+const LOGIN_RETURN = /^\/[A-Za-z0-9/_-]{1,200}$/;
+
+/** In-app path to reopen after login. Never an external URL. */
+export function safeLoginReturn(value: string | undefined | null): string {
+  if (!value) return "/app";
+  const path = value.trim().split("?")[0]?.split("#")[0] ?? "";
+  if (!LOGIN_RETURN.test(path)) return "/app";
+  if (
+    path === "/app" ||
+    path.startsWith("/app/") ||
+    path.startsWith("/admin") ||
+    path.startsWith("/api/") ||
+    path === "/health" ||
+    path.startsWith("/health/")
+  ) {
+    return "/app";
+  }
+  return path;
+}
+
+export function loginReturnFromQuery(query: unknown): string {
+  if (!query || typeof query !== "object") return "/app";
+  const next = (query as { next?: unknown }).next;
+  return safeLoginReturn(typeof next === "string" ? next : undefined);
+}
+
+/** Logged-out browser navigation to a product URL. */
+export function loginRedirectFor(requestUrl: string | undefined): string {
+  const path = safeLoginReturn((requestUrl ?? "").split("?")[0]);
+  if (path === "/app") return "/app";
+  return `/app?next=${encodeURIComponent(path)}`;
+}

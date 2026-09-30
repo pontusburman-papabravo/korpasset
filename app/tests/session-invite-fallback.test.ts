@@ -15,17 +15,32 @@ describe("session and spent-invite fallback", () => {
     await resetDatabaseData();
   });
 
-  it("shows Swedish HTML when a product page has no session", async () => {
+  it("sends a logged-out product page to login and keeps the destination", async () => {
     const app = await createTestApp();
     const { journey } = await createJourneyForStudent("Ella");
     const response = await app.inject({
       method: "GET",
       url: `/journey/${journey.id}`,
     });
-    assert.equal(response.statusCode, 401);
-    assert.match(response.headers["content-type"] ?? "", /text\/html/);
-    assert.match(response.body, /Vi känner inte igen den här enheten/);
-    assert.match(response.body, /Öppna Körpasset/);
+    assert.equal(response.statusCode, 302);
+    assert.equal(response.headers.location, `/app?next=${encodeURIComponent(`/journey/${journey.id}`)}`);
+    assert.doesNotMatch(String(response.body), /Session saknas/);
+
+    const login = await app.inject({
+      method: "GET",
+      url: String(response.headers.location),
+    });
+    assert.equal(login.statusCode, 200);
+    assert.match(login.body, /Fortsätt in i Körpasset/);
+    assert.match(login.body, new RegExp(`data-return-to="/journey/${journey.id}"`));
+    assert.doesNotMatch(login.body, /Session saknas/);
+    assert.doesNotMatch(login.body, /consent\.js|googletagmanager/);
+
+    const evil = await app.inject({
+      method: "GET",
+      url: "/app?next=https://evil.example/phish",
+    });
+    assert.match(evil.body, /data-return-to="\/app"/);
 
     const json = await app.inject({
       method: "GET",
