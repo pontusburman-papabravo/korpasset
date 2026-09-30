@@ -125,6 +125,38 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
   </script>
   <script>window.KORPASSET_OAUTH = ${JSON.stringify(publicOAuthConfig())};</script>
   <script src="/app-oauth.js" defer></script>
+  <script>
+    (function () {
+      var body = { platform: "", version: "", build: "" };
+      var cap = window.Capacitor;
+      function send() {
+        try {
+          fetch("/api/client", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            credentials: "same-origin",
+            keepalive: true,
+            body: JSON.stringify(body)
+          });
+        } catch (ignore) {}
+      }
+      if (!cap || typeof cap.isNativePlatform !== "function" || !cap.isNativePlatform()) {
+        send();
+        return;
+      }
+      if (typeof cap.getPlatform === "function") body.platform = String(cap.getPlatform() || "");
+      var plugin = cap.Plugins && cap.Plugins.App;
+      if (!plugin || typeof plugin.getInfo !== "function") {
+        send();
+        return;
+      }
+      Promise.resolve(plugin.getInfo()).then(function (info) {
+        if (info && info.version) body.version = String(info.version);
+        if (info && info.build) body.build = String(info.build);
+        send();
+      }).catch(send);
+    })();
+  </script>
 </body>
 </html>`;
 }

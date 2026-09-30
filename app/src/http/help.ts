@@ -15,6 +15,7 @@ import { layoutForRequest } from "./active-journey.js";
 import { FEEDBACK_TOPICS } from "./journey-pages.js";
 import { allowRequest } from "./rate-limit.js";
 import { redactRequestPath } from "./log.js";
+import { parseUserClientReport, recordUserClient } from "../services/user-client.js";
 
 export const FEEDBACK_RATE_LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 };
 export const CLIENT_ERROR_RATE_LIMIT = { limit: 20, windowMs: 10 * 60 * 1000 };
@@ -144,6 +145,27 @@ export async function registerHelpRoutes(app: FastifyInstance): Promise<void> {
     const path =
       typeof body.path === "string" ? redactRequestPath(body.path) : "";
     request.log.warn({ clientError: true, message, path }, "client error");
+    return reply.status(204).send();
+  });
+
+  app.post("/api/client", async (request, reply) => {
+    const sessionUserId = await getReusableSessionUserId(getSessionUserId(request));
+    if (!sessionUserId) return reply.status(204).send();
+    if (
+      !allowRequest(
+        `client-seen:${sessionUserId}`,
+        60,
+        10 * 60 * 1000,
+      )
+    ) {
+      return reply.status(204).send();
+    }
+    const body = (request.body ?? {}) as {
+      platform?: unknown;
+      version?: unknown;
+      build?: unknown;
+    };
+    await recordUserClient(sessionUserId, parseUserClientReport(body));
     return reply.status(204).send();
   });
 }

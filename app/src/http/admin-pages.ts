@@ -1,4 +1,12 @@
 import type { AdminBetaStats, DayCount } from "../services/admin-stats.js";
+import {
+  filterUsageJourneys,
+  USAGE_ACTIVE_WINDOW_MS,
+  type AdminUsage,
+  type UsageCount,
+  type UsageJourney,
+  type UsageListFilter,
+} from "../services/admin-usage.js";
 import type { DirectoryUser } from "../services/admin-directory.js";
 import {
   DIRECTORY_ACCOUNT_STATES,
@@ -18,6 +26,7 @@ import {
   siteLayout,
   successBanner,
 } from "./layout.js";
+import { csvCell } from "./csv.js";
 import { siteFooter, siteHeader } from "./landing.js";
 
 export type AdminNav = "overview" | "signups" | "users" | "statistik" | "support";
@@ -411,7 +420,302 @@ export function signupDetailPage(signup: InterestSignup): string {
   );
 }
 
-export function statistikPage(stats: AdminBetaStats): string {
+const USAGE_SOURCE_LABELS: Record<string, string> = {
+  direct: "Eleven själv",
+  parent_handoff: "Via handledare",
+  unknown: "Okänd",
+};
+
+const USAGE_STAGE_LABELS: Record<string, string> = {
+  unknown: "Inte angivet",
+  just_started: "Precis börjat",
+  building: "Bygger på",
+  near_test: "Nära uppkörning",
+};
+
+const USAGE_TRANSMISSION_LABELS: Record<string, string> = {
+  unknown: "Inte angivet",
+  manual: "Manuell",
+  automatic_only: "Automat",
+};
+
+const USAGE_SUPERVISOR_LABELS: Record<string, string> = {
+  "0": "Ingen handledare",
+  "1": "En handledare",
+  "2+": "Flera handledare",
+};
+
+const USAGE_STUCK_LABELS: Record<string, string> = {
+  no_journey: "Fastnat: resan är inte skapad",
+  no_supervisor: "Fastnat: handledaren är inte ansluten",
+  no_drive: "Fastnat: första passet är inte startat",
+  drive_open: "Fastnat: första passet är inte avslutat",
+  no_rating: "Fastnat: första bedömningen saknas",
+  no_second: "Fastnat: andra passet är inte gjort",
+  through: "Andra passet gjort",
+};
+
+const USAGE_ASSESSMENT_LABELS: Record<string, string> = {
+  needs_help: "Behöver hjälp",
+  with_support: "Med stöd",
+  independent: "Självständigt",
+};
+
+const USAGE_CONTEXT_LABELS: Record<string, string> = {
+  residential: "Villaområde",
+  urban: "Tätort",
+  rural: "Landsväg",
+  highway: "Motorväg",
+  daylight: "Dagsljus",
+  dusk_dawn: "Skymning",
+  night: "Mörker",
+  dry: "Torrt",
+  rain: "Regn",
+  snow_ice: "Snö eller halka",
+  fog: "Dimma",
+  light: "Lätt trafik",
+  moderate: "Måttlig trafik",
+  heavy: "Tät trafik",
+};
+
+const USAGE_EVENT_LABELS: Record<string, string> = {
+  onboarding_student: "Sidinträde, elevspår",
+  onboarding_supervisor: "Sidinträde, handledarspår",
+  student_handoff_started: "Eleven öppnade handledarens länk",
+  recap_viewed: "Recap visad",
+  next_drive_plan_created: "Plan för nästa pass skapad",
+  next_drive_plan_updated: "Plan för nästa pass uppdaterad",
+  training_guidance_opened: "Övningsguide öppnad",
+  stale_drive_nudge_shown: "Påminnelse om vilande pass",
+};
+
+function usageLabel(labels: Record<string, string>, key: string): string {
+  return labels[key] ?? key;
+}
+
+function countTable(caption: string, rows: UsageCount[], labels: Record<string, string>): string {
+  const body = rows
+    .map(
+      (row) =>
+        `<tr><td>${escapeHtml(usageLabel(labels, row.key))}</td><td>${row.count}</td></tr>`,
+    )
+    .join("");
+  return `<h3>${escapeHtml(caption)}</h3>
+  <table class="admin-table">
+    <thead><tr><th>Grupp</th><th>Antal</th></tr></thead>
+    <tbody>${body}</tbody>
+  </table>`;
+}
+
+function contextTable(
+  caption: string,
+  rows: UsageCount[],
+  missing: number,
+  missingLabel: string,
+): string {
+  return countTable(caption, [...rows, { key: missingLabel, count: missing }], {
+    ...USAGE_CONTEXT_LABELS,
+    [missingLabel]: missingLabel,
+  });
+}
+
+function stockholmDay(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Stockholm",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function shiftDay(day: string, delta: number): string {
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, date + delta)).toISOString().slice(0, 10);
+}
+
+export function formatLastActive(iso: string, now = new Date()): string {
+  const date = new Date(iso);
+  const time = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Stockholm",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+  const day = stockholmDay(date);
+  const today = stockholmDay(now);
+  if (day === today) return `idag ${time}`;
+  if (day === shiftDay(today, -1)) return `igår ${time}`;
+  return formatWhen(iso);
+}
+
+function formatClient(client: UsageJourney["student"]["client"]): string {
+  if (!client.platform) return "";
+  const name = client.platform === "ios" ? "iOS" : "Android";
+  if (client.appVersion && client.appBuild) return `${name} ${client.appVersion} (${client.appBuild})`;
+  if (client.appVersion) return `${name} ${client.appVersion}`;
+  return name;
+}
+
+function platformCell(journey: UsageJourney): string {
+  const reported = formatClient(journey.student.client);
+  if (reported) return escapeHtml(reported);
+  if (journey.waitlist && (journey.waitlist.platformIos || journey.waitlist.platformAndroid)) {
+    const claimed = formatInterestPlatforms({
+      platformIos: journey.waitlist.platformIos,
+      platformAndroid: journey.waitlist.platformAndroid,
+    });
+    return `<span class="muted">Anmälan: ${escapeHtml(claimed)}</span>`;
+  }
+  return `<span class="muted">Inte rapporterad</span>`;
+}
+
+function journeyRows(journeys: UsageJourney[]): string {
+  return journeys
+    .map((journey) => {
+      const supervisors =
+        journey.supervisors.length === 0
+          ? "—"
+          : journey.supervisors
+              .map((person) => {
+                const name = person.removed ? `${person.name} (borttagen)` : person.name;
+                const client = formatClient(person.client);
+                const device = client ? `<div class="muted">${escapeHtml(client)}</div>` : "";
+                return `<a href="/admin/users/${escapeHtml(person.userId)}">${escapeHtml(name)}</a>${device}`;
+              })
+              .join("<br>");
+      const waitlist = journey.waitlist
+        ? `<a href="/admin/signups/${escapeHtml(journey.waitlist.id)}">${escapeHtml(STATUS_LABELS[journey.waitlist.status as InterestStatus] ?? journey.waitlist.status)}</a>`
+        : "—";
+      return `<tr data-last-active="${escapeHtml(journey.lastActivityAt)}" data-stuck="${escapeHtml(journey.stuck)}" data-completed="${journey.drivesCompleted}">
+        <td><a href="/admin/users/${escapeHtml(journey.student.userId)}">${escapeHtml(journey.student.name)}</a></td>
+        <td>${escapeHtml(formatLastActive(journey.lastActivityAt))}</td>
+        <td>${escapeHtml(usageLabel(USAGE_STUCK_LABELS, journey.stuck))}</td>
+        <td>${platformCell(journey)}</td>
+        <td>${supervisors}</td>
+        <td>${waitlist}</td>
+      </tr>`;
+    })
+    .join("");
+}
+
+export function usageCsv(journeys: UsageJourney[]): string {
+  const header = [
+    "senaste",
+    "skapad",
+    "journey_id",
+    "elev",
+    "elev_id",
+    "handledare",
+    "vag_in",
+    "ovningslage",
+    "vaxel",
+    "korpass_genomforda",
+    "korpass_startade",
+    "bedomda",
+    "fastnat",
+    "plattform",
+    "appversion",
+    "appbuild",
+    "anmalan_status",
+    "anmalan_id",
+  ].join(",");
+  const lines = journeys.map((journey) =>
+    [
+      journey.lastActivityAt,
+      journey.createdAt,
+      journey.journeyId,
+      csvCell(journey.student.name),
+      journey.student.userId,
+      csvCell(
+        journey.supervisors
+          .map((person) => {
+            const name = person.removed ? `${person.name} (borttagen)` : person.name;
+            const client = formatClient(person.client);
+            return client ? `${name} (${client})` : name;
+          })
+          .join("; "),
+      ),
+      csvCell(usageLabel(USAGE_SOURCE_LABELS, journey.source)),
+      csvCell(usageLabel(USAGE_STAGE_LABELS, journey.practiceStage)),
+      csvCell(usageLabel(USAGE_TRANSMISSION_LABELS, journey.transmission)),
+      String(journey.drivesCompleted),
+      String(journey.drivesStarted),
+      String(journey.ratedDrives),
+      csvCell(usageLabel(USAGE_STUCK_LABELS, journey.stuck)),
+      csvCell(formatClient(journey.student.client)),
+      csvCell(journey.student.client.appVersion ?? ""),
+      csvCell(journey.student.client.appBuild ?? ""),
+      csvCell(
+        journey.waitlist
+          ? (STATUS_LABELS[journey.waitlist.status as InterestStatus] ?? journey.waitlist.status)
+          : "",
+      ),
+      journey.waitlist?.id ?? "",
+    ].join(","),
+  );
+  return [header, ...lines].join("\n");
+}
+
+const USAGE_FILTERS: Array<[UsageListFilter, string]> = [
+  ["all", "Alla"],
+  ["active7", "Aktiva senaste 7 dagarna"],
+  ["stuck", "Fastnat"],
+  ["two", "2+ pass"],
+];
+
+function usageFilterBar(journeys: UsageJourney[]): string {
+  const buttons = USAGE_FILTERS.map(([value, label]) => {
+    const count = filterUsageJourneys(journeys, value).length;
+    const pressed = value === "all" ? "true" : "false";
+    return `<button type="button" data-usage-filter="${value}" aria-pressed="${pressed}">${escapeHtml(label)} (${count})</button>`;
+  }).join("");
+  return `<div class="admin-usage-filter" role="group" aria-label="Filtrera tabellen">${buttons}</div>`;
+}
+
+function usageFilterScript(): string {
+  return `<script>
+    (function () {
+      var table = document.getElementById("usage-journeys");
+      if (!table) return;
+      var rows = Array.prototype.filter.call(table.querySelectorAll("tbody tr"), function (row) {
+        return row.hasAttribute("data-stuck");
+      });
+      var none = table.querySelector("[data-usage-none]");
+      var buttons = document.querySelectorAll("[data-usage-filter]");
+      var csv = document.querySelector("[data-usage-csv]");
+      var week = ${USAGE_ACTIVE_WINDOW_MS};
+      function match(row, filter) {
+        if (filter === "active7") {
+          return Date.now() - Date.parse(row.getAttribute("data-last-active")) <= week;
+        }
+        if (filter === "stuck") return row.getAttribute("data-stuck") !== "through";
+        if (filter === "two") return Number(row.getAttribute("data-completed")) >= 2;
+        return true;
+      }
+      function apply(filter) {
+        var shown = 0;
+        Array.prototype.forEach.call(rows, function (row) {
+          var ok = match(row, filter);
+          row.hidden = !ok;
+          if (ok) shown += 1;
+        });
+        if (none) none.hidden = shown !== 0;
+        Array.prototype.forEach.call(buttons, function (button) {
+          button.setAttribute("aria-pressed", button.getAttribute("data-usage-filter") === filter ? "true" : "false");
+        });
+        if (csv) {
+          csv.setAttribute("href", filter === "all" ? "/admin/statistik.csv" : "/admin/statistik.csv?filter=" + encodeURIComponent(filter));
+        }
+      }
+      Array.prototype.forEach.call(buttons, function (button) {
+        button.addEventListener("click", function () {
+          apply(button.getAttribute("data-usage-filter"));
+        });
+      });
+    })();
+  </script>`;
+}
+
+export function statistikPage(stats: AdminBetaStats, usage: AdminUsage): string {
   const funnel = [
     ["journey_created", stats.funnel.journeyCreated],
     ["supervisor_connected", stats.funnel.supervisorConnected],
@@ -422,9 +726,9 @@ export function statistikPage(stats: AdminBetaStats): string {
 
   return adminPage(
     "Statistik",
-    `<main class="admin-shell">
+    `<main class="admin-shell admin-shell--wide">
        <h1>Statistik</h1>
-       <p>Beräknat från domäntabeller i Europe/Stockholm. Ingen separat analyticsdatabas.</p>
+       <p>Beta-puls från körpass och bedömningar. Tabellen visar vem som fortfarande testar, var de fastnat och vilken app de kör. Europe/Stockholm.</p>
        <section class="admin-kpis">
          ${kpi("Nya intresseanmälningar 7/30", `${stats.waitlistNew7d} / ${stats.waitlistNew30d}`)}
          ${kpi("Aktiva elevresor", `${stats.activeJourneys} / ${stats.betaGateTarget}`)}
@@ -460,6 +764,75 @@ export function statistikPage(stats: AdminBetaStats): string {
        <section class="admin-charts">
          ${barChart("Skapade körpass per dag, 30 dagar", stats.drivesCreatedPerDay)}
          ${barChart("Genomförda körpass per dag, 30 dagar", stats.drivesCompletedPerDay)}
+       </section>
+       <section>
+         <h2>Vilka som använder appen</h2>
+         <p>${usage.studentAccounts} elevkonton · ${usage.supervisorAccounts} handledarkonton · ${usage.accountsWithoutJourney} konton utan resa.</p>
+         <p class="muted">${usage.journeyTotal} elevresor, senast aktiva först. Senast aktiv är senaste appöppning, handledarkoppling, körpass eller bedömning. Plattform och build kommer från appen. “Anmälan:” är vad de kryssade i på väntelistan.</p>
+         ${usageFilterBar(usage.journeys)}
+         <p><a href="/admin/statistik.csv" data-usage-csv>Ladda ner resorna som CSV</a></p>
+         <div class="admin-table-wrap">
+           <table class="admin-table" id="usage-journeys">
+             <thead>
+               <tr>
+                 <th>Elev</th><th>Senast aktiv</th><th>Fastnat</th><th>Plattform</th><th>Handledare</th><th>Anmälan</th>
+               </tr>
+             </thead>
+             <tbody>
+               ${
+                 journeyRows(usage.journeys) ||
+                 `<tr><td colspan="6">Ingen användning ännu.</td></tr>`
+               }
+               ${
+                 usage.journeys.length > 0
+                   ? `<tr data-usage-none hidden><td colspan="6">Inga rader i det här urvalet.</td></tr>`
+                   : ""
+               }
+             </tbody>
+           </table>
+         </div>
+         ${usageFilterScript()}
+       </section>
+       <section>
+         <h2>På vilket sätt</h2>
+         <div class="admin-table-wrap">
+           ${countTable("Väg in i resan", usage.bySource, USAGE_SOURCE_LABELS)}
+           ${countTable("Var i övningen", usage.byPracticeStage, USAGE_STAGE_LABELS)}
+           ${countTable("Växellåda", usage.byTransmission, USAGE_TRANSMISSION_LABELS)}
+           ${countTable("Handledare på resan", usage.bySupervisorCount, USAGE_SUPERVISOR_LABELS)}
+         </div>
+         <p>Körpass startade av eleven: ${usage.drivesStartedByStudent}. Av en handledare: ${usage.drivesStartedBySupervisor}.</p>
+         ${countTable("Hur passen bedömts", usage.byAssessment, USAGE_ASSESSMENT_LABELS)}
+         <h3>Moment som valts till körpass</h3>
+         <table class="admin-table">
+           <thead><tr><th>Moment</th><th>Körpass</th></tr></thead>
+           <tbody>
+             ${
+               usage.focusSkills.length === 0
+                 ? `<tr><td colspan="2">Inga moment valda ännu.</td></tr>`
+                 : usage.focusSkills
+                     .map(
+                       (skill) =>
+                         `<tr><td>${escapeHtml(skill.title)}</td><td>${skill.drives}</td></tr>`,
+                     )
+                     .join("")
+             }
+           </tbody>
+         </table>
+         ${usage.otherFocusSkills > 0 ? `<p class="muted">${usage.otherFocusSkills} ytterligare moment finns i datan.</p>` : ""}
+         <h3>Sammanhang på körpassen</h3>
+         <p class="muted">Ett pass kan räknas i flera miljöer. Inte angivet betyder att fältet lämnades tomt.</p>
+         <div class="admin-table-wrap">
+           ${contextTable("Miljö", usage.byEnvironment, usage.environmentMissing, "Miljö inte angiven")}
+           ${contextTable("Ljus", usage.byLight, usage.lightMissing, "Ljus inte angivet")}
+           ${contextTable("Väder", usage.byWeather, usage.weatherMissing, "Väder inte angivet")}
+           ${contextTable("Trafik", usage.byTraffic, usage.trafficMissing, "Trafik inte angiven")}
+         </div>
+       </section>
+       <section>
+         <h2>Sidinträden</h2>
+         <p class="muted">Det här är antal händelser, inte unika personer. Ett sidinträde och en senare resa går inte att koppla till samma människa.</p>
+         ${countTable("Händelser", usage.events, USAGE_EVENT_LABELS)}
        </section>
      </main>`,
     { signedIn: true, nav: "statistik" },
@@ -504,6 +877,19 @@ function directoryName(user: DirectoryUser): string {
   return user.displayName?.trim() || "Produktanvändare";
 }
 
+function directoryRemoveForm(user: DirectoryUser, returnState?: string): string {
+  if (user.accountState !== "guest" && user.accountState !== "deleted") return "—";
+  const question =
+    user.accountState === "deleted"
+      ? "Ta bort den raderade raden från listan?"
+      : "Ta bort gästen från listan? Sitter hen på en resa frikopplas hen.";
+  return `<form method="post" action="/admin/users/${escapeHtml(user.id)}/remove-from-list" class="admin-row-delete" onsubmit='return confirm(${JSON.stringify(question)});'>
+    <input type="hidden" name="confirm" value="yes">
+    <input type="hidden" name="return_state" value="${escapeHtml(returnState ?? "")}">
+    <button type="submit" class="btn-link">Ta bort</button>
+  </form>`;
+}
+
 export function usersListPage(options: {
   users: DirectoryUser[];
   total: number;
@@ -512,8 +898,9 @@ export function usersListPage(options: {
   query: string;
   state?: string;
   successMessage?: string;
+  errorMessage?: string;
 }): string {
-  const { users, total, page, pageSize, query, state, successMessage } = options;
+  const { users, total, page, pageSize, query, state, successMessage, errorMessage } = options;
   const rows = users
     .map((user) => {
       const emails = user.emails.length > 0 ? user.emails.join(", ") : "—";
@@ -526,18 +913,25 @@ export function usersListPage(options: {
         <td>${escapeHtml(roles)}</td>
         <td>${escapeHtml(user.providers.map(providerLabel).join(", ") || "—")}</td>
         <td>${escapeHtml(formatWhen(user.createdAt))}</td>
+        <td>${directoryRemoveForm(user, state)}</td>
       </tr>`;
     })
     .join("");
 
-  const filters = ["all", ...DIRECTORY_ACCOUNT_STATES]
-    .map((value) => {
+  const filters = [
+    ["", "Konton"],
+    ["active", "Aktiv"],
+    ["suspended", "Avstängd"],
+    ["guest", "Gäst"],
+    ["deleted", "Raderad"],
+    ["all", "Alla"],
+  ]
+    .map(([value, label]) => {
       const href = usersQuery({
         q: query || undefined,
-        state: value === "all" ? undefined : value,
+        state: value || undefined,
       });
-      const label = value === "all" ? "Alla" : accountStateLabel(value);
-      const current = (value === "all" && !state) || value === state;
+      const current = (value === "" && !state) || value === state;
       return `<a href="${escapeHtml(href)}"${current ? ' aria-current="page"' : ""}>${escapeHtml(label)}</a>`;
     })
     .join(" · ");
@@ -553,10 +947,16 @@ export function usersListPage(options: {
     page < pageCount
       ? `<a href="${escapeHtml(usersQuery({ q: query || undefined, state, page: page + 1 }))}">Nästa</a>`
       : `<span class="muted">Nästa</span>`;
-  const stateOptions = ["", ...DIRECTORY_ACCOUNT_STATES]
-    .map((value) => {
+  const stateOptions = [
+    ["", "Konton"],
+    ["active", "Aktiv"],
+    ["suspended", "Avstängd"],
+    ["guest", "Gäst"],
+    ["deleted", "Raderad"],
+    ["all", "Alla"],
+  ]
+    .map(([value, label]) => {
       const selected = value === (state ?? "") ? " selected" : "";
-      const label = value ? accountStateLabel(value) : "Alla statusar";
       return `<option value="${escapeHtml(value)}"${selected}>${escapeHtml(label)}</option>`;
     })
     .join("");
@@ -565,8 +965,9 @@ export function usersListPage(options: {
     "Användare",
     `<main class="admin-shell admin-shell--wide">
        <h1>Användare</h1>
-       <p>Alla produktkonton, även de som inte anmält sig till betan. Intresseanmälningar utan konto ligger under Intresseanmälningar.</p>
+       <p>Listan visar konton. Gäster och raderade syns under de filtren, och där tar du bort raden själv. Sitter gästen på en resa frikopplas hen. Aktiva konton raderas inne på kontot.</p>
        ${successMessage ? successBanner(successMessage) : ""}
+       ${errorMessage ? errorBanner(errorMessage) : ""}
        <p>${from}–${to} av ${total}${query ? ` · sökning “${escapeHtml(query)}”` : ""}</p>
        <form method="get" action="/admin/users" class="admin-search" role="search">
          <label for="q">Sök användare</label>
@@ -583,10 +984,10 @@ export function usersListPage(options: {
        <div class="admin-table-wrap">
          <table class="admin-table">
            <thead>
-             <tr><th>Namn</th><th>E-post</th><th>Status</th><th>Roll</th><th>Inloggning</th><th>Skapad</th></tr>
+             <tr><th>Namn</th><th>E-post</th><th>Status</th><th>Roll</th><th>Inloggning</th><th>Skapad</th><th>Åtgärd</th></tr>
            </thead>
            <tbody>
-             ${rows || `<tr><td colspan="6">Inga användare matchar.</td></tr>`}
+             ${rows || `<tr><td colspan="7">Inga användare matchar.</td></tr>`}
            </tbody>
          </table>
        </div>

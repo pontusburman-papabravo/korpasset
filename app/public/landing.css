@@ -524,6 +524,30 @@ label.interest-choice {
 
 .admin-shell--wide { max-width: 72rem; }
 
+.admin-usage-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.admin-usage-filter button {
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--navy);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-usage-filter button[aria-pressed="true"] {
+  background: var(--navy);
+  color: var(--white);
+  border-color: var(--navy);
+}
+
 .admin-table-wrap { overflow-x: auto; }
 
 .admin-table {

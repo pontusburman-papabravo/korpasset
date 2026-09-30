@@ -5,6 +5,7 @@ import { getPool } from "../src/db/pool.js";
 import { createAdminUser } from "../src/services/admin-users.js";
 import { saveInterestSignup } from "../src/services/interest.js";
 import { continueWithOAuth } from "../src/services/oauth-accounts.js";
+import { createJourneyForStudent } from "../src/services/journeys.js";
 import { createGuestUser } from "../src/services/users.js";
 import { createTestApp } from "./helpers.js";
 import { formBody } from "./http-helpers.js";
@@ -36,18 +37,20 @@ describe("admin user directory", () => {
 
     const list = await app.inject({ method: "GET", url: "/admin/users", cookies });
     assert.equal(list.statusCode, 200);
-    assert.match(list.body, /Nora/);
+    assert.doesNotMatch(list.body, /Nora/);
     assert.match(list.body, /Omar/);
+    assert.doesNotMatch(list.body, /remove-from-list/);
     assert.match(list.body, /omar@example.com/);
     assert.doesNotMatch(list.body, /beta@example.com/);
     assert.doesNotMatch(list.body, /Bara beta/);
 
     const byName = await app.inject({
       method: "GET",
-      url: "/admin/users?q=nora",
+      url: "/admin/users?q=nora&state=guest",
       cookies,
     });
     assert.match(byName.body, /Nora/);
+    assert.match(byName.body, /Ta bort/);
     assert.doesNotMatch(byName.body, /Omar/);
 
     const byEmail = await app.inject({
@@ -198,6 +201,93 @@ describe("admin user directory", () => {
     assert.match(page2.body, /51–51 av 51/);
     const csv = await app.inject({ method: "GET", url: "/admin/users.csv", cookies });
     assert.equal(csv.body.split("\n").length, 52);
+    await app.close();
+  });
+
+  it("removes a guest or a deleted row when Ta bort is pressed", async () => {
+    const admin = await createAdminUser("ops@korpasset.se", "korrekt-losen-12");
+    const loose = await createGuestUser("Lös");
+    const onJourney = await createJourneyForStudent("Ella");
+    const active = await continueWithOAuth({
+      provider: "google",
+      subject: "google-aktiv",
+      displayName: "Aktiv",
+      email: "aktiv@example.com",
+    });
+    const app = await createTestApp();
+    const cookies = { korpasset_admin: createAdminToken(admin.id) };
+
+    const guests = await app.inject({
+      method: "GET",
+      url: "/admin/users?state=guest",
+      cookies,
+    });
+    assert.match(guests.body, /Lös/);
+    assert.match(guests.body, /Ella/);
+    assert.match(guests.body, /Ta bort/);
+
+    const removedLoose = await app.inject({
+      method: "POST",
+      url: `/admin/users/${loose.id}/remove-from-list`,
+      cookies,
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({ confirm: "yes", return_state: "guest" }),
+    });
+    assert.equal(removedLoose.statusCode, 302);
+    assert.equal(removedLoose.headers.location, "/admin/users?state=guest&removed=1");
+    const looseLeft = await getPool().query(`SELECT id FROM users WHERE id = $1`, [loose.id]);
+    assert.equal(looseLeft.rowCount, 0);
+
+    const removedJourney = await app.inject({
+      method: "POST",
+      url: `/admin/users/${onJourney.userId}/remove-from-list`,
+      cookies,
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({ confirm: "yes", return_state: "guest" }),
+    });
+    assert.equal(removedJourney.statusCode, 302);
+    const journeyLeft = await getPool().query(
+      `SELECT id FROM users WHERE id = $1`,
+      [onJourney.userId],
+    );
+    assert.equal(journeyLeft.rowCount, 0);
+    const drives = await getPool().query(
+      `SELECT id FROM driving_journeys WHERE id = $1`,
+      [onJourney.journey.id],
+    );
+    assert.equal(drives.rowCount, 0);
+
+    const blocked = await app.inject({
+      method: "POST",
+      url: `/admin/users/${active.userId}/remove-from-list`,
+      cookies,
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({ confirm: "yes", return_state: "" }),
+    });
+    assert.equal(blocked.statusCode, 400);
+    const activeLeft = await getPool().query(`SELECT id FROM users WHERE id = $1`, [active.userId]);
+    assert.equal(activeLeft.rowCount, 1);
+
+    const tombstone = await createGuestUser("Färdig");
+    await getPool().query(`UPDATE users SET account_state = 'deleted', display_name = NULL WHERE id = $1`, [
+      tombstone.id,
+    ]);
+    const deletedList = await app.inject({
+      method: "GET",
+      url: "/admin/users?state=deleted",
+      cookies,
+    });
+    assert.match(deletedList.body, /Ta bort/);
+    const removedTombstone = await app.inject({
+      method: "POST",
+      url: `/admin/users/${tombstone.id}/remove-from-list`,
+      cookies,
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({ confirm: "yes", return_state: "deleted" }),
+    });
+    assert.equal(removedTombstone.statusCode, 302);
+    const tombstoneLeft = await getPool().query(`SELECT id FROM users WHERE id = $1`, [tombstone.id]);
+    assert.equal(tombstoneLeft.rowCount, 0);
     await app.close();
   });
 });
