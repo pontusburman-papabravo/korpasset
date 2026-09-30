@@ -247,6 +247,7 @@ describe("production foundation / fresh database migrate", () => {
       "0015_training_focus_created_by.sql",
       "0016_auth_identity_apple_refresh_token.sql",
       "0017_oauth_handoffs.sql",
+      "0018_user_client_seen.sql",
     ]);
     assert.deepEqual(first.stamped, []);
 
@@ -327,6 +328,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
       "0015_training_focus_created_by.sql",
       "0016_auth_identity_apple_refresh_token.sql",
       "0017_oauth_handoffs.sql",
+      "0018_user_client_seen.sql",
     ]);
     assert.deepEqual(first.skipped, []);
 
@@ -364,6 +366,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
         "0015_training_focus_created_by.sql",
         "0016_auth_identity_apple_refresh_token.sql",
         "0017_oauth_handoffs.sql",
+        "0018_user_client_seen.sql",
       ],
     );
 

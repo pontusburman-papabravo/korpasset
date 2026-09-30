@@ -168,6 +168,10 @@ export async function deleteProductAccount(
            display_name = NULL,
            contact_email = NULL,
            contact_email_normalized = NULL,
+           last_seen_at = NULL,
+           client_platform = NULL,
+           client_app_version = NULL,
+           client_app_build = NULL,
            updated_at = now()
        WHERE id = $1`,
       [userId],

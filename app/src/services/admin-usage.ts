@@ -15,8 +15,16 @@ export type UsageTransmission = (typeof USAGE_TRANSMISSIONS)[number];
 export const USAGE_SUPERVISOR_BUCKETS = ["0", "1", "2+"] as const;
 export type UsageSupervisorBucket = (typeof USAGE_SUPERVISOR_BUCKETS)[number];
 
-export const USAGE_FURTHEST = ["journey", "supervisor", "drive", "rated", "second"] as const;
-export type UsageFurthest = (typeof USAGE_FURTHEST)[number];
+export const USAGE_STUCK = [
+  "no_journey",
+  "no_supervisor",
+  "no_drive",
+  "drive_open",
+  "no_rating",
+  "no_second",
+  "through",
+] as const;
+export type UsageStuck = (typeof USAGE_STUCK)[number];
 
 export const USAGE_ASSESSMENTS = ["needs_help", "with_support", "independent"] as const;
 
@@ -48,10 +56,17 @@ export interface UsageSkill {
   drives: number;
 }
 
+export interface UsageClient {
+  platform: "ios" | "android" | null;
+  appVersion: string | null;
+  appBuild: string | null;
+}
+
 export interface UsagePerson {
   userId: string;
   name: string;
   removed: boolean;
+  client: UsageClient;
 }
 
 export interface UsageJourney {
@@ -67,8 +82,13 @@ export interface UsageJourney {
   drivesStarted: number;
   drivesCompleted: number;
   ratedDrives: number;
-  furthest: UsageFurthest;
-  waitlist: { id: string; status: string } | null;
+  stuck: UsageStuck;
+  waitlist: {
+    id: string;
+    status: string;
+    platformIos: boolean;
+    platformAndroid: boolean;
+  } | null;
 }
 
 export interface AdminUsage {
@@ -120,12 +140,20 @@ function asTransmission(value: unknown): UsageTransmission {
     : "unknown";
 }
 
-function furthest(ratedDrives: number, drivesStarted: number, activeSupervisors: number): UsageFurthest {
-  if (ratedDrives >= 2) return "second";
-  if (ratedDrives >= 1) return "rated";
-  if (drivesStarted >= 1) return "drive";
-  if (activeSupervisors >= 1) return "supervisor";
-  return "journey";
+export function usageStuck(input: {
+  hasJourney: boolean;
+  activeSupervisors: number;
+  drivesStarted: number;
+  drivesCompleted: number;
+  ratedDrives: number;
+}): UsageStuck {
+  if (!input.hasJourney) return "no_journey";
+  if (input.activeSupervisors < 1) return "no_supervisor";
+  if (input.drivesStarted < 1) return "no_drive";
+  if (input.drivesCompleted < 1) return "drive_open";
+  if (input.ratedDrives < 1) return "no_rating";
+  if (input.ratedDrives < 2) return "no_second";
+  return "through";
 }
 
 function personName(deleted: boolean, displayName: unknown, fallback: string): string {
@@ -138,6 +166,22 @@ interface SupervisorJson {
   userId?: string;
   name?: string;
   status?: string;
+  platform?: string | null;
+  appVersion?: string | null;
+  appBuild?: string | null;
+}
+
+function clientFrom(row: {
+  platform?: unknown;
+  appVersion?: unknown;
+  appBuild?: unknown;
+}): UsageClient {
+  const platform = row.platform === "ios" || row.platform === "android" ? row.platform : null;
+  return {
+    platform,
+    appVersion: typeof row.appVersion === "string" && row.appVersion ? row.appVersion : null,
+    appBuild: typeof row.appBuild === "string" && row.appBuild ? row.appBuild : null,
+  };
 }
 
 function supervisorsFrom(value: unknown): UsagePerson[] {
@@ -150,6 +194,7 @@ function supervisorsFrom(value: unknown): UsagePerson[] {
         userId: String(item.userId),
         name: item.name?.trim() || "Handledare",
         removed: item.status === "removed",
+        client: clientFrom(item),
       },
     ];
   });
@@ -168,7 +213,10 @@ const JOURNEY_SQL = `
               WHEN u.account_state = 'deleted' THEN 'Tidigare handledare'
               ELSE COALESCE(NULLIF(btrim(u.display_name), ''), 'Handledare')
             END,
-            'status', c.status
+            'status', c.status,
+            'platform', u.client_platform,
+            'appVersion', u.client_app_version,
+            'appBuild', u.client_app_build
           )
           ORDER BY c.created_at, u.id
         ),
@@ -204,6 +252,24 @@ const JOURNEY_SQL = `
     FROM drives d
     GROUP BY d.journey_id
   ),
+  seen AS (
+    SELECT c.journey_id, max(u.last_seen_at) AS last_seen_at
+    FROM journey_collaborators c
+    JOIN users u ON u.id = c.user_id
+    WHERE c.role = 'supervisor'
+    GROUP BY c.journey_id
+  ),
+  connected AS (
+    SELECT journey_id, max(created_at) AS connected_at
+    FROM journey_collaborators
+    WHERE role = 'supervisor'
+    GROUP BY journey_id
+  ),
+  observed AS (
+    SELECT journey_id, max(created_at) AS observed_at
+    FROM drive_observations
+    GROUP BY journey_id
+  ),
   sources AS (
     SELECT DISTINCT ON (journey_id)
       journey_id,
@@ -221,18 +287,31 @@ const JOURNEY_SQL = `
     stu.id AS student_id,
     stu.account_state::text AS student_state,
     stu.display_name AS student_name,
+    stu.client_platform,
+    stu.client_app_version,
+    stu.client_app_build,
     sources.event_source,
     COALESCE(supervisors.active_supervisors, 0)::int AS active_supervisors,
     COALESCE(supervisors.people, '[]'::jsonb) AS supervisors,
     COALESCE(drive_stats.drives_started, 0)::int AS drives_started,
     COALESCE(drive_stats.drives_completed, 0)::int AS drives_completed,
     COALESCE(drive_stats.rated_drives, 0)::int AS rated_drives,
-    COALESCE(drive_stats.last_drive_at, j.created_at) AS last_activity_at,
+    GREATEST(
+      j.created_at,
+      COALESCE(stu.last_seen_at, j.created_at),
+      COALESCE(seen.last_seen_at, j.created_at),
+      COALESCE(connected.connected_at, j.created_at),
+      COALESCE(drive_stats.last_drive_at, j.created_at),
+      COALESCE(observed.observed_at, j.created_at)
+    ) AS last_activity_at,
     count(*) OVER ()::int AS journey_total
   FROM driving_journeys j
   JOIN users stu ON stu.id = j.student_user_id
   LEFT JOIN supervisors ON supervisors.journey_id = j.id
   LEFT JOIN drive_stats ON drive_stats.journey_id = j.id
+  LEFT JOIN seen ON seen.journey_id = j.id
+  LEFT JOIN connected ON connected.journey_id = j.id
+  LEFT JOIN observed ON observed.journey_id = j.id
   LEFT JOIN sources ON sources.journey_id = j.id
   ORDER BY last_activity_at DESC, j.created_at DESC, j.id DESC
   LIMIT ${USAGE_JOURNEY_LIMIT}
@@ -386,8 +465,29 @@ export async function getAdminUsage(): Promise<AdminUsage> {
     ),
   ]);
 
-  const studentIds = journeysResult.rows.map((row) => String(row.student_id));
-  const waitlist = new Map<string, { id: string; status: string }>();
+  const accountResult = await pool.query(
+    `SELECT u.id, u.display_name, u.created_at,
+            COALESCE(u.last_seen_at, u.created_at) AS last_activity_at,
+            u.client_platform, u.client_app_version, u.client_app_build
+     FROM users u
+     WHERE u.account_state <> 'deleted'
+       AND NOT EXISTS (SELECT 1 FROM driving_journeys j WHERE j.student_user_id = u.id)
+       AND NOT EXISTS (
+         SELECT 1 FROM journey_collaborators c
+         WHERE c.user_id = u.id AND c.role = 'supervisor'
+       )
+     ORDER BY last_activity_at DESC, u.id DESC
+     LIMIT ${USAGE_JOURNEY_LIMIT}`,
+  );
+
+  const studentIds = [
+    ...journeysResult.rows.map((row) => String(row.student_id)),
+    ...accountResult.rows.map((row) => String(row.id)),
+  ];
+  const waitlist = new Map<
+    string,
+    { id: string; status: string; platformIos: boolean; platformAndroid: boolean }
+  >();
   if (studentIds.length > 0) {
     const matched = await pool.query(
       `WITH emails AS (
@@ -404,7 +504,8 @@ export async function getAdminUsage(): Promise<AdminUsage> {
            AND u.account_state <> 'deleted'
            AND a.email_normalized IS NOT NULL
        )
-       SELECT DISTINCT ON (e.user_id) e.user_id, s.id, s.status
+       SELECT DISTINCT ON (e.user_id)
+         e.user_id, s.id, s.status, s.platform_ios, s.platform_android
        FROM emails e
        JOIN interest_signups s ON s.email_normalized = e.email
        ORDER BY e.user_id, s.created_at DESC, s.id DESC`,
@@ -414,6 +515,8 @@ export async function getAdminUsage(): Promise<AdminUsage> {
       waitlist.set(String(row.user_id), {
         id: String(row.id),
         status: String(row.status),
+        platformIos: Boolean(row.platform_ios),
+        platformAndroid: Boolean(row.platform_android),
       });
     }
   }
@@ -430,6 +533,13 @@ export async function getAdminUsage(): Promise<AdminUsage> {
         userId: studentId,
         name: personName(deleted, row.student_name, deleted ? "Tidigare elev" : "Elev"),
         removed: deleted,
+        client: deleted
+          ? { platform: null, appVersion: null, appBuild: null }
+          : clientFrom({
+              platform: row.client_platform,
+              appVersion: row.client_app_version,
+              appBuild: row.client_app_build,
+            }),
       },
       supervisors: supervisorsFrom(row.supervisors),
       createdAt: new Date(String(row.created_at)).toISOString(),
@@ -441,9 +551,51 @@ export async function getAdminUsage(): Promise<AdminUsage> {
       drivesStarted,
       drivesCompleted: num(row.drives_completed),
       ratedDrives,
-      furthest: furthest(ratedDrives, drivesStarted, activeSupervisors),
+      stuck: usageStuck({
+        hasJourney: true,
+        activeSupervisors,
+        drivesStarted,
+        drivesCompleted: num(row.drives_completed),
+        ratedDrives,
+      }),
       waitlist: deleted ? null : (waitlist.get(studentId) ?? null),
     };
+  });
+
+  const accountsOnly: UsageJourney[] = accountResult.rows.map((row) => {
+    const userId = String(row.id);
+    return {
+      journeyId: "",
+      student: {
+        userId,
+        name: personName(false, row.display_name, "Elev"),
+        removed: false,
+        client: clientFrom({
+          platform: row.client_platform,
+          appVersion: row.client_app_version,
+          appBuild: row.client_app_build,
+        }),
+      },
+      supervisors: [],
+      createdAt: new Date(String(row.created_at)).toISOString(),
+      lastActivityAt: new Date(String(row.last_activity_at)).toISOString(),
+      source: "unknown",
+      practiceStage: "unknown",
+      transmission: "unknown",
+      activeSupervisors: 0,
+      drivesStarted: 0,
+      drivesCompleted: 0,
+      ratedDrives: 0,
+      stuck: "no_journey",
+      waitlist: waitlist.get(userId) ?? null,
+    };
+  });
+
+  journeys.push(...accountsOnly);
+  journeys.sort((a, b) => {
+    const byTime = b.lastActivityAt.localeCompare(a.lastActivityAt);
+    if (byTime !== 0) return byTime;
+    return a.student.userId.localeCompare(b.student.userId);
   });
 
   const account = accounts.rows[0] ?? {};

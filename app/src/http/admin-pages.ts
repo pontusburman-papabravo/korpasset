@@ -438,12 +438,14 @@ const USAGE_SUPERVISOR_LABELS: Record<string, string> = {
   "2+": "Flera handledare",
 };
 
-const USAGE_FURTHEST_LABELS: Record<string, string> = {
-  journey: "Bara resan",
-  supervisor: "Handledare kopplad",
-  drive: "Körpass startat",
-  rated: "Bedömt körpass",
-  second: "Andra bedömda passet",
+const USAGE_STUCK_LABELS: Record<string, string> = {
+  no_journey: "Fastnat: resan är inte skapad",
+  no_supervisor: "Fastnat: handledaren är inte ansluten",
+  no_drive: "Fastnat: första passet är inte startat",
+  drive_open: "Fastnat: första passet är inte avslutat",
+  no_rating: "Fastnat: första bedömningen saknas",
+  no_second: "Fastnat: andra passet är inte gjort",
+  through: "Andra passet gjort",
 };
 
 const USAGE_ASSESSMENT_LABELS: Record<string, string> = {
@@ -510,6 +512,55 @@ function contextTable(
   });
 }
 
+function stockholmDay(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Stockholm",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function shiftDay(day: string, delta: number): string {
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, date + delta)).toISOString().slice(0, 10);
+}
+
+export function formatLastActive(iso: string, now = new Date()): string {
+  const date = new Date(iso);
+  const time = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Stockholm",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+  const day = stockholmDay(date);
+  const today = stockholmDay(now);
+  if (day === today) return `idag ${time}`;
+  if (day === shiftDay(today, -1)) return `igår ${time}`;
+  return formatWhen(iso);
+}
+
+function formatClient(client: UsageJourney["student"]["client"]): string {
+  if (!client.platform) return "";
+  const name = client.platform === "ios" ? "iOS" : "Android";
+  if (client.appVersion && client.appBuild) return `${name} ${client.appVersion} (${client.appBuild})`;
+  if (client.appVersion) return `${name} ${client.appVersion}`;
+  return name;
+}
+
+function platformCell(journey: UsageJourney): string {
+  const reported = formatClient(journey.student.client);
+  if (reported) return escapeHtml(reported);
+  if (journey.waitlist && (journey.waitlist.platformIos || journey.waitlist.platformAndroid)) {
+    const claimed = formatInterestPlatforms({
+      platformIos: journey.waitlist.platformIos,
+      platformAndroid: journey.waitlist.platformAndroid,
+    });
+    return `<span class="muted">Anmälan: ${escapeHtml(claimed)}</span>`;
+  }
+  return `<span class="muted">Inte rapporterad</span>`;
+}
+
 function journeyRows(journeys: UsageJourney[]): string {
   return journeys
     .map((journey) => {
@@ -519,7 +570,9 @@ function journeyRows(journeys: UsageJourney[]): string {
           : journey.supervisors
               .map((person) => {
                 const name = person.removed ? `${person.name} (borttagen)` : person.name;
-                return `<a href="/admin/users/${escapeHtml(person.userId)}">${escapeHtml(name)}</a>`;
+                const client = formatClient(person.client);
+                const device = client ? `<div class="muted">${escapeHtml(client)}</div>` : "";
+                return `<a href="/admin/users/${escapeHtml(person.userId)}">${escapeHtml(name)}</a>${device}`;
               })
               .join("<br>");
       const waitlist = journey.waitlist
@@ -527,14 +580,10 @@ function journeyRows(journeys: UsageJourney[]): string {
         : "—";
       return `<tr>
         <td><a href="/admin/users/${escapeHtml(journey.student.userId)}">${escapeHtml(journey.student.name)}</a></td>
+        <td>${escapeHtml(formatLastActive(journey.lastActivityAt))}</td>
+        <td>${escapeHtml(usageLabel(USAGE_STUCK_LABELS, journey.stuck))}</td>
+        <td>${platformCell(journey)}</td>
         <td>${supervisors}</td>
-        <td>${escapeHtml(usageLabel(USAGE_SOURCE_LABELS, journey.source))}</td>
-        <td>${escapeHtml(usageLabel(USAGE_STAGE_LABELS, journey.practiceStage))}</td>
-        <td>${escapeHtml(usageLabel(USAGE_TRANSMISSION_LABELS, journey.transmission))}</td>
-        <td>${journey.drivesCompleted} / ${journey.drivesStarted}</td>
-        <td>${journey.ratedDrives}</td>
-        <td>${escapeHtml(usageLabel(USAGE_FURTHEST_LABELS, journey.furthest))}</td>
-        <td>${escapeHtml(formatWhen(journey.lastActivityAt))}</td>
         <td>${waitlist}</td>
       </tr>`;
     })
@@ -555,7 +604,10 @@ export function usageCsv(journeys: UsageJourney[]): string {
     "korpass_genomforda",
     "korpass_startade",
     "bedomda",
-    "langst",
+    "fastnat",
+    "plattform",
+    "appversion",
+    "appbuild",
     "anmalan_status",
     "anmalan_id",
   ].join(",");
@@ -568,7 +620,11 @@ export function usageCsv(journeys: UsageJourney[]): string {
       journey.student.userId,
       csvCell(
         journey.supervisors
-          .map((person) => (person.removed ? `${person.name} (borttagen)` : person.name))
+          .map((person) => {
+            const name = person.removed ? `${person.name} (borttagen)` : person.name;
+            const client = formatClient(person.client);
+            return client ? `${name} (${client})` : name;
+          })
           .join("; "),
       ),
       csvCell(usageLabel(USAGE_SOURCE_LABELS, journey.source)),
@@ -577,7 +633,10 @@ export function usageCsv(journeys: UsageJourney[]): string {
       String(journey.drivesCompleted),
       String(journey.drivesStarted),
       String(journey.ratedDrives),
-      csvCell(usageLabel(USAGE_FURTHEST_LABELS, journey.furthest)),
+      csvCell(usageLabel(USAGE_STUCK_LABELS, journey.stuck)),
+      csvCell(formatClient(journey.student.client)),
+      csvCell(journey.student.client.appVersion ?? ""),
+      csvCell(journey.student.client.appBuild ?? ""),
       csvCell(
         journey.waitlist
           ? (STATUS_LABELS[journey.waitlist.status as InterestStatus] ?? journey.waitlist.status)
@@ -602,7 +661,7 @@ export function statistikPage(stats: AdminBetaStats, usage: AdminUsage): string 
     "Statistik",
     `<main class="admin-shell admin-shell--wide">
        <h1>Statistik</h1>
-       <p>Beta-puls från körpass och bedömningar. Tabellen visar vilka som använder appen och hur långt varje elevresa kommit. Europe/Stockholm.</p>
+       <p>Beta-puls från körpass och bedömningar. Tabellen visar vem som fortfarande testar, var de fastnat och vilken app de kör. Europe/Stockholm.</p>
        <section class="admin-kpis">
          ${kpi("Nya intresseanmälningar 7/30", `${stats.waitlistNew7d} / ${stats.waitlistNew30d}`)}
          ${kpi("Aktiva elevresor", `${stats.activeJourneys} / ${stats.betaGateTarget}`)}
@@ -642,22 +701,20 @@ export function statistikPage(stats: AdminBetaStats, usage: AdminUsage): string 
        <section>
          <h2>Vilka som använder appen</h2>
          <p>${usage.studentAccounts} elevkonton · ${usage.supervisorAccounts} handledarkonton · ${usage.accountsWithoutJourney} konton utan resa.</p>
-         <p class="muted">${usage.journeys.length} av ${usage.journeyTotal} elevresor, senast aktiva först. Anmälan visas när samma e-post finns på väntelistan. Det är en adressmatchning, inte ett bevis på att hushållet är detsamma.</p>
+         <p class="muted">${usage.journeyTotal} elevresor, senast aktiva först. Senast aktiv är senaste appöppning, handledarkoppling, körpass eller bedömning. Plattform och build kommer från appen. “Anmälan:” är vad de kryssade i på väntelistan.</p>
          <p><a href="/admin/statistik.csv">Ladda ner resorna som CSV</a></p>
          <div class="admin-table-wrap">
            <table class="admin-table">
              <thead>
                <tr>
-                 <th>Elev</th><th>Handledare</th><th>Väg in</th><th>Övningsläge</th><th>Växel</th>
-                 <th>Körpass</th><th>Bedömda</th><th>Längst</th><th>Senaste</th><th>Anmälan</th>
+                 <th>Elev</th><th>Senast aktiv</th><th>Fastnat</th><th>Plattform</th><th>Handledare</th><th>Anmälan</th>
                </tr>
              </thead>
              <tbody>
-               ${journeyRows(usage.journeys) || `<tr><td colspan="10">Inga elevresor ännu.</td></tr>`}
+               ${journeyRows(usage.journeys) || `<tr><td colspan="6">Ingen användning ännu.</td></tr>`}
              </tbody>
            </table>
          </div>
-         <p class="muted">Körpass är genomförda / startade. Bedömda är avslutade pass med en handledarbedömning som inte skrivits över.</p>
        </section>
        <section>
          <h2>På vilket sätt</h2>
