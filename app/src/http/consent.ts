@@ -4,10 +4,12 @@ import { config } from "../config.js";
 export const CONSENT_VERSION = 2;
 
 /**
- * One-shot signal that a new waitlist row was stored. Not a tracking cookie.
- * Value is `1.<nonce>` so a refresh can be told apart from a later signup.
+ * One-shot signals that a new waitlist row was stored. Not tracking cookies.
+ * Meta and GA4 each get their own cookie so one provider can finish without
+ * deleting the pending signal the other still needs. Value is `1.<nonce>`.
  */
 export const META_LEAD_COOKIE_NAME = "korpasset_meta_lead";
+export const GA_LEAD_COOKIE_NAME = "korpasset_ga_lead";
 
 export const CONSENT_COOKIE_NAME = "korpasset_consent";
 
@@ -23,6 +25,7 @@ export function consentConfigJson(): string {
     gaMeasurementId: config.gaMeasurementId,
     metaPixelId: config.metaPixelId,
     leadCookieName: META_LEAD_COOKIE_NAME,
+    gaLeadCookieName: GA_LEAD_COOKIE_NAME,
   });
 }
 

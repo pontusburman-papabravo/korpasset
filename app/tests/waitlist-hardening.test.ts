@@ -68,7 +68,10 @@ describe("waitlist hardening", () => {
         }),
       });
       lastStatus = response.statusCode;
-      lastLead = response.cookies.some((cookie) => cookie.name === "korpasset_meta_lead");
+      lastLead = response.cookies.some(
+        (cookie) =>
+          cookie.name === "korpasset_meta_lead" || cookie.name === "korpasset_ga_lead",
+      );
     }
     assert.equal(lastStatus, 429);
     assert.equal(lastLead, false);

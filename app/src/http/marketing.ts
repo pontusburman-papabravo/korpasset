@@ -3,7 +3,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { wantsPublicCookieConsent } from "../auth/session.js";
 import { config } from "../config.js";
 import { AppError } from "../errors.js";
-import { META_LEAD_COOKIE_NAME } from "./consent.js";
+import { GA_LEAD_COOKIE_NAME, META_LEAD_COOKIE_NAME } from "./consent.js";
 import { EmailSendError, notifyWaitlistSignup } from "../services/email.js";
 import { countBetaWaitlist, saveInterestSignup } from "../services/interest.js";
 import {
@@ -52,14 +52,17 @@ function thanksLocation(query: unknown): string {
 }
 
 function markSavedLead(reply: FastifyReply): void {
-  reply.setCookie(META_LEAD_COOKIE_NAME, `1.${randomBytes(9).toString("base64url")}`, {
-    path: "/interest/tack",
-    httpOnly: false,
-    sameSite: "lax",
-    secure: config.cookieSecure,
-    signed: false,
-    maxAge: 120,
-  });
+  const token = `1.${randomBytes(9).toString("base64url")}`;
+  for (const name of [META_LEAD_COOKIE_NAME, GA_LEAD_COOKIE_NAME]) {
+    reply.setCookie(name, token, {
+      path: "/interest/tack",
+      httpOnly: false,
+      sameSite: "lax",
+      secure: config.cookieSecure,
+      signed: false,
+      maxAge: 120,
+    });
+  }
 }
 
 function checkboxChecked(value: unknown): boolean {

@@ -65,6 +65,7 @@
       ? config.metaPixelId
       : "";
   var LEAD_COOKIE = config.leadCookieName || "korpasset_meta_lead";
+  var GA_LEAD_COOKIE = config.gaLeadCookieName || "korpasset_ga_lead";
   var listeners = [];
   var marketingTools = [];
   var gaLoaded = false;
@@ -73,7 +74,8 @@
   var gaLeadSent = false;
   var interestFormVisible = false;
   var interestViewSent = false;
-  var GA_LEAD_STORAGE = "korpasset_ga_lead";
+  var META_LEAD_STORAGE = "korpasset_meta_lead_sent";
+  var GA_LEAD_STORAGE = "korpasset_ga_lead_sent";
   var root = document.querySelector("[data-consent-root]");
   var banner = document.querySelector(".consent__banner");
   var panel = document.querySelector(".consent__panel");
@@ -243,10 +245,17 @@
   function trackMetaLead() {
     if (!runtime.allowMarketingTracking) return;
     if (!metaLoaded || leadSent || typeof window.fbq !== "function") return;
-    if (!pendingLeadToken()) return;
+    var token = leadToken(LEAD_COOKIE);
+    if (!token) return;
+    if (storedLead(META_LEAD_STORAGE) === token) {
+      leadSent = true;
+      clearNamedCookie(LEAD_COOKIE);
+      return;
+    }
     window.fbq("track", "Lead");
     leadSent = true;
-    clearLeadCookie();
+    rememberLead(META_LEAD_STORAGE, token);
+    clearNamedCookie(LEAD_COOKIE);
   }
 
   function readNamedCookie(name) {
@@ -259,28 +268,28 @@
     return "";
   }
 
-  function pendingLeadToken() {
-    var value = readNamedCookie(LEAD_COOKIE);
+  function leadToken(name) {
+    var value = readNamedCookie(name);
     if (value === "1" || value.indexOf("1.") === 0) return value;
     return "";
   }
 
   function hasPendingLead() {
-    return pendingLeadToken() !== "";
+    return leadToken(LEAD_COOKIE) !== "";
   }
 
-  function gaLeadAlreadySent(token) {
+  function storedLead(key) {
     try {
-      if (!window.sessionStorage) return false;
-      return window.sessionStorage.getItem(GA_LEAD_STORAGE) === token;
+      if (!window.sessionStorage) return "";
+      return window.sessionStorage.getItem(key) || "";
     } catch (ignore) {
-      return false;
+      return "";
     }
   }
 
-  function rememberGaLead(token) {
+  function rememberLead(key, token) {
     try {
-      if (window.sessionStorage) window.sessionStorage.setItem(GA_LEAD_STORAGE, token);
+      if (window.sessionStorage) window.sessionStorage.setItem(key, token);
     } catch (ignore) {}
   }
 
@@ -288,10 +297,11 @@
     if (!runtime.allowAnalyticsTracking || !GA_ID || gaLeadSent) return;
     if (window["ga-disable-" + GA_ID] === true) return;
     if (typeof window.gtag !== "function") return;
-    var token = pendingLeadToken();
+    var token = leadToken(GA_LEAD_COOKIE);
     if (!token) return;
-    if (gaLeadAlreadySent(token)) {
+    if (storedLead(GA_LEAD_STORAGE) === token) {
       gaLeadSent = true;
+      clearNamedCookie(GA_LEAD_COOKIE);
       return;
     }
     window.gtag("event", "generate_lead", {
@@ -299,7 +309,8 @@
       lead_type: "beta_waitlist",
     });
     gaLeadSent = true;
-    rememberGaLead(token);
+    rememberLead(GA_LEAD_STORAGE, token);
+    clearNamedCookie(GA_LEAD_COOKIE);
   }
 
   function trackVisibleInterestForm() {
@@ -335,14 +346,14 @@
     observer.observe(section);
   }
 
-  function clearLeadCookie() {
+  function clearNamedCookie(name) {
     var domains = cookieDomains(location.hostname);
     var paths = ["/", "/interest/tack"];
     for (var i = 0; i < domains.length; i += 1) {
       var domain = domains[i] ? "; Domain=" + domains[i] : "";
       for (var p = 0; p < paths.length; p += 1) {
         document.cookie =
-          LEAD_COOKIE + "=; Path=" + paths[p] + "; Max-Age=0; SameSite=Lax" + domain;
+          name + "=; Path=" + paths[p] + "; Max-Age=0; SameSite=Lax" + domain;
       }
     }
   }

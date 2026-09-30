@@ -208,7 +208,7 @@ describe("landing and interest waitlist", () => {
       /action="\/interest\?utm_source=tiktok&amp;utm_medium=paid_social&amp;utm_campaign=korpasset_beta&amp;utm_content=creative_a"/,
     );
     assert.equal(
-      invalid.cookies.some((cookie) => cookie.name === "korpasset_meta_lead"),
+      invalid.cookies.some((cookie) => cookie.name === "korpasset_meta_lead" || cookie.name === "korpasset_ga_lead"),
       false,
     );
     await app.close();
@@ -233,8 +233,11 @@ describe("landing and interest waitlist", () => {
     assert.equal(response.statusCode, 302);
     assert.equal(response.headers.location, "/interest/tack");
     const lead = response.cookies.find((cookie) => cookie.name === "korpasset_meta_lead");
+    const gaLead = response.cookies.find((cookie) => cookie.name === "korpasset_ga_lead");
     assert.match(lead?.value ?? "", /^1\.[A-Za-z0-9_-]+$/);
+    assert.equal(gaLead?.value, lead?.value);
     assert.equal(lead?.path, "/interest/tack");
+    assert.equal(gaLead?.path, "/interest/tack");
 
     const thanks = await app.inject({ method: "GET", url: "/interest/tack" });
     assert.match(thanks.body, /Tack — vi hör av oss/);
@@ -296,7 +299,7 @@ describe("landing and interest waitlist", () => {
     assert.equal(missingPlatform.statusCode, 400);
     assert.match(missingPlatform.body, /Kryssa i minst en: iPhone, Android eller båda/);
     assert.equal(
-      missingPlatform.cookies.some((cookie) => cookie.name === "korpasset_meta_lead"),
+      missingPlatform.cookies.some((cookie) => cookie.name === "korpasset_meta_lead" || cookie.name === "korpasset_ga_lead"),
       false,
     );
     assert.doesNotMatch(missingPlatform.body, /facebook\.net|fbq\(/);
@@ -323,7 +326,7 @@ describe("landing and interest waitlist", () => {
     assert.equal(missingConsent.statusCode, 400);
     assert.match(missingConsent.body, /Bekräfta att du vill bli kontaktad/);
     assert.equal(
-      missingConsent.cookies.some((cookie) => cookie.name === "korpasset_meta_lead"),
+      missingConsent.cookies.some((cookie) => cookie.name === "korpasset_meta_lead" || cookie.name === "korpasset_ga_lead"),
       false,
     );
 
@@ -342,7 +345,7 @@ describe("landing and interest waitlist", () => {
     assert.equal(badEmail.statusCode, 400);
     assert.match(badEmail.body, /giltig e-postadress/);
     assert.equal(
-      badEmail.cookies.some((cookie) => cookie.name === "korpasset_meta_lead"),
+      badEmail.cookies.some((cookie) => cookie.name === "korpasset_meta_lead" || cookie.name === "korpasset_ga_lead"),
       false,
     );
     assert.doesNotMatch(badEmail.body, /generate_lead/);
@@ -381,7 +384,7 @@ describe("landing and interest waitlist", () => {
     });
     assert.equal(second.statusCode, 302);
     assert.equal(
-      second.cookies.some((cookie) => cookie.name === "korpasset_meta_lead"),
+      second.cookies.some((cookie) => cookie.name === "korpasset_meta_lead" || cookie.name === "korpasset_ga_lead"),
       false,
     );
     const rows = await getPool().query(`SELECT name, role, city FROM interest_signups`);
@@ -409,7 +412,7 @@ describe("landing and interest waitlist", () => {
     });
     assert.equal(response.statusCode, 302);
     assert.equal(
-      response.cookies.some((cookie) => cookie.name === "korpasset_meta_lead"),
+      response.cookies.some((cookie) => cookie.name === "korpasset_meta_lead" || cookie.name === "korpasset_ga_lead"),
       false,
     );
     const count = await getPool().query(`SELECT count(*)::int AS n FROM interest_signups`);

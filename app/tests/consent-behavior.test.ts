@@ -246,7 +246,8 @@ function boot(options: BootOptions = {}) {
       maxAgeSeconds: ${options.maxAge ?? CONSENT_MAX_AGE_SECONDS},
       gaMeasurementId: ${JSON.stringify(options.gaId ?? "G-TEST123")},
       metaPixelId: ${JSON.stringify(options.metaPixelId ?? "")},
-      leadCookieName: "korpasset_meta_lead"
+      leadCookieName: "korpasset_meta_lead",
+      gaLeadCookieName: "korpasset_ga_lead"
     };
     ${
       options.capacitor
@@ -302,6 +303,21 @@ function gtagEvents(context: Record<string, unknown>): unknown[][] {
 
 function leadEvents(context: Record<string, unknown>, name: string): unknown[][] {
   return gtagEvents(context).filter((call) => call[0] === "event" && call[1] === name);
+}
+
+function metaLeadCount(context: Record<string, unknown>): number {
+  return fbqCalls(context).filter((call) => call[0] === "track" && call[1] === "Lead").length;
+}
+
+function savedLeadCookies(token: string): SeedCookie[] {
+  return [
+    { name: "korpasset_meta_lead", value: token, domain: "" },
+    { name: "korpasset_ga_lead", value: token, domain: "" },
+  ];
+}
+
+function cookieJar(context: Record<string, unknown>): SeedCookie[] {
+  return (context.__cookies as () => SeedCookie[])().map((cookie) => ({ ...cookie }));
 }
 
 function eventParams(call: unknown[]): Record<string, unknown> {
@@ -579,7 +595,7 @@ describe("GA4 interest funnel", () => {
 
   it("sends generate_lead once after a saved signup when analytics consent exists", () => {
     const page = boot({
-      cookies: [analyticsConsent, { name: "korpasset_meta_lead", value: "1.saved", domain: "" }],
+      cookies: [analyticsConsent, ...savedLeadCookies("1.saved")],
     });
     const leads = leadEvents(page, "generate_lead");
     assert.equal(leads.length, 1);
@@ -593,7 +609,7 @@ describe("GA4 interest funnel", () => {
 
   it("sends generate_lead when analytics consent is granted after the saved signup", () => {
     const page = boot({
-      cookies: [{ name: "korpasset_meta_lead", value: "1.later", domain: "" }],
+      cookies: savedLeadCookies("1.later"),
     });
     assert.equal(leadEvents(page, "generate_lead").length, 0);
     click(page, "[data-consent-customize]");
@@ -622,7 +638,7 @@ describe("GA4 interest funnel", () => {
           value: `v${CONSENT_VERSION}.a0.m0.${now}`,
           domain: "",
         },
-        { name: "korpasset_meta_lead", value: "1.denied", domain: "" },
+        ...savedLeadCookies("1.denied"),
         { name: "_ga", value: "GA1.1.1.1", domain: "" },
       ],
     });
@@ -631,14 +647,12 @@ describe("GA4 interest funnel", () => {
     assert.equal(scriptSrcs(page).some((src) => src.includes("googletagmanager")), false);
     assert.equal(cookieNames(page).includes("_ga"), false);
     assert.equal(cookieNames(page).includes("korpasset_meta_lead"), true);
+    assert.equal(cookieNames(page).includes("korpasset_ga_lead"), true);
   });
 
   it("does not send a second generate_lead on refresh, and does send one for a new signup", () => {
     const storage: Record<string, string> = {};
-    const cookies = [
-      analyticsConsent,
-      { name: "korpasset_meta_lead", value: "1.same", domain: "" },
-    ];
+    const cookies = [analyticsConsent, ...savedLeadCookies("1.same")];
     const first = boot({ cookies, sessionStorage: storage });
     assert.equal(leadEvents(first, "generate_lead").length, 1);
     (first.__reopen as { click: () => void }).click();
@@ -652,7 +666,7 @@ describe("GA4 interest funnel", () => {
     assert.equal(leadEvents(refresh, "generate_lead").length, 0);
 
     const again = boot({
-      cookies: [analyticsConsent, { name: "korpasset_meta_lead", value: "1.next", domain: "" }],
+      cookies: [analyticsConsent, ...savedLeadCookies("1.next")],
       sessionStorage: storage,
     });
     assert.equal(leadEvents(again, "generate_lead").length, 1);
@@ -661,7 +675,7 @@ describe("GA4 interest funnel", () => {
   it("keeps Meta Lead and sends generate_lead once when both consents are already granted", () => {
     const page = boot({
       metaPixelId: META_PIXEL_ID,
-      cookies: [bothConsent, { name: "korpasset_meta_lead", value: "1.both", domain: "" }],
+      cookies: [bothConsent, ...savedLeadCookies("1.both")],
     });
     assert.equal(leadEvents(page, "generate_lead").length, 1);
     assert.equal(
@@ -721,7 +735,7 @@ describe("GA4 interest funnel", () => {
       capacitor: { isNativePlatform: true, getPlatform: "ios" },
       cookies: [
         bothConsent,
-        { name: "korpasset_meta_lead", value: "1.native", domain: "" },
+        ...savedLeadCookies("1.native"),
         { name: "_ga", value: "GA1.1.1.1", domain: "" },
         { name: "_fbp", value: "fb.1.1.1", domain: "" },
       ],
@@ -733,8 +747,179 @@ describe("GA4 interest funnel", () => {
     assert.equal(scriptSrcs(page).length, 0);
     assert.equal(cookieNames(page).includes("_ga"), false);
     assert.equal(cookieNames(page).includes("_fbp"), false);
+    assert.equal(cookieNames(page).includes("korpasset_ga_lead"), true);
+    assert.equal(cookieNames(page).includes("korpasset_meta_lead"), true);
     assert.equal((page.__root as { hidden: boolean }).hidden, true);
     assert.equal((page.__reopen as { hidden: boolean }).hidden, true);
+  });
+});
+
+describe("Meta and GA4 lead signals stay independent", () => {
+  const marketingConsent = {
+    name: "korpasset_consent",
+    value: `v${CONSENT_VERSION}.a0.m1.${now}`,
+    domain: "",
+  };
+  const analyticsConsent = {
+    name: "korpasset_consent",
+    value: `v${CONSENT_VERSION}.a1.m0.${now}`,
+    domain: "",
+  };
+  const bothConsent = {
+    name: "korpasset_consent",
+    value: `v${CONSENT_VERSION}.a1.m1.${now}`,
+    domain: "",
+  };
+
+  function enable(page: Record<string, unknown>, category: "analytics" | "marketing"): void {
+    (page.__reopen as { click: () => void }).click();
+    click(page, "[data-consent-customize]");
+    (page[category === "analytics" ? "__analytics" : "__marketing"] as { checked: boolean }).checked =
+      true;
+    click(page, "[data-consent-save]");
+  }
+
+  it("A sends generate_lead after marketing consent already consumed Meta Lead", () => {
+    const storage: Record<string, string> = {};
+    const first = boot({
+      metaPixelId: META_PIXEL_ID,
+      sessionStorage: storage,
+      cookies: [marketingConsent, ...savedLeadCookies("1.marketing-first")],
+    });
+    assert.equal(metaLeadCount(first), 1);
+    assert.equal(leadEvents(first, "generate_lead").length, 0);
+    assert.equal(cookieNames(first).includes("korpasset_meta_lead"), false);
+    assert.equal(cookieNames(first).includes("korpasset_ga_lead"), true);
+
+    enable(first, "analytics");
+    assert.equal(metaLeadCount(first), 1);
+    assert.equal(leadEvents(first, "generate_lead").length, 1);
+    assert.deepEqual(eventParams(leadEvents(first, "generate_lead")[0]), {
+      form_name: "beta_interest",
+      lead_type: "beta_waitlist",
+    });
+    assert.equal(cookieNames(first).includes("korpasset_ga_lead"), false);
+
+    const refresh = boot({
+      metaPixelId: META_PIXEL_ID,
+      sessionStorage: storage,
+      cookies: cookieJar(first),
+    });
+    assert.equal(metaLeadCount(refresh), 0);
+    assert.equal(leadEvents(refresh, "generate_lead").length, 0);
+  });
+
+  it("B sends Meta Lead after analytics consent already consumed generate_lead", () => {
+    const storage: Record<string, string> = {};
+    const first = boot({
+      metaPixelId: META_PIXEL_ID,
+      sessionStorage: storage,
+      cookies: [analyticsConsent, ...savedLeadCookies("1.analytics-first")],
+    });
+    assert.equal(leadEvents(first, "generate_lead").length, 1);
+    assert.equal(metaLeadCount(first), 0);
+    assert.equal(cookieNames(first).includes("korpasset_ga_lead"), false);
+    assert.equal(cookieNames(first).includes("korpasset_meta_lead"), true);
+
+    enable(first, "marketing");
+    assert.equal(leadEvents(first, "generate_lead").length, 1);
+    assert.equal(metaLeadCount(first), 1);
+    assert.equal(cookieNames(first).includes("korpasset_meta_lead"), false);
+
+    const refresh = boot({
+      metaPixelId: META_PIXEL_ID,
+      sessionStorage: storage,
+      cookies: cookieJar(first),
+    });
+    assert.equal(metaLeadCount(refresh), 0);
+    assert.equal(leadEvents(refresh, "generate_lead").length, 0);
+  });
+
+  it("C sends one of each when both consents already exist and when the visitor accepts all", () => {
+    const grantedStorage: Record<string, string> = {};
+    const granted = boot({
+      metaPixelId: META_PIXEL_ID,
+      sessionStorage: grantedStorage,
+      cookies: [bothConsent, ...savedLeadCookies("1.both-now")],
+    });
+    assert.equal(metaLeadCount(granted), 1);
+    assert.equal(leadEvents(granted, "generate_lead").length, 1);
+    assert.equal(cookieNames(granted).includes("korpasset_meta_lead"), false);
+    assert.equal(cookieNames(granted).includes("korpasset_ga_lead"), false);
+
+    const grantedRefresh = boot({
+      metaPixelId: META_PIXEL_ID,
+      sessionStorage: grantedStorage,
+      cookies: cookieJar(granted),
+    });
+    assert.equal(metaLeadCount(grantedRefresh), 0);
+    assert.equal(leadEvents(grantedRefresh, "generate_lead").length, 0);
+
+    const acceptStorage: Record<string, string> = {};
+    const pending = boot({
+      metaPixelId: META_PIXEL_ID,
+      sessionStorage: acceptStorage,
+      cookies: savedLeadCookies("1.accept-all"),
+    });
+    assert.equal(metaLeadCount(pending), 0);
+    assert.equal(leadEvents(pending, "generate_lead").length, 0);
+    click(pending, "[data-consent-accept]");
+    assert.equal(metaLeadCount(pending), 1);
+    assert.equal(leadEvents(pending, "generate_lead").length, 1);
+
+    const acceptRefresh = boot({
+      metaPixelId: META_PIXEL_ID,
+      sessionStorage: acceptStorage,
+      cookies: cookieJar(pending),
+    });
+    assert.equal(metaLeadCount(acceptRefresh), 0);
+    assert.equal(leadEvents(acceptRefresh, "generate_lead").length, 0);
+  });
+
+  it("D does not repeat either event on refresh after it has been sent", () => {
+    const metaStorage: Record<string, string> = {};
+    const metaFirst = boot({
+      metaPixelId: META_PIXEL_ID,
+      sessionStorage: metaStorage,
+      cookies: [marketingConsent, ...savedLeadCookies("1.refresh-meta")],
+    });
+    assert.equal(metaLeadCount(metaFirst), 1);
+    const metaRefresh = boot({
+      metaPixelId: META_PIXEL_ID,
+      sessionStorage: metaStorage,
+      cookies: cookieJar(metaFirst),
+    });
+    assert.equal(metaLeadCount(metaRefresh), 0);
+    assert.equal(leadEvents(metaRefresh, "generate_lead").length, 0);
+    assert.equal(cookieNames(metaRefresh).includes("korpasset_ga_lead"), true);
+    const metaSticky = boot({
+      metaPixelId: META_PIXEL_ID,
+      sessionStorage: metaStorage,
+      cookies: [marketingConsent, ...savedLeadCookies("1.refresh-meta")],
+    });
+    assert.equal(metaLeadCount(metaSticky), 0);
+
+    const gaStorage: Record<string, string> = {};
+    const gaFirst = boot({
+      metaPixelId: META_PIXEL_ID,
+      sessionStorage: gaStorage,
+      cookies: [analyticsConsent, ...savedLeadCookies("1.refresh-ga")],
+    });
+    assert.equal(leadEvents(gaFirst, "generate_lead").length, 1);
+    const gaRefresh = boot({
+      metaPixelId: META_PIXEL_ID,
+      sessionStorage: gaStorage,
+      cookies: cookieJar(gaFirst),
+    });
+    assert.equal(leadEvents(gaRefresh, "generate_lead").length, 0);
+    assert.equal(metaLeadCount(gaRefresh), 0);
+    assert.equal(cookieNames(gaRefresh).includes("korpasset_meta_lead"), true);
+    const gaSticky = boot({
+      metaPixelId: META_PIXEL_ID,
+      sessionStorage: gaStorage,
+      cookies: [analyticsConsent, ...savedLeadCookies("1.refresh-ga")],
+    });
+    assert.equal(leadEvents(gaSticky, "generate_lead").length, 0);
   });
 });
 
