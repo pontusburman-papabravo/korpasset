@@ -2,7 +2,7 @@
 
 Registrerade identifierare för iOS-appen (Capacitor-shell, TestFlight → App Store).
 Produktkonton via Sign in with Apple: [ADR-008](../decisions/ADR-008-app-oauth-accounts.md).
-Byggsteg: [native-apps.md](native-apps.md).
+Byggsteg: [native-apps.md](native-apps.md). Xcode Cloud: [xcode-cloud.md](xcode-cloud.md).
 
 Portal: [Certificates, Identifiers & Profiles](https://developer.apple.com/account/resources/identifiers/list)
 
@@ -109,7 +109,7 @@ Ordning efter App Store Connect-appen:
 3. **Services ID** `se.korpasset.app.android` — bara för Apple-inloggning på Android, Return URL `https://korpasset.se/app`. Inte `se.mystarday.*`.
 4. **Associated Domains** — `applinks:korpasset.se` och `webcredentials:korpasset.se` i [`native/ios/App/App/App.entitlements`](../../native/ios/App/App/App.entitlements). Bekräfta capability i Xcode mot teamet.
 5. **`APPLE_CLIENT_ID` / `APPLE_TEAM_ID` i `deploy/.env`** så live AASA och token-verify stämmer.
-6. **TestFlight** när första iOS-bygget finns.
+6. **TestFlight** via Xcode Cloud när workflow finns — [xcode-cloud.md](xcode-cloud.md).
 7. **Apple-webhook** — fyll i URL:en på App ID:n efter deploy. Steg nedan.
 
 Push och betalning ingår inte i första betan.
