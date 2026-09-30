@@ -73,6 +73,7 @@ export function renderMorePage(options: {
   identity: ReturnType<typeof journeyIdentityForRole> | null;
   journeyCount: number;
   canStartOwnJourney?: boolean;
+  leaveJourneyId?: string | null;
 }): string {
   const identity = options.identity
     ? renderJourneyIdentity(options.identity)
@@ -84,6 +85,11 @@ export function renderMorePage(options: {
   const startOwn = options.canStartOwnJourney
     ? `<p><a class="btn btn-secondary" href="${STUDENT_ONBOARDING_PATH}">Starta min körkortsresa</a></p>`
     : "";
+  const leave = options.leaveJourneyId
+    ? `<form method="post" action="/journey/${escapeHtml(options.leaveJourneyId)}/leave" onsubmit="return confirm('Lämna den här körkortsresan? Du kan ansluta igen med en ny inbjudan.');">
+         <button type="submit" class="btn btn-secondary">Lämna resan</button>
+       </form>`
+    : "";
   return `${identity}
     ${switcher}
     ${startOwn}
@@ -94,6 +100,7 @@ export function renderMorePage(options: {
       <a href="/villkor">Villkor</a>
       <a href="/konto#radera-konto">Radera konto</a>
     </nav>
+    ${leave}
     <form method="post" action="/logout">
       <button type="submit" class="btn btn-secondary">Logga ut</button>
     </form>`;

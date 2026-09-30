@@ -66,6 +66,7 @@ På en given resa skiljer sig vad man **får göra**, inte vad man **får se** a
 | --- | --- | --- | --- |
 | Se utveckling, recap, nästa gång | Ja | Ja | Ja |
 | Bjuda in / återkalla handledare | Ja | Nej | Nej |
+| Lämna resan | Nej | Ja | Ja |
 | Välja växellåda | Ja | Nej | Nej |
 | Planera Drive Focus och starta körpass | Ja | Ja | Ja |
 | Avsluta körpasset | Ja | Ja | Nej |

@@ -308,10 +308,18 @@ export function renderJourneyHome(options: {
   </section>`;
 
   const supervisorList = supervisors
-    .map(
-      (s) =>
-        `<li>${escapeHtml(actorDisplayName(s.displayName, null, "supervisor"))}</li>`,
-    )
+    .map((s) => {
+      const name = actorDisplayName(s.displayName, null, "supervisor");
+      const remove = isStudent
+        ? `<form method="post" action="/journey/${journeyId}/supervisors/${escapeHtml(s.userId)}/remove" class="supervisor-list__action" onsubmit="return confirm('Ta bort handledaren? De kan bjudas in igen.');">
+             <button type="submit" class="btn-link">Ta bort</button>
+           </form>`
+        : "";
+      return `<li>
+        <span class="supervisor-list__name">${escapeHtml(name)}</span>
+        ${remove}
+      </li>`;
+    })
     .join("");
 
   const inviteForm =
@@ -320,6 +328,12 @@ export function renderJourneyHome(options: {
          ${primaryButton("Bjud in fler handledare")}
        </form>`
       : "";
+
+  const leaveForm = !isStudent
+    ? `<form method="post" action="/journey/${journeyId}/leave" class="supervisor-leave" onsubmit="return confirm('Lämna den här körkortsresan? Du kan ansluta igen med en ny inbjudan.');">
+         <button type="submit" class="btn-link">Lämna resan</button>
+       </form>`
+    : "";
 
   const supervisorsSection = `<section class="card">
     <h2>${isStudent ? "Mina handledare" : "Handledare"}</h2>
@@ -330,6 +344,7 @@ export function renderJourneyHome(options: {
         : `<p class="muted">Ingen handledare ännu.</p>`
     }
     ${inviteForm}
+    ${leaveForm}
   </section>`;
 
   const practiceOptions = PRACTICE_STAGES.map((stage) => {
