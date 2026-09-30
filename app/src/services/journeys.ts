@@ -1,5 +1,5 @@
 import type pg from "pg";
-import { ConflictError, ForbiddenError } from "../errors.js";
+import { AppError, ConflictError, ForbiddenError, NotFoundError } from "../errors.js";
 import { getPool, withTransaction } from "../db/pool.js";
 import { createGuestUser, getReusableSessionUserId } from "./users.js";
 import {
@@ -269,6 +269,74 @@ export async function listActiveSupervisors(
     userId: row.user_id,
     displayName: row.display_name,
   }));
+}
+
+export async function removeJourneySupervisor(
+  journeyId: string,
+  actorUserId: string,
+  supervisorUserId: string,
+): Promise<"removed" | "left"> {
+  return withTransaction(async (client) => {
+    const journey = await client.query(
+      `SELECT student_user_id FROM driving_journeys WHERE id = $1 FOR UPDATE`,
+      [journeyId],
+    );
+    if (journey.rowCount === 0) {
+      throw new NotFoundError("Resan hittades inte");
+    }
+
+    const studentUserId = journey.rows[0].student_user_id as string;
+    const isStudent = studentUserId === actorUserId;
+    const isSelf = actorUserId === supervisorUserId;
+    if (!isStudent && !isSelf) {
+      throw new ForbiddenError(
+        "Bara eleven eller handledaren själv kan ta bort kopplingen",
+      );
+    }
+    if (isStudent && isSelf) {
+      throw new ForbiddenError("Eleven kan inte tas bort från sin egen resa");
+    }
+
+    const collab = await client.query(
+      `SELECT status FROM journey_collaborators
+       WHERE journey_id = $1 AND user_id = $2 AND role = 'supervisor'
+       FOR UPDATE`,
+      [journeyId, supervisorUserId],
+    );
+    if (collab.rowCount === 0 || collab.rows[0].status !== "active") {
+      throw new NotFoundError("Handledaren är inte med på resan");
+    }
+
+    const openDrive = await client.query(
+      `SELECT 1 FROM drives
+       WHERE journey_id = $1 AND supervisor_user_id = $2 AND ended_at IS NULL
+       LIMIT 1`,
+      [journeyId, supervisorUserId],
+    );
+    if ((openDrive.rowCount ?? 0) > 0) {
+      throw new AppError(
+        "Avsluta körpasset först. Den här handledaren är med i ett pågående pass.",
+        409,
+        "active_drive",
+      );
+    }
+
+    const updated = await client.query(
+      `UPDATE journey_collaborators
+       SET status = 'removed', updated_at = now()
+       WHERE journey_id = $1
+         AND user_id = $2
+         AND role = 'supervisor'
+         AND status = 'active'
+       RETURNING id`,
+      [journeyId, supervisorUserId],
+    );
+    if (updated.rowCount === 0) {
+      throw new NotFoundError("Handledaren är inte med på resan");
+    }
+
+    return isSelf ? "left" : "removed";
+  });
 }
 
 export async function updateTransmissionScope(

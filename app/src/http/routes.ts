@@ -16,6 +16,7 @@ import {
   listAccessibleActiveJourneys,
   listActiveSupervisors,
   ownsActiveStudentJourney,
+  removeJourneySupervisor,
   updatePracticeStage,
   updateTransmissionScope,
 } from "../services/journeys.js";
@@ -413,6 +414,8 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
           identity,
           journeyCount: journeys.length,
           canStartOwnJourney: !journeys.some((journey) => journey.studentUserId === userId),
+          leaveJourneyId:
+            resolved?.role === "supervisor" ? resolved.journey.id : null,
         }),
         {
           journeyId: resolved?.journey.id,
@@ -613,6 +616,41 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
           }),
           { journeyId, role: access.role },
         ),
+      );
+    } catch (error) {
+      const { status, message } = handleError(error);
+      return reply.status(status).type("text/html").send(
+        layout("Fel", errorBanner(message)),
+      );
+    }
+  });
+
+  app.post("/journey/:journeyId/supervisors/:userId/remove", async (request, reply) => {
+    const { journeyId, userId: supervisorUserId } = request.params as {
+      journeyId: string;
+      userId: string;
+    };
+    const userId = requireSessionUserId(request);
+
+    try {
+      await removeJourneySupervisor(journeyId, userId, supervisorUserId);
+      return reply.redirect(`/journey/${journeyId}`);
+    } catch (error) {
+      const { status, message } = handleError(error);
+      return reply.status(status).type("text/html").send(
+        layout("Fel", errorBanner(message)),
+      );
+    }
+  });
+
+  app.post("/journey/:journeyId/leave", async (request, reply) => {
+    const { journeyId } = request.params as { journeyId: string };
+    const userId = requireSessionUserId(request);
+
+    try {
+      await removeJourneySupervisor(journeyId, userId, userId);
+      return reply.redirect(
+        await signedInRedirectPath(userId, readOnboardingTrack(request)),
       );
     } catch (error) {
       const { status, message } = handleError(error);
