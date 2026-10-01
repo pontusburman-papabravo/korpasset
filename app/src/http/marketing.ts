@@ -9,7 +9,7 @@ import {
   META_LEAD_COOKIE_NAME,
 } from "./consent.js";
 import { EmailSendError, notifyWaitlistSignup } from "../services/email.js";
-import { countBetaWaitlist, saveInterestSignup } from "../services/interest.js";
+import { saveInterestSignup } from "../services/interest.js";
 import {
   renderInterestFormError,
   renderInterestThanksPage,
@@ -147,7 +147,6 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
         renderInterestFormError(
           "För många försök. Vänta en stund och prova igen.",
           formValues((request.body ?? {}) as Record<string, unknown>),
-          await countBetaWaitlist(),
           interestPageOptions(request),
         ),
       );
@@ -160,7 +159,6 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
         renderInterestFormError(
           "Bekräfta att du vill bli kontaktad om betan.",
           values,
-          await countBetaWaitlist(),
           interestPageOptions(request),
         ),
       );
@@ -192,7 +190,6 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
         renderInterestFormError(
           message,
           values,
-          await countBetaWaitlist(),
           interestPageOptions(request),
         ),
       );
