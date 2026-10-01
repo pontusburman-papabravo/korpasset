@@ -326,6 +326,18 @@ a { color: inherit; }
 
 .site-section--white .value-card { background: var(--cream); }
 
+a.guide-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+a.guide-card h3 { margin-top: 0; }
+
+a.guide-card p:last-child { margin-bottom: 0; }
+
+a.guide-card:hover { border-color: rgba(26, 43, 76, 0.28); }
+
 .steps {
   list-style: none;
   padding: 0;

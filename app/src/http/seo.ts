@@ -1,4 +1,5 @@
 import { config } from "../config.js";
+import { PRACTICE_SITEMAP_PAGES } from "./guide-content.js";
 
 export const SITE_NAME = "Körpasset";
 export const SITE_THEME_COLOR = "#1A2B4C";
@@ -18,6 +19,7 @@ export const PUBLIC_INDEX_PAGES = [
     priority: "1.0",
     changefreq: "weekly",
   },
+  ...PRACTICE_SITEMAP_PAGES,
   {
     path: "/kontakt",
     priority: "0.7",
@@ -49,6 +51,10 @@ const ROBOTS_DISALLOW = [
   "/admin",
   "/admin/",
   "/api/",
+  "/app",
+  "/app/",
+  "/guide",
+  "/guide/",
   "/health",
   "/hjalp",
   "/hjalp/",
@@ -57,10 +63,13 @@ const ROBOTS_DISALLOW = [
   "/journey/",
   "/konto",
   "/konto/",
+  "/logout",
+  "/mer",
+  "/nasta",
   "/onboarding",
+  "/resa",
   "/start",
-  "/app",
-  "/app/",
+  "/utveckling",
 ] as const;
 
 export interface FaqItem {
@@ -106,8 +115,9 @@ export function publicPageJsonLd(options: {
   path: string;
   title: string;
   description: string;
-  faq?: FaqItem[];
   includeApp?: boolean;
+  /** Real install URL. Only set when the native app is actually available. */
+  appDownloadUrl?: string;
 }): unknown {
   const pageUrl = absoluteUrl(options.path);
   const origin = absoluteUrl("/");
@@ -153,13 +163,16 @@ export function publicPageJsonLd(options: {
 
   if (options.includeApp) {
     graph.push({
-      "@type": "WebApplication",
+      "@type": "SoftwareApplication",
+      "@id": `${origin}#app`,
       name: SITE_NAME,
       url: origin,
       applicationCategory: "EducationalApplication",
-      operatingSystem: "Web",
+      // iOS ships via TestFlight. Android is not in open testing, so it is omitted.
+      operatingSystem: "iOS",
       inLanguage: "sv-SE",
       description: SITE_DESCRIPTION,
+      ...(options.appDownloadUrl ? { downloadUrl: options.appDownloadUrl } : {}),
       offers: {
         "@type": "Offer",
         price: "0",
@@ -169,25 +182,63 @@ export function publicPageJsonLd(options: {
     });
   }
 
-  if (options.faq && options.faq.length > 0) {
-    graph.push({
-      "@type": "FAQPage",
-      url: `${pageUrl}#fragor`,
-      inLanguage: "sv-SE",
-      mainEntity: options.faq.map((item) => ({
-        "@type": "Question",
-        name: item.question,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: item.answer,
-        },
-      })),
-    });
-  }
-
   return {
     "@context": "https://schema.org",
     "@graph": graph,
+  };
+}
+
+export interface BreadcrumbItem {
+  name: string;
+  path: string;
+}
+
+/** Article + breadcrumb for a public guide. Organization is included once, as publisher. */
+export function articlePageJsonLd(options: {
+  path: string;
+  headline: string;
+  description: string;
+  breadcrumbs: BreadcrumbItem[];
+}): unknown {
+  const pageUrl = absoluteUrl(options.path);
+  const origin = absoluteUrl("/");
+  const organizationId = `${origin}#organization`;
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": organizationId,
+        name: SITE_NAME,
+        url: origin,
+        logo: {
+          "@type": "ImageObject",
+          url: absoluteUrl(SITE_LOGO_PATH),
+        },
+      },
+      {
+        "@type": "Article",
+        "@id": `${pageUrl}#article`,
+        headline: options.headline,
+        description: options.description,
+        inLanguage: "sv-SE",
+        mainEntityOfPage: pageUrl,
+        url: pageUrl,
+        author: { "@id": organizationId },
+        publisher: { "@id": organizationId },
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${pageUrl}#breadcrumb`,
+        itemListElement: options.breadcrumbs.map((item, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          name: item.name,
+          item: absoluteUrl(item.path),
+        })),
+      },
+    ],
   };
 }
 
