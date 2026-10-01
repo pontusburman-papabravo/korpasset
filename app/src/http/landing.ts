@@ -19,6 +19,8 @@ const ROLE_LABELS: Record<InterestRole, string> = {
   other: "Annat",
 };
 
+export const TESTFLIGHT_JOIN_URL = "https://testflight.apple.com/join/MjyuvkzB";
+
 export const TRANSPORTSTYRELSEN_LINKS = {
   ovningskora:
     "https://www.transportstyrelsen.se/sv/vagtrafik/korkort/ta-korkort/handledarskap-och-ovningskorning/ovningskora/",
@@ -39,6 +41,10 @@ function tsLink(href: string, label: string): string {
   return `<a href="${escapeHtml(href)}" rel="noopener noreferrer" target="_blank">${escapeHtml(label)}</a>`;
 }
 
+function testFlightButton(label: string): string {
+  return `<a class="btn btn-primary" href="${TESTFLIGHT_JOIN_URL}" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
+}
+
 const LANDING_FAQ: Array<FaqItem & { answerHtml?: string }> = [
   {
     question: "Vad är Körpasset?",
@@ -48,7 +54,13 @@ const LANDING_FAQ: Array<FaqItem & { answerHtml?: string }> = [
   {
     question: "Vem kan bli betatestare?",
     answer:
-      "Elever, handledare och föräldrar som övningskör privat mot B-körkort. En anmälan ger inte automatisk access — vi tar in familjer löpande.",
+      "Elever, handledare och föräldrar som övningskör privat mot B-körkort. På iPhone laddar du ner betan via TestFlight. På Android lämnar du mejl tills Google öppnat för öppet test — en anmälan ger inte automatisk access.",
+  },
+  {
+    question: "Hur laddar jag ner Körpasset?",
+    answer:
+      "På iPhone via TestFlight: https://testflight.apple.com/join/MjyuvkzB. På Android lämnar du din mejladress tills Google öppnat för öppet test. Vi väntar på granskning.",
+    answerHtml: `På iPhone via <a href="${TESTFLIGHT_JOIN_URL}" rel="noopener noreferrer">TestFlight</a>. På Android lämnar du din mejladress tills Google öppnat för öppet test. Vi väntar på granskning.`,
   },
   {
     question: "Kostar betan något?",
@@ -191,7 +203,8 @@ export function renderInterestThanksPage(options: PublicConsentOptions = {}): st
          <div class="site-inner site-inner--narrow">
            <p class="eyebrow">Betan</p>
            <h1>Tack — vi hör av oss.</h1>
-           <p class="lede">Din intresseanmälan är inne. Vi skickar en bekräftelse till din mejladress, tar in familjer löpande och mejlar när det är dags — inte automatisk access.</p>
+           <p class="lede">Din intresseanmälan är inne. Vi skickar en bekräftelse till din mejladress och hör av oss när Android-testet är öppet — inte automatisk access.</p>
+           <p>Har du iPhone kan du ladda ner appen direkt via <a href="${TESTFLIGHT_JOIN_URL}" rel="noopener noreferrer">TestFlight</a>.</p>
            <p><a class="btn-link" href="/">Tillbaka till startsidan</a></p>
          </div>
        </section>
@@ -271,9 +284,9 @@ export function siteHeader(
     <nav class="site-nav__links" aria-label="Huvudmeny">
       <a href="/#sa-funkar-det">Övningskörning</a>
       <a href="/#regler">Regler</a>
-      <a href="/#intresse" class="site-nav__cta">Bli betatestare</a>
+      <a href="/#intresse" class="site-nav__cta">Ladda ner</a>
     </nav>
-    <a class="site-nav__cta site-nav__cta--mobile" href="${escapeHtml(ctaHref)}">Bli betatestare</a>
+    <a class="site-nav__cta site-nav__cta--mobile" href="${escapeHtml(ctaHref)}">Ladda ner</a>
   </header>`;
 }
 
@@ -315,10 +328,11 @@ function hero(): string {
         <p class="lede">Körpasset hjälper körkortselev och handledare att övningsköra med en plan — oavsett om ni just börjat eller redan kört ett år.</p>
         <p>Håll koll på vad ni har tränat på, dokumentera körpassen och samarbeta när mamma, pappa eller syskon turas om som handledare under övningskörningen. Ett stöd för att träna inför körkort och uppkörning. Eleven behöver körkortstillstånd.</p>
         <div class="hero__ctas">
-          <a class="btn btn-primary" href="#intresse">Bli betatestare</a>
+          ${testFlightButton("Ladda ner för iPhone")}
+          <a class="btn btn-secondary" href="#android">Lämna mejl för Android</a>
           <a class="btn-link" href="#sa-funkar-det">Så fungerar det</a>
         </div>
-        <p class="hero__trust">Gratis under betan · Vi hör av oss när det är er tur</p>
+        <p class="hero__trust">Gratis under betan · iPhone via TestFlight · Android efter Googles granskning</p>
         <p class="hero__tagline">${BRAND_TAGLINE}</p>
       </div>
       ${heroCard()}
@@ -381,7 +395,11 @@ function betaProgress(filled: number): string {
       <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="${BETA_COHORT_SIZE}" aria-valuenow="${shown}" aria-label="${escapeHtml(status)}">
         <span style="width:${percent}%"></span>
       </div>
-      <p><a class="btn btn-primary" href="#intresse">Jag vill vara med</a></p>
+      <p>iPhone laddar du ner via TestFlight. Android lämnar mejl tills Google öppnat för öppet test.</p>
+      <div class="beta-actions">
+        ${testFlightButton("Ladda ner för iPhone")}
+        <a class="btn btn-secondary" href="#android">Lämna mejl för Android</a>
+      </div>
     </div>
   </section>`;
 }
@@ -540,56 +558,58 @@ function interestSection(
   return `<section class="site-section site-section--cta" id="intresse" data-interest-form>
     <div class="site-inner site-inner--narrow">
       <p class="eyebrow">Beta</p>
-      <h2>Vill du testa Körpasset i er övningskörning?</h2>
-      <p class="lede">${escapeHtml(cohortNote)}</p>
-      <p>Produkten utvecklas fortfarande. Deltagare kan få frågor om hur det fungerar att övningsköra med Körpasset. Ingen betalning under betan.</p>
-      ${formError}
-      <form method="post" action="${escapeHtml(action)}" class="interest-form" novalidate>
-        <div class="hp" aria-hidden="true">
-          <label for="website">Webbplats</label>
-          <input id="website" name="website" type="text" tabindex="-1" autocomplete="off">
+      <h2>Ladda ner Körpasset</h2>
+      <p class="lede">På iPhone laddar du ner direkt. På Android lämnar du mejl tills Google öppnat för öppet test.</p>
+      <div class="download-paths">
+        <div class="download-card" id="iphone">
+          <h3>iPhone</h3>
+          <p>Ladda ner via TestFlight. Öppna länken på iPhone, installera TestFlight om du inte redan har den, och gå med i testet.</p>
+          <p class="download-note">Gratis under betan.</p>
+          ${testFlightButton("Ladda ner för iPhone")}
         </div>
-        <div>
-          <label for="name">Namn</label>
-          <input id="name" name="name" type="text" required maxlength="80" autocomplete="name" value="${escapeHtml(values.name ?? "")}">
+        <div class="download-card" id="android">
+          <h3>Android</h3>
+          <p>Google Play har inte öppnat för öppet test än. Vi väntar på granskning. Lämna din mejladress så hör vi av oss när det går att ladda ner.</p>
+          <p>${escapeHtml(cohortNote)} Ingen betalning under betan.</p>
+          ${formError}
+          <form method="post" action="${escapeHtml(action)}" class="interest-form" novalidate>
+            <div class="hp" aria-hidden="true">
+              <label for="website">Webbplats</label>
+              <input id="website" name="website" type="text" tabindex="-1" autocomplete="off">
+            </div>
+            <input type="hidden" name="platform_android" value="yes">
+            <div>
+              <label for="name">Namn</label>
+              <input id="name" name="name" type="text" required maxlength="80" autocomplete="name" value="${escapeHtml(values.name ?? "")}">
+            </div>
+            <div>
+              <label for="email">Mejladress</label>
+              <input id="email" name="email" type="email" required maxlength="120" autocomplete="email" value="${escapeHtml(values.email ?? "")}">
+            </div>
+            <div>
+              <label for="role">Jag är</label>
+              <select id="role" name="role" required>
+                <option value="">Välj…</option>
+                ${roleOptions}
+              </select>
+            </div>
+            <div>
+              <label for="city">Ort <span class="optional">(valfritt)</span></label>
+              <input id="city" name="city" type="text" maxlength="80" autocomplete="address-level2" value="${escapeHtml(values.city ?? "")}">
+            </div>
+            <div>
+              <label for="message">Kort om er övningskörning <span class="optional">(valfritt)</span></label>
+              <p class="muted field-hint" id="message-hint">Hur länge ni kört, vilka som handleder och vad ni vill ha hjälp med — till exempel tips på nästa steg.</p>
+              <textarea id="message" name="message" maxlength="1000" rows="4" aria-describedby="message-hint" placeholder="T.ex. dotter 16, just börjat. Jag kör oftast, pappa ibland. Eller: son 17, kört ett år, vill ha nästa steg.">${escapeHtml(values.message ?? "")}</textarea>
+            </div>
+            <label class="interest-choice">
+              <input type="checkbox" name="consent" value="yes" required>
+              <span>Jag vill bli kontaktad om betan. Vi använder uppgifterna bara för det. Läs mer i <a href="/integritet">integritetspolicyn</a>.</span>
+            </label>
+            ${primaryButton("Bli betatestare")}
+          </form>
         </div>
-        <div>
-          <label for="email">Mejladress</label>
-          <input id="email" name="email" type="email" required maxlength="120" autocomplete="email" value="${escapeHtml(values.email ?? "")}">
-        </div>
-        <div>
-          <label for="role">Jag är</label>
-          <select id="role" name="role" required>
-            <option value="">Välj…</option>
-            ${roleOptions}
-          </select>
-        </div>
-        <fieldset class="platform-choice">
-          <legend>Vi använder <span class="optional">(minst en, båda går bra)</span></legend>
-          <label class="interest-choice">
-            <input type="checkbox" name="platform_ios" value="yes"${values.platformIos ? " checked" : ""}>
-            <span>iPhone</span>
-          </label>
-          <label class="interest-choice">
-            <input type="checkbox" name="platform_android" value="yes"${values.platformAndroid ? " checked" : ""}>
-            <span>Android</span>
-          </label>
-        </fieldset>
-        <div>
-          <label for="city">Ort <span class="optional">(valfritt)</span></label>
-          <input id="city" name="city" type="text" maxlength="80" autocomplete="address-level2" value="${escapeHtml(values.city ?? "")}">
-        </div>
-        <div>
-          <label for="message">Kort om er övningskörning <span class="optional">(valfritt)</span></label>
-          <p class="muted field-hint" id="message-hint">Hur länge ni kört, vilka som handleder och vad ni vill ha hjälp med — till exempel tips på nästa steg.</p>
-          <textarea id="message" name="message" maxlength="1000" rows="4" aria-describedby="message-hint" placeholder="T.ex. dotter 16, just börjat. Jag kör oftast, pappa ibland. Eller: son 17, kört ett år, vill ha nästa steg.">${escapeHtml(values.message ?? "")}</textarea>
-        </div>
-        <label class="interest-choice">
-          <input type="checkbox" name="consent" value="yes" required>
-          <span>Jag vill bli kontaktad om betan. Vi använder uppgifterna bara för det. Läs mer i <a href="/integritet">integritetspolicyn</a>.</span>
-        </label>
-        ${primaryButton("Bli betatestare")}
-      </form>
+      </div>
     </div>
   </section>`;
 }
