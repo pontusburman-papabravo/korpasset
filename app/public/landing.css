@@ -134,6 +134,15 @@ a { color: inherit; }
 
 .btn-primary { width: 100%; min-height: 3rem; }
 
+.btn-secondary {
+  background: transparent;
+  color: var(--navy);
+  border: 2px solid var(--navy);
+  width: auto;
+}
+
+.btn-secondary:active { background: rgba(26, 43, 76, 0.06); }
+
 .btn-link {
   font-weight: 700;
   color: var(--navy);
@@ -188,7 +197,8 @@ a { color: inherit; }
   margin: 1.5rem 0 0.75rem;
 }
 
-.hero__ctas .btn-primary { width: auto; padding: 0.85rem 1.4rem; }
+.hero__ctas .btn-primary,
+.hero__ctas .btn-secondary { width: auto; padding: 0.85rem 1.4rem; }
 
 .hero__trust {
   color: var(--muted);
@@ -265,12 +275,48 @@ a { color: inherit; }
   color: var(--white);
 }
 
-.site-section--cta .lede { color: #c5d0c8; }
+.site-section--cta .lede,
+.site-section--cta .muted { color: #c5d0c8; }
 .site-section--cta .eyebrow { color: var(--accent); }
 
 .site-section--cta a { color: var(--accent); }
 .site-section--cta .btn-primary,
 .site-section--cta a.btn-primary { color: var(--navy); }
+
+.site-section--cta a.btn-secondary {
+  color: var(--white);
+  border-color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+}
+
+.download-paths {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.download-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1.15rem;
+  padding: 1.25rem 1.35rem 1.35rem;
+}
+
+.download-card h3 { margin-top: 0; }
+
+.download-card .btn-primary { width: 100%; }
+
+.download-note {
+  color: #c5d0c8;
+  font-size: 0.95rem;
+}
+
+.beta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: center;
+}
 
 .card-grid {
   display: grid;
@@ -374,7 +420,8 @@ a { color: inherit; }
   font-weight: 700;
 }
 
-#beta .btn-primary {
+#beta .btn-primary,
+#beta .btn-secondary {
   width: auto;
   min-width: 12rem;
 }
@@ -514,6 +561,7 @@ label.interest-choice {
   .photo-strip { grid-template-columns: 1fr 1fr 1fr; }
   .photo-strip figure:last-child { grid-column: auto; }
   .photo-strip img { height: 13.5rem; }
+  .download-card .btn-primary { width: auto; min-width: 14rem; }
 }
 
 .admin-shell {
