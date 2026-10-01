@@ -12,6 +12,10 @@ import {
   type LinkedIdentity,
 } from "../services/oauth-accounts.js";
 import { getReusableSessionUserId, getUserById, updateDisplayName } from "../services/users.js";
+import {
+  getMarketingEmailPreference,
+  setMarketingEmailOptIn,
+} from "../services/marketing-preferences.js";
 import type { OAuthProvider } from "../auth/oauth-verify.js";
 import {
   escapeHtml,
@@ -52,6 +56,7 @@ function accountPage(options: {
   displayName: string;
   linked: OAuthProvider[];
   identities: LinkedIdentity[];
+  marketingOptIn: boolean;
   errorMessage?: string;
   nav?: AppLayoutOptions;
 }): string {
@@ -82,6 +87,17 @@ function accountPage(options: {
          ${providerRow("google", hasGoogle)}
        </ul>
      </section>
+     <section class="card account-comm" id="kommunikation">
+       <h2>Kommunikation</h2>
+       <form method="post" action="/konto/kommunikation" class="stack">
+         <label for="marketing_email_opt_in">
+           <input id="marketing_email_opt_in" name="marketing_email_opt_in" type="checkbox" value="yes"${options.marketingOptIn ? " checked" : ""}>
+           <span>Jag vill få nyheter, tips och erbjudanden från Körpasset via e-post.</span>
+         </label>
+         <p class="muted">Du kan ändra detta när som helst.</p>
+         ${primaryButton("Spara")}
+       </form>
+     </section>
      <form method="post" action="/logout">
        <button type="submit" class="btn btn-secondary">Logga ut</button>
      </form>
@@ -106,10 +122,12 @@ async function renderAccountPage(
 ): Promise<string> {
   const user = await getUserById(userId);
   const identities = await listLinkedIdentities(userId);
+  const marketing = await getMarketingEmailPreference(userId);
   return accountPage({
     displayName: user?.displayName ?? "",
     linked: identities.map((identity) => identity.provider),
     identities,
+    marketingOptIn: marketing?.optIn === true,
     errorMessage: extras.errorMessage,
   });
 }
@@ -142,6 +160,18 @@ export async function registerAccountRoutes(app: FastifyInstance): Promise<void>
     }
     await updateDisplayName(reusable, name);
     return reply.redirect("/konto");
+  });
+
+  app.post("/konto/kommunikation", async (request, reply) => {
+    const userId = requireSessionUserId(request);
+    const reusable = await getReusableSessionUserId(userId);
+    if (!reusable) {
+      clearSessionCookie(reply);
+      return reply.redirect("/app");
+    }
+    const body = (request.body ?? {}) as { marketing_email_opt_in?: string };
+    await setMarketingEmailOptIn(reusable, body.marketing_email_opt_in === "yes");
+    return reply.redirect("/konto#kommunikation");
   });
 
   app.post("/konto/radera", async (request, reply) => {

@@ -254,7 +254,7 @@ export function siteHeader(
     ctaHref?: string;
     variant?: "site" | "admin";
     signedIn?: boolean;
-    adminNav?: "overview" | "signups" | "users" | "statistik" | "support";
+    adminNav?: "overview" | "signups" | "users" | "statistik" | "support" | "utskick";
   } = {},
 ): string {
   if (options.variant === "admin") {
@@ -265,6 +265,7 @@ export function siteHeader(
       ${current("/admin", "overview", "Översikt")}
       ${current("/admin/signups", "signups", "Intresseanmälningar")}
       ${current("/admin/users", "users", "Användare")}
+      ${current("/admin/utskick", "utskick", "Utskick")}
       ${current("/admin/statistik", "statistik", "Statistik")}
       <form method="post" action="/admin/logout"><button type="submit" class="btn-link">Logga ut</button></form>
     </nav>`

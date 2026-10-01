@@ -107,6 +107,8 @@ Om identity redan sitter på en **annan** user: **409**. Ingen merge. Ingen tyst
 
 Efter radering: ny Apple/Google-inloggning är ett nytt konto, inte recovery av den tombstonade `user_id`. Apple styr själv om nästa Sign in with Apple visar namn och e-post igen. Körpasset sparar en ny refresh token om den nya inloggningen skickar en authorization code och Apple-nyckeln är konfigurerad.
 
+Nyhetsbrev är ett separat val på kontot och är av som standard. Tombstone nollar valet och tar bort avregistreringslänkar. En väntelisteanmälan ändrar inte valet, och nödvändiga meddelanden om konto, säkerhet eller tjänsten styrs inte av det.
+
 Apple-identities som saknar refresh token (konton skapade innan växlingen fanns, eller inloggningar där växlingen inte kunde sparas) raderas ändå lokalt. Då påstås inte att Apple-auktorisationen återkallats. Bekräftelsesidan ber dem ta bort Körpasset under Inställningar → namn → Inloggning och säkerhet → Logga in med Apple. Nya konton med sparad token ska inte behöva det steget.
 
 Inbjudan får **inte** skriva över `display_name` på ett `active`-konto. Namn från inbjudningsformuläret används när en guest-actor skapas. Aktiv user behåller kontots namn; ändring sker på `/konto`.

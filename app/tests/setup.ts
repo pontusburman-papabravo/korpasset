@@ -100,6 +100,8 @@ export async function resetDatabaseData(): Promise<void> {
       skills,
       auth_identities,
       oauth_handoffs,
+      marketing_unsubscribe_tokens,
+      email_broadcasts,
       users
     RESTART IDENTITY CASCADE
   `);

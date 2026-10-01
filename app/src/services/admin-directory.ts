@@ -2,6 +2,7 @@ import { AppError, NotFoundError } from "../errors.js";
 import { getPool } from "../db/pool.js";
 import { deleteProductAccount } from "./account-lifecycle.js";
 import { optionalIdentityEmail, sanitizeDisplayName } from "./oauth-accounts.js";
+import { marketingPreferenceFromRow } from "./marketing-preferences.js";
 
 export const DIRECTORY_PAGE_SIZE = 50;
 
@@ -27,6 +28,9 @@ export interface DirectoryUser {
   providers: string[];
   roles: Array<"student" | "supervisor">;
   identities: DirectoryIdentity[];
+  marketingEmailOptIn: boolean;
+  marketingEmailConsentAt: string | null;
+  marketingEmailOptOutAt: string | null;
 }
 
 export function isDirectoryAccountState(value: string | undefined): value is DirectoryAccountState {
@@ -143,6 +147,7 @@ async function hydrateUsers(
     const roles: DirectoryUser["roles"] = [];
     if (row.is_student) roles.push("student");
     if (row.is_supervisor) roles.push("supervisor");
+    const marketing = marketingPreferenceFromRow(row);
     return {
       id,
       displayName: deleted || row.display_name == null ? null : String(row.display_name),
@@ -153,11 +158,15 @@ async function hydrateUsers(
       providers: [...new Set(userIdentities.map((identity) => identity.provider))],
       roles,
       identities: userIdentities,
+      marketingEmailOptIn: marketing.optIn,
+      marketingEmailConsentAt: marketing.consentAt,
+      marketingEmailOptOutAt: marketing.optOutAt,
     };
   });
 }
 
 const USER_SELECT = `SELECT u.id, u.display_name, u.contact_email, u.account_state, u.created_at,
+            u.marketing_email_opt_in, u.marketing_email_consent_at, u.marketing_email_opt_out_at,
             EXISTS (SELECT 1 FROM driving_journeys j WHERE j.student_user_id = u.id) AS is_student,
             EXISTS (
               SELECT 1 FROM journey_collaborators jc

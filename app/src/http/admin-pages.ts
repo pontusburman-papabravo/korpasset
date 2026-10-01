@@ -29,7 +29,7 @@ import {
 import { csvCell } from "./csv.js";
 import { siteFooter, siteHeader } from "./landing.js";
 
-export type AdminNav = "overview" | "signups" | "users" | "statistik" | "support";
+export type AdminNav = "overview" | "signups" | "users" | "statistik" | "support" | "utskick";
 
 const ACCOUNT_STATE_LABELS: Record<string, string> = {
   guest: "Gäst",
@@ -913,6 +913,7 @@ export function usersListPage(options: {
         <td>${escapeHtml(roles)}</td>
         <td>${escapeHtml(user.providers.map(providerLabel).join(", ") || "—")}</td>
         <td>${escapeHtml(formatWhen(user.createdAt))}</td>
+        <td>Nyheter: ${user.marketingEmailOptIn ? "Ja" : "Nej"}</td>
         <td>${directoryRemoveForm(user, state)}</td>
       </tr>`;
     })
@@ -984,10 +985,10 @@ export function usersListPage(options: {
        <div class="admin-table-wrap">
          <table class="admin-table">
            <thead>
-             <tr><th>Namn</th><th>E-post</th><th>Status</th><th>Roll</th><th>Inloggning</th><th>Skapad</th><th>Åtgärd</th></tr>
+             <tr><th>Namn</th><th>E-post</th><th>Status</th><th>Roll</th><th>Inloggning</th><th>Skapad</th><th>Nyheter</th><th>Åtgärd</th></tr>
            </thead>
            <tbody>
-             ${rows || `<tr><td colspan="7">Inga användare matchar.</td></tr>`}
+             ${rows || `<tr><td colspan="8">Inga användare matchar.</td></tr>`}
            </tbody>
          </table>
        </div>
@@ -1094,6 +1095,22 @@ function loginSection(view: SupportUserView): string {
       <thead><tr><th>Leverantör</th><th>E-post från inloggning</th><th>Inloggnings-id</th></tr></thead>
       <tbody>${rows || `<tr><td colspan="3">Ingen inloggning kopplad.</td></tr>`}</tbody>
     </table>
+  </section>`;
+}
+
+function communicationSection(view: SupportUserView): string {
+  const status = view.marketingEmailOptIn ? "Ja" : "Nej";
+  const when = view.marketingEmailOptIn
+    ? view.marketingEmailConsentAt
+      ? `<p>Tackade ja: ${escapeHtml(formatWhen(view.marketingEmailConsentAt))}</p>`
+      : ""
+    : view.marketingEmailOptOutAt
+      ? `<p>Tackade nej: ${escapeHtml(formatWhen(view.marketingEmailOptOutAt))}</p>`
+      : "";
+  return `<section>
+    <h2>Kommunikation</h2>
+    <p>Nyheter via e-post: ${status}</p>
+    ${when}
   </section>`;
 }
 
@@ -1204,6 +1221,7 @@ export function supportUserPage(
            : `<p>Visningsnamn: ${escapeHtml(view.displayName ?? "—")}</p>`
        }
        ${loginSection(view)}
+       ${communicationSection(view)}
        ${options.editable ? userEditForm(view) : `<p><a href="/admin/users/${escapeHtml(view.id)}">Ändra användare</a></p>`}
        <section class="admin-kpis">
          ${kpi("Journeys", String(view.journeyCount))}

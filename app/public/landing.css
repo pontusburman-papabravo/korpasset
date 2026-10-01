@@ -639,6 +639,21 @@ label.interest-choice {
   min-width: 10rem;
 }
 
+.broadcast-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.broadcast-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  padding: 1rem;
+}
+
 .admin-kpis {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
