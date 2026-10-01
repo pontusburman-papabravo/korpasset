@@ -211,18 +211,6 @@ export async function countNewInterestSignups(): Promise<number> {
   return result.rows[0]?.count ?? 0;
 }
 
-/** Unique waitlist rows in the first beta cohort. Duplicates cannot exist (`email_normalized`). Declined does not count. */
-export const BETA_COHORT_SIZE = 25;
-
-export async function countBetaWaitlist(): Promise<number> {
-  const result = await getPool().query(
-    `SELECT count(*)::int AS count
-     FROM interest_signups
-     WHERE status <> 'declined'`,
-  );
-  return result.rows[0]?.count ?? 0;
-}
-
 export async function getInterestSignup(id: string): Promise<InterestSignup | null> {
   const result = await getPool().query(
     `SELECT * FROM interest_signups WHERE id = $1`,

@@ -25,7 +25,6 @@ import {
   requireActiveSupervisor,
   requireJourneyAccess,
 } from "../services/authorization.js";
-import { countBetaWaitlist } from "../services/interest.js";
 import {
   createDriveWithFocus,
   endDrive,
@@ -336,7 +335,6 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
   app.get("/", async (request, reply) => {
     return reply.type("text/html").send(
       renderLandingPage({
-        betaFilled: await countBetaWaitlist(),
         consent: wantsPublicCookieConsent(request),
         interestAction: `/interest${campaignSearch(request.query)}`,
       }),

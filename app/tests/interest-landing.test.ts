@@ -6,10 +6,6 @@ import {
   type OutboundEmail,
   setMailerForTests,
 } from "../src/services/email.js";
-import {
-  saveInterestSignup,
-  updateInterestSignup,
-} from "../src/services/interest.js";
 import { LEAD_SIGNAL_MAX_AGE_SECONDS } from "../src/http/consent.js";
 import { TESTFLIGHT_JOIN_URL, TRANSPORTSTYRELSEN_LINKS } from "../src/http/landing.js";
 import { createTestApp } from "./helpers.js";
@@ -32,7 +28,9 @@ describe("landing and interest waitlist", () => {
     assert.equal(response.statusCode, 200);
     assert.match(response.body, /Övningskörning med bättre koll/);
     assert.match(response.body, /Bli betatestare/);
-    assert.match(response.body, /0 av 25 platser fyllda/);
+    assert.doesNotMatch(response.body, /platser fyllda/);
+    assert.doesNotMatch(response.body, /första 25/);
+    assert.doesNotMatch(response.body, /role="progressbar"/);
     assert.match(response.body, /Ska du övningsköra privat/);
     assert.match(response.body, /En handledarguide som kommer ihåg/);
     assert.match(response.body, /bok i handskfacket/);
@@ -45,7 +43,7 @@ describe("landing and interest waitlist", () => {
     assert.match(response.body, /name="platform_android" value="yes"/);
     assert.doesNotMatch(response.body, /name="platform_ios"/);
     assert.match(response.body, /integritetspolicyn/);
-    assert.match(response.body, /Vi söker just nu våra första 25/);
+    assert.match(response.body, /Ingen betalning under betan/);
     assert.match(response.body, /oavsett om ni just börjat eller redan kört ett år/);
     assert.match(response.body, /Mamma, pappa, partner, syskon/);
     assert.match(response.body, /Vi har redan övningskört ett tag/);
@@ -424,50 +422,6 @@ describe("landing and interest waitlist", () => {
     );
     const count = await getPool().query(`SELECT count(*)::int AS n FROM interest_signups`);
     assert.equal(count.rows[0].n, 0);
-    await app.close();
-  });
-
-  it("shows waitlist progress from unique rows and ignores declined", async () => {
-    for (let i = 0; i < 3; i += 1) {
-      await saveInterestSignup({
-        name: `Familj ${i}`,
-        email: `familj${i}@example.com`,
-        role: "parent",
-        platformIos: true,
-      });
-    }
-    const declined = await saveInterestSignup({
-      name: "Avböjd",
-      email: "avbojd@example.com",
-      role: "other",
-      platformAndroid: true,
-    });
-    assert.ok(declined);
-    await updateInterestSignup(declined.signup.id, { status: "declined" });
-
-    const app = await createTestApp();
-    const home = await app.inject({ method: "GET", url: "/" });
-    assert.equal(home.statusCode, 200);
-    assert.match(home.body, /3 av 25 platser fyllda/);
-    assert.doesNotMatch(home.body, /4 av 25/);
-    await app.close();
-  });
-
-  it("caps the public counter at 25 and keeps the waitlist form", async () => {
-    for (let i = 0; i < 26; i += 1) {
-      await saveInterestSignup({
-        name: `Person ${i}`,
-        email: `person${i}@example.com`,
-        role: "student",
-        platformIos: true,
-      });
-    }
-    const app = await createTestApp();
-    const home = await app.inject({ method: "GET", url: "/" });
-    assert.match(home.body, /Första betagruppen är fylld/);
-    assert.match(home.body, /action="\/interest"/);
-    assert.doesNotMatch(home.body, /26 av 25/);
-    assert.match(home.body, /aria-valuenow="25"/);
     await app.close();
   });
 

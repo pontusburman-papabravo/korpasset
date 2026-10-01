@@ -1,4 +1,4 @@
-import { BETA_COHORT_SIZE, type InterestRole } from "../services/interest.js";
+import { type InterestRole } from "../services/interest.js";
 import { BRAND_ASSETS, escapeHtml, errorBanner, primaryButton, siteLayout } from "./layout.js";
 import {
   publicPageJsonLd,
@@ -132,7 +132,6 @@ export interface PublicConsentOptions {
 
 export function renderLandingPage(options: {
   errorMessage?: string;
-  betaFilled?: number;
   consent?: boolean;
   interestAction?: string;
   values?: {
@@ -160,7 +159,6 @@ export function renderLandingPage(options: {
          });
        </script>`
     : "";
-  const betaFilled = options.betaFilled ?? 0;
 
   return siteLayout(
     "Övningskör med bättre koll",
@@ -168,14 +166,13 @@ export function renderLandingPage(options: {
      <main>
        ${hero()}
        ${trafficPhotos()}
-       ${betaProgress(betaFilled)}
        ${howItWorks()}
        ${supervisorGuide()}
        ${whoItsFor()}
        ${whyItExists()}
        ${officialRules()}
        ${faq()}
-       ${interestSection(formError, values, betaFilled, options.interestAction || "/interest")}
+       ${interestSection(formError, values, options.interestAction || "/interest")}
      </main>
      ${siteFooter({ cookieSettings: options.consent !== false })}`,
     {
@@ -375,35 +372,6 @@ function heroCard(): string {
   </aside>`;
 }
 
-function betaProgress(filled: number): string {
-  const shown = Math.min(filled, BETA_COHORT_SIZE);
-  const percent = Math.round((shown / BETA_COHORT_SIZE) * 100);
-  const cohortFull = filled >= BETA_COHORT_SIZE;
-
-  const heading = cohortFull
-    ? "Första betagruppen är fylld — skriv upp dig för nästa plats"
-    : "Vi söker våra första 25 betatestare";
-  const status = cohortFull
-    ? `Första gruppen på ${BETA_COHORT_SIZE} är fylld. Du kan fortfarande anmäla intresse.`
-    : `${shown} av ${BETA_COHORT_SIZE} platser fyllda`;
-
-  return `<section class="site-section site-section--white" id="beta" aria-labelledby="beta-heading">
-    <div class="site-inner site-inner--narrow">
-      <p class="eyebrow">Beta</p>
-      <h2 id="beta-heading">${escapeHtml(heading)}</h2>
-      <p class="lede">${escapeHtml(status)}</p>
-      <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="${BETA_COHORT_SIZE}" aria-valuenow="${shown}" aria-label="${escapeHtml(status)}">
-        <span style="width:${percent}%"></span>
-      </div>
-      <p>iPhone laddar du ner via TestFlight. Android lämnar mejl tills Google öppnat för öppet test.</p>
-      <div class="beta-actions">
-        ${testFlightButton("Ladda ner för iPhone")}
-        <a class="btn btn-secondary" href="#android">Lämna mejl för Android</a>
-      </div>
-    </div>
-  </section>`;
-}
-
 function howItWorks(): string {
   return `<section class="site-section site-section--cream" id="sa-funkar-det">
     <div class="site-inner">
@@ -540,7 +508,6 @@ function interestSection(
     platformIos?: boolean;
     platformAndroid?: boolean;
   },
-  betaFilled: number,
   action = "/interest",
 ): string {
   const roleOptions = (Object.entries(ROLE_LABELS) as [InterestRole, string][])
@@ -549,11 +516,6 @@ function interestSection(
       return `<option value="${value}"${selected}>${escapeHtml(label)}</option>`;
     })
     .join("");
-
-  const cohortNote =
-    betaFilled >= BETA_COHORT_SIZE
-      ? "Första gruppen är fylld, men du kan skriva upp dig för nästa plats."
-      : "Vi söker just nu våra första 25 elever och handledare som vill hjälpa oss testa tjänsten.";
 
   return `<section class="site-section site-section--cta" id="intresse" data-interest-form>
     <div class="site-inner site-inner--narrow">
@@ -570,7 +532,7 @@ function interestSection(
         <div class="download-card" id="android">
           <h3>Android</h3>
           <p>Google Play har inte öppnat för öppet test än. Vi väntar på granskning. Lämna din mejladress så hör vi av oss när det går att ladda ner.</p>
-          <p>${escapeHtml(cohortNote)} Ingen betalning under betan.</p>
+          <p>Ingen betalning under betan.</p>
           ${formError}
           <form method="post" action="${escapeHtml(action)}" class="interest-form" novalidate>
             <div class="hp" aria-hidden="true">
@@ -625,13 +587,11 @@ export function renderInterestFormError(
     platformIos?: boolean;
     platformAndroid?: boolean;
   },
-  betaFilled = 0,
   options: PublicConsentOptions = {},
 ): string {
   return renderLandingPage({
     errorMessage: message,
     values,
-    betaFilled,
     consent: options.consent,
     interestAction: options.interestAction,
   });
