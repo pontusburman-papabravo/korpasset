@@ -53,10 +53,10 @@ export const MOMENT_GUIDES: MomentGuide[] = [
     cardBlurb: "Ett kort pass: stol, start, stopp och en lugn avslutning.",
     documentTitle: "Första gången ni övningskör · Körpasset",
     description:
-      "Ett lugnt första körpass. Vad körkortseleven behöver kunna, vad handledaren tittar efter och när ni ska avsluta innan det blir för mycket.",
+      "Ett lugnt första körpass. Vad körkortseleven behöver kunna, vad handledaren tittar efter och hur ni kan avsluta innan det blir för mycket.",
     h1: "Första gången ni övningskör",
     intro:
-      "Första passet ska kännas litet. Välj en tom yta eller en tyst villagata i dagsljus, och bestäm innan motorn går igång att ni bara tränar att komma iväg, rulla och stanna. Trafikregler, rondell och parkering får vänta tills bilen känns bekant.",
+      "Första passet kan vara litet. Börja på en stor tom yta som är avskild eller mycket lugn, i dagsljus. Bestäm innan motorn går igång att ni bara tränar att komma iväg, rulla och stanna. Annan trafik kan vänta tills den grundläggande manövreringen fungerar och du som handledare bedömer att det är säkert. Rondell och parkering kan vänta tills bilen känns bekant.",
     studentCan: [
       "Ställa in stol, ratt, speglar och bälte själv, och säga vad som ändrades.",
       "Starta utan ryck och stanna mjukt där ni kommit överens om.",
@@ -71,8 +71,8 @@ export const MOMENT_GUIDES: MomentGuide[] = [
       "Stå stilla bredvid bilen och säg vad passet ska innehålla: start, en kort sträcka, stopp. Inget mer.",
       "Låt eleven sätta stol, speglar och bälte. Fråga vad som sitter fel om något skaver, i stället för att rätta själv.",
       "En start och ett stopp på tom yta. Gör om samma sak tills det känns odramatiskt, inte tills det är perfekt.",
-      "Om det fortfarande är lugnt: en kort slinga i villaområdet, samma fart, samma uppgift.",
-      "Avsluta medan eleven fortfarande kan berätta vad som hände. Tio lugna minuter slår ett trött pass.",
+      "Annan trafik först när start och stopp fungerar på den tomma ytan, och du bedömer att platsen är säker.",
+      "Avsluta medan eleven fortfarande kan berätta vad som hände. Ett kort pass är ofta lättare att följa upp än ett som tar slut i trötthet.",
     ],
     mistakes: [
       "Att fylla första kvarten med allt ni själva var nervösa för: fickparkering, köer, en rondell “på vägen hem”.",
@@ -88,37 +88,37 @@ export const MOMENT_GUIDES: MomentGuide[] = [
     path: "/ovningskora/backning",
     label: "Backning",
     cardTitle: "Backning",
-    cardBlurb: "Tom yta, blick bakåt och så låg fart att ni hinner stanna.",
+    cardBlurb: "Tom yta, uppsikt runt bilen och så låg fart att ni hinner stanna.",
     documentTitle: "Öva backning: uppsikt och låg fart · Körpasset",
     description:
-      "Backa på tom yta först. Körkortseleven tittar bakåt, håller låg fart och handledaren ser om blicken eller ratten tar över.",
+      "Backa på tom yta först. Körkortseleven håller låg fart och ser runt bilen med speglar, egen sikt och kamera som komplement.",
     h1: "Öva backning",
     intro:
-      "Backning är ett uppsiktsmoment, inte ett ratttrick. Börja på en tom parkering i dagsljus, utan bilar i vägen. Kameran i bilen kan hjälpa sen. Första gångerna ska eleven vända sig om och se vad som finns bakom.",
+      "Backning handlar om uppsikt runt bilen, inte om ett särskilt ratttrick. Börja på en tom parkering i dagsljus, utan bilar i vägen. Speglar, egen sikt och backkamera används tillsammans. Kameran är ett komplement, inte den enda informationskällan.",
     studentCan: [
-      "Stanna, titta bakåt och åt sidorna, och först därefter släppa bromsen.",
-      "Rulla en billängd, stanna, titta igen. Farten ska vara så låg att ett stopp är odramatiskt.",
+      "Stanna och skaffa uppsikt bakåt och åt sidorna innan bromsen släpps. Speglar, egen sikt och kamera kan användas tillsammans.",
+      "Rulla en billängd, stanna, titta igen. Håll farten så låg att ett stopp är odramatiskt.",
       "Backa rakt en kort bit, och sedan en mjuk sväng, utan att gissa var bakhjulet tar vägen.",
     ],
     supervisorWatches: [
-      "Om blicken verkligen går bakåt, eller om eleven bara nickar mot spegeln.",
+      "Om uppsikten räcker runt bilen, eller om eleven bara använder en källa: spegeln, kameran eller blicken bakåt.",
       "Om farten smyger upp så fort svängen börjar.",
-      "Om du själv lutar dig och styr med rösten. Då är ytan för svår, inte eleven.",
+      "Om du själv lutar dig och styr med rösten. Då kan ytan vara för svår ännu.",
     ],
     steps: [
       "Välj en tom ruta med gott om asfalt bakom. Peka ut stolpar och kant innan ni rullar.",
-      "Eleven sitter stilla, vänder sig och säger vad som syns bakom bilen. Ingen gas än.",
+      "Ett sätt att kolla den direkta sikten är att vända sig och säga vad som syns bakom och vid sidan. Speglar och kamera får vara med. Ingen gas än.",
       "Rulla en billängd rakt bakåt. Stanna. Gör om tills spåret är tråkigt.",
-      "Lägg till en mjuk sväng. Samma regel: titta, rulla, stanna.",
-      "Avsluta där. Fickparkering är ett annat pass, när den här blicken sitter.",
+      "Lägg till en mjuk sväng. Samma upplägg: titta, rulla, stanna.",
+      "Avsluta där. Fickparkering kan bli ett annat pass, när uppsikten sitter.",
     ],
     mistakes: [
-      "Att lita på backkameran som enda uppsikt. Kameran ser inte allt vid sidan.",
+      "Att lita på bara en källa. Kameran ser inte allt vid sidan, och varken speglar, kamera eller en blick bakåt räcker ensam om uppsikten runt bilen saknas.",
       "Att backa långt i ett svep och rätta med stora rattrörelser.",
       "Att öva mellan parkerade bilar första gången, “eftersom det ändå är där man backar”.",
     ],
     readyWhen:
-      "När eleven backar en kort sträcka och en mjuk sväng på tom yta och fortfarande tittar ut, inte bara på skärmen. Då kan ni ta en rymlig parkeringsruta.",
+      "När eleven backar en kort sträcka och en mjuk sväng på tom yta och har uppsikt runt bilen, inte bara på skärmen. Då kan ni ta en rymlig parkeringsruta.",
     cta:
       "Notera om det var blicken, farten eller svängen som behövde en påminnelse. Nästa pass ska börja med just det, inte med en trängre lucka.",
   },
@@ -132,11 +132,11 @@ export const MOMENT_GUIDES: MomentGuide[] = [
       "Så övar ni parkering privat. Välj en rymlig plats, håll uppsikt mot trafiken och vänta med trånga luckor tills backningen sitter.",
     h1: "Öva parkering",
     intro:
-      "Parkering går att dela upp. Först en stor ruta på en lugn parkering, framåt in. Sedan en bred ficka längs en gata med lite trafik. En trång stadsgata är ett sent moment. Eleven ska välja platsen själv och kunna säga varför den duger.",
+      "Parkering går att dela upp som träning. Först en stor ruta på en lugn parkering, framåt in. Sedan en bred ficka längs en gata med lite trafik, om backningen redan känns lugn. En trång stadsgata kan vänta. Eleven kan välja platsen själv och säga varför den duger.",
     studentCan: [
       "Peka ut en plats och säga om den är stor nog, och vad som händer om någon kommer bakom.",
       "Köra in i en ruta framåt med uppsikt hela vägen, och stanna innan det tar i.",
-      "Backa in i en bred ficka i tre steg: startläge, vinkel, räta upp. Titta ut mot gatan under backningen, inte bara på linjerna.",
+      "Backa in i en bred ficka. Ett sätt att dela upp manövern är startläge, vinkel och att räta upp. Titta ut mot gatan under backningen, inte bara på linjerna.",
     ],
     supervisorWatches: [
       "Om eleven tappar gatan så fort inriktningen mot rutan börjar.",
@@ -146,17 +146,17 @@ export const MOMENT_GUIDES: MomentGuide[] = [
     steps: [
       "Gå ur bilen och titta på en tom ruta tillsammans. Prata om var bakhjulen kommer att ta, inte om betyg.",
       "Eleven kör in framåt, stannar, och ni tittar på hjulen en gång. Sedan ut igen, samma ruta.",
-      "Välj en bred ficka utan kö bakom. Dela manövern: lägg bilen parallellt, backa till vinkel, räta upp.",
+      "Välj en bred ficka utan kö bakom. Ett sätt att dela upp manövern är att lägga bilen parallellt, backa till vinkel och räta upp. Det är ett övningssätt, inte en regel.",
       "Avbryt om en bil kommer. Trafiken runt är uppgiften, inte att hinna klart.",
       "Spara den trånga luckan till ett annat pass, när den breda fickan känns långsam och odramatisk.",
     ],
     mistakes: [
-      "Att jaga en liten lucka för att det “ser ut som uppkörning”.",
+      "Att välja en trång lucka innan den breda känns lugn.",
       "Att stirra på kantstenen och glömma spegeln ut mot gatan.",
       "Att handledaren rattar med instruktioner i varje centimeter. Då övar eleven att lyda, inte att se.",
     ],
     readyWhen:
-      "När eleven kan ta en stor ruta och en bred ficka och fortfarande söker av gatan. Start i backe eller högerregeln är vettigare nästa steg än en smalare ficka samma dag.",
+      "När eleven kan ta en stor ruta och en bred ficka och fortfarande söker av gatan. Start i backe eller högerregeln kan vara ett annat pass, i stället för en smalare ficka samma dag.",
     cta:
       "Skriv vilken plats ni tog och om det var valet, uppsikten eller själva fickan som ska övas igen. Nästa handledare ska inte gissa.",
   },
@@ -164,13 +164,13 @@ export const MOMENT_GUIDES: MomentGuide[] = [
     path: "/ovningskora/start-i-backe",
     label: "Start i backe",
     cardTitle: "Start i backe",
-    cardBlurb: "Lätt lutning, ingen kö bakom, och bilen ska inte rulla.",
+    cardBlurb: "Lätt lutning, ingen kö bakom. Öva att hålla bilen stilla.",
     documentTitle: "Start i backe utan att rulla bakåt · Körpasset",
     description:
-      "Start i lätt lutning, utan kö bakom. Körkortseleven håller emot rullningen. Handbroms är ett stöd i början, även i automat.",
+      "Start i lätt lutning, utan kö bakom. Körkortseleven håller emot rullningen. Handbroms kan vara ett stöd. Även en automatbil kan röra sig i en lutning.",
     h1: "Start i backe",
     intro:
-      "Ni behöver en mild backe med fri sikt och ingen bil tätt bakom. Målet är litet: bilen ska stå stilla, och sedan rulla framåt utan att dippa bakåt. En brant backe med kö är fel första plats, oavsett hur modig eleven känner sig.",
+      "Ni behöver en mild backe med fri sikt och ingen bil tätt bakom. Målet är litet: att bilen står stilla, och sedan rullar framåt utan att dippa bakåt. En brant backe med kö är en svår första plats, även om eleven känner sig redo.",
     studentCan: [
       "Hålla bilen stilla i lutningen och säga vad som håller emot: fotbroms, handbroms eller båda.",
       "Köra iväg utan en okontrollerad rullning bakåt.",
@@ -178,19 +178,19 @@ export const MOMENT_GUIDES: MomentGuide[] = [
     ],
     supervisorWatches: [
       "Om bilen rör sig bakåt innan den tar fart. En decimeter är redan information.",
-      "Om eleven släpper allt på en gång. Då är lutningen för brant, eller så behövs handbromsen som stöd.",
-      "Om ni har automat. Momentet finns kvar: bilen ska inte rulla medan foten flyttas.",
+      "Om eleven släpper allt på en gång. Då kan lutningen vara för brant, eller så kan handbromsen vara ett stöd.",
+      "Om ni har automat. Även en automatbil kan röra sig i en lutning, beroende på bil och situation.",
     ],
     steps: [
       "Stanna på en svag lutning där det är tomt bakom. Låt eleven känna att bilen vill rulla, med bromsen i.",
-      "Första starten med handbroms som stöd. Fot och koppling, eller fotbroms och gas i automat, tills bilen tar emot.",
-      "Släpp handbromsen först när bilen vill framåt. Stanna igen och gör om.",
+      "Ett sätt att börja är med handbroms som stöd, om det passar bilen och lutningen. Det är inget ni måste använda. Fot och koppling, eller fotbroms och gas i automat, tills bilen tar emot.",
+      "Om ni använder handbroms: släpp den när bilen vill framåt. Stanna igen och gör om.",
       "Tre lugna starter på samma ställe. Byt inte backe för att det gick en gång.",
       "En aning brantare lutning bara om de tre första var tråkiga och ni fortfarande är ensamma där.",
     ],
     mistakes: [
       "Att börja i en brant backe för att “det är så det är på riktigt”.",
-      "Att hoppa över momentet för att bilen är automat. Rullning finns ändå.",
+      "Att hoppa över momentet för att bilen är automat. Även en automatbil kan röra sig i en lutning, beroende på bil och situation.",
       "Att lägga till en sväng eller en utfart i samma start. En sak i taget.",
     ],
     readyWhen:
@@ -202,37 +202,38 @@ export const MOMENT_GUIDES: MomentGuide[] = [
     path: "/ovningskora/hogerregeln",
     label: "Högerregeln",
     cardTitle: "Högerregeln",
-    cardBlurb: "Omärkta korsningar i villaområdet. Känn igen dem och släpp fram.",
+    cardBlurb: "Väjningsplikt från höger, övad i lugna omärkta korsningar.",
     documentTitle: "Öva högerregeln i villaområdet · Körpasset",
     description:
-      "Öva högerregeln där korsningen saknar märke. Körkortseleven ska känna igen den, söka åt höger och faktiskt lämna företräde.",
+      "Högerregeln ger väjningsplikt mot fordon från höger när kurserna skär varandra, om ingen annan väjningsregel gäller. I passet övar ni omärkta korsningar.",
     h1: "Öva högerregeln",
     intro:
-      "Högerregeln sitter inte i en skylt. Den sitter i korsningar som saknar märke och väjningslinje, ofta i villaområden. Välj tre eller fyra sådana korsningar ni redan känner, i dagsljus och låg fart. Eleven ska säga högt om det är högerregel eller om det finns ett märke, innan ni är framme.",
+      "Högerregeln innebär att du har väjningsplikt mot fordon som närmar sig från höger när era kurser skär varandra, om inte andra väjningsregler gäller. Den gäller inte bara i vanliga vägkorsningar. I det här passet tränar ni på vanliga omärkta korsningar i ett lugnt villaområde. Välj tre eller fyra sådana korsningar ni redan känner, i dagsljus och låg fart. Att en skylt saknas räcker inte som förklaring: trafiksignal, väjningsplikt, huvudled eller en annan regel kan styra i stället.",
     studentCan: [
-      "Se skillnad på en korsning med väjningsplikt och en utan, i tid för att sänka farten.",
-      "Söka åt höger och lämna företräde när någon kommer därifrån, inte bara nicka ditåt.",
-      "Förklara efteråt varför just den korsningen var högerregel.",
+      "Se skillnad på när ett märke, en signal eller en annan regel styr väjningsplikten, och när högerregeln kan gälla.",
+      "Söka åt höger och lämna företräde när ett fordon kommer därifrån och kurserna skär varandra, inte bara nicka ditåt.",
+      "Förklara efteråt varför högerregeln gällde just där, inte bara att en skylt saknades.",
     ],
     supervisorWatches: [
-      "Om eleven sänker för att hen såg korsningen, eller för att du sa till.",
+      "Om eleven sänker för att hen såg situationen, eller för att du sa till.",
       "Om “jag tittade” betyder att bilen ändå rullade ut.",
-      "Om varje korsning blir ett stopp av försiktighet. Då är reglerna ihopblandade, och det är värt att stanna och reda ut en i taget.",
+      "Om varje korsning blir ett stopp även när det är fritt från höger. Då kan ni stanna och reda ut en korsning i taget. Att stanna när det behövs är däremot riktigt.",
     ],
     steps: [
-      "Gå igenom kartan i stillastående: vilka korsningar saknar märke, och en där ni faktiskt har väjningsplikt så skillnaden syns.",
-      "Kör fram mot den första. Eleven säger “högerregel” eller “märke” innan korsningen.",
-      "Om någon kommer från höger: stanna på riktigt och släpp fram. Beröm avståendet, inte bara en mjuk inbromsning.",
-      "Ta samma korsningar en gång till. Andra varvet ska din påminnelse “kolla höger” kunna utebli.",
-      "Avsluta med att eleven pekar ut en korsning ni inte övade och säger vad som gäller där.",
+      "Gå igenom kartan i stillastående: var ni tror att högerregeln gäller, och en plats där ett väjningspliktsmärke eller en annan regel styr, så skillnaden syns.",
+      "Kör fram mot den första. Eleven säger vad som styr väjningsplikten innan ni är framme, inte bara om en skylt saknas.",
+      "Om ett fordon kommer från höger och kurserna skär varandra: sänk farten i god tid eller stanna, och kör vidare bara om det kan ske utan fara eller hinder.",
+      "Ta samma korsningar en gång till. Andra varvet kan din påminnelse “kolla höger” utebli.",
+      "Avsluta med att eleven pekar ut en korsning ni inte övade och säger vad som gäller där, inklusive om en annan regel tar över.",
     ],
     mistakes: [
-      "Att bara öva där det är tomt, så eleven aldrig behöver släppa fram någon.",
+      "Att bara öva där det är tomt, så eleven inte behöver släppa fram någon.",
+      "Att utgå från att en korsning utan skylt automatiskt är högerregel.",
       "Att titta åt vänster av vana och glömma höger.",
-      "Att blanda in en rondell i samma pass. Det är ett annat företräde.",
+      "Att blanda in en rondell i samma pass. Där väjer den som kör in för dem som redan är inne.",
     ],
     readyWhen:
-      "När eleven kan säga varför en korsning saknar märke och lämna företräde utan att du pekar. En liten enfältsrondell är ett bra nästa moment, en annan dag.",
+      "När eleven kan förklara varför högerregeln gällde i just den korsningen, och lämna företräde utan att du pekar. En liten enfältsrondell kan vara ett senare moment, en annan dag.",
     cta:
       "Skriv vilka korsningar ni tog och om eleven såg dem själv. Nästa gång ska ni kunna åka tillbaka till samma ställe och göra mindre.",
   },
@@ -243,14 +244,14 @@ export const MOMENT_GUIDES: MomentGuide[] = [
     cardBlurb: "En enkel enfältsrondell, många varv. Flerfält får vänta.",
     documentTitle: "Öva rondell: infart, läge och utfart · Körpasset",
     description:
-      "Börja med en enkel enfältsrondell. Öva fart före infarten, lucka och blinkers ut. Flerfältsrondell får vänta tills den lilla sitter.",
+      "Börja med en enkel enfältsrondell. Öva fart före infarten, en säker lucka och blinkers vid utfart. Flerfält kan vänta.",
     h1: "Öva rondell",
     intro:
-      "Ta en liten enfältsrondell i ett villaområde, inte den stora leden. Kör den flera varv så att infart, läge och utfart blir tre saker ni känner igen, inte en överraskning. Flerfält är ett senare pass, när den här rondellen känns långsam.",
+      "Det som i vardagligt tal brukar kallas rondell heter egentligen cirkulationsplats. Rondellen är området i mitten. Ta en liten enfältscirkulationsplats, inte den stora leden. Kör den flera varv så att infart, läge och utfart blir tre saker ni känner igen. Flerfält kan vänta tills den här känns lugn. Hur ni placerar er följer skyltar och körfält på just den platsen.",
     studentCan: [
-      "Sänka farten före infarten och titta åt vänster efter en lucka, utan att stanna i onödan.",
-      "Hålla sig i rondellen utan att skära, och veta vilken utfart ni ska ta innan ni är inne.",
-      "Blinka ut i tid och lämna utan att störa den som fortsätter runt.",
+      "Sänka farten före infarten och lämna företräde åt dem som redan är inne. Stanna om luckan inte räcker, och kör in när det kan ske säkert.",
+      "Välja det läge som skyltar och körfält visar för utfarten ni bestämt, och veta utfarten innan ni är inne.",
+      "Visa utfarten med blinkers och lämna utan att störa den som fortsätter runt.",
     ],
     supervisorWatches: [
       "Om eleven fryser vid infarten trots en lucka, eller kastar sig in i en för liten.",
@@ -259,14 +260,14 @@ export const MOMENT_GUIDES: MomentGuide[] = [
     ],
     steps: [
       "Stanna före rondellen första gången bara för att peka: här sänker vi, här tittar vi, tredje utfarten är målet. Sedan kör ni.",
-      "Eleven tar samma utfart flera varv. Luckan ska väljas, inte hoppas fram.",
+      "Eleven tar samma utfart flera varv. Ett sätt är att välja luckan medvetet, inte att hoppas att den räcker.",
       "Byt utfart. Säg den tidigt, så placeringen hinner bli ett val.",
-      "Öva att avstå från en trång lucka och ta nästa. Det är ett godkänt beslut.",
+      "Öva att avstå från en trång lucka och ta nästa. Det kan vara ett klokt val.",
       "Avsluta på den här rondellen. En större led är nästa kapitel, inte nästa varv.",
     ],
     mistakes: [
       "Att stanna på infarten varje gång, även när det är fritt.",
-      "Att glömma blinkers ut, eller att lägga sig fel för utfarten och rätta mitt i.",
+      "Att glömma blinkers vid utfarten, eller att välja läge utan att titta på skyltar och körfält.",
       "Att ta en flerfältsrondell för att den ligger på vägen hem.",
     ],
     readyWhen:
@@ -281,74 +282,74 @@ export const MOMENT_GUIDES: MomentGuide[] = [
     cardBlurb: "Känd utfart, en kurva och ett möte. Omkörning får vänta.",
     documentTitle: "Övningskörning på landsväg · Körpasset",
     description:
-      "När tätorten sitter kan ni ta en känd landsväg i dagsljus: påfart, kurva och möte. Omkörning är inte det första momentet där.",
+      "När tätorten sitter kan ni ta en känd landsväg i dagsljus: utfart, kurva och möte. Omkörning är ett mer krävande moment och kan vänta.",
     h1: "Övningskörning på landsväg",
     intro:
-      "Landsväg är högre fart och längre beslut, inte en belöning för att villaområdet gick bra en gång. Vänta tills start, stopp och vanliga korsningar är lugna. Välj en utfart ni känner, med god sikt, i dagsljus. Omkörning hör hemma sent i träningen, och bara om ni båda är överens om att platsen duger.",
+      "Landsväg är högre fart och längre beslut. Ett möjligt läge är när start, stopp och vanliga korsningar känns lugna. Välj en utfart ni känner, med god sikt, i dagsljus. Omkörning är ett mer krävande moment och kan vänta tills eleven har god kontroll på fart, placering och avstånd. Den behöver inte ingå i ett visst skede.",
     studentCan: [
       "Stå stilla vid utfarten, titta på luckorna och säga om den räcker i den fart som gäller på vägen.",
-      "Sänka före en kurva, inte mitt i den, och placera bilen så mötet får plats.",
+      "Anpassa farten före en kurva så att bilen kan köras stabilt genom den, och placera bilen så mötet får plats.",
       "Avstå från en omkörning utan att det känns som ett misslyckande.",
     ],
     supervisorWatches: [
-      "Om farten är nere innan kurvan börjar. Broms i kurvan är för sent.",
-      "Om luckan ut på vägen var elevens val. En lucka du tvingade fram räknas inte.",
-      "Om du själv blir rastlös bakom en långsammare bil. Avstå är ett giltigt beslut, säg det högt.",
+      "Om eleven anpassar farten före kurvan så att bilen kan köras stabilt genom den. Att behöva bromsa kraftigt inne i kurvan kan tyda på att farten var för hög från början. Trafiken kan ändå kräva en inbromsning.",
+      "Om luckan ut på vägen var elevens val. En lucka du tvingade fram säger lite om omdömet.",
+      "Om du själv blir rastlös bakom en långsammare bil. Att avstå kan vara ett klokt val. Säg det högt.",
     ],
     steps: [
       "Välj utfarten hemma, inte i farten. Dagsljus, torrt väglag, en väg ni har åkt som passagerare.",
       "Stanna och titta på luckor innan eleven kör ut. En utfart, inte en rundtur.",
       "Ta en kurva där eleven säger “sänker nu” innan den börjar. Kör samma kurva åt andra hållet om det går.",
       "Ett möte på en väg som inte är som smalast. Prata efteråt om var ni lade bilen, inte om mod.",
-      "Lämna omkörning. Om ni ändå pratar om den: bara för att säga att den får vänta tills resten känns tråkigt.",
+      "Omkörning behöver inte ingå. Om ni pratar om den: den kan vänta tills eleven har god kontroll på fart, placering och avstånd.",
     ],
     mistakes: [
       "Att ta landsvägen som första miljö för att “det är mindre trafik”.",
       "Att gasa in i en för kort lucka för att inte stå kvar vid utfarten.",
-      "Att lägga in en omkörning som första landsvägsmoment.",
+      "Att ta en omkörning innan eleven har kontroll på fart, placering och avstånd.",
     ],
     readyWhen:
-      "När utfarten och kurvan känns odramatiska och eleven sänker utan att du säger till. Motorväg är nästa miljö, en annan dag, med en påfart ni redan känner.",
+      "När utfarten och kurvan känns odramatiska och eleven anpassar farten före kurvan utan att du säger till. Motorväg kan vara ett senare pass, en annan dag, med en påfart ni redan känner. Det är ett förslag, inte en given ordning.",
     cta:
-      "Skriv om det var luckan ut, kurvan eller mötet som ska göras om, och att omkörning inte ingick. Nästa förare ska inte hitta på ett svårare pass.",
+      "Skriv om det var luckan ut, kurvan eller mötet som kan göras om, och om omkörning ingick eller inte. Nästa handledare behöver inte gissa sig till ett svårare pass.",
   },
   {
     path: "/ovningskora/motorvag",
     label: "Motorväg",
     cardTitle: "Motorväg",
-    cardBlurb: "En känd påfart i dagsljus. Hela accelerationsfältet, sedan högerfilen.",
+    cardBlurb: "En känd påfart i dagsljus. Anpassa farten och sök en säker lucka.",
     documentTitle: "Öva motorväg: påfart och avfart · Körpasset",
     description:
-      "En känd påfart i dagsljus. Använd accelerationsfältet, stanna inte på rampen och planera avfarten innan ni är framme vid den.",
+      "En känd påfart i dagsljus. Använd accelerationsfältet för att söka en säker lucka. Målet är att köra in utan stopp, men bara om det kan ske säkert.",
     h1: "Öva motorväg",
     intro:
-      "Första motorvägspasset ska vara kort och känt. En påfart ni har åkt förut, dagsljus, inte rusning. Målet är att komma in i trafikrytmen och att komma av igen på en avfart ni valt i förväg. Att ligga kvar länge, byta fil utan anledning eller “ta igen” en missad avfart hör inte hemma här.",
+      "Första motorvägspasset kan vara kort och känt. En påfart ni har åkt förut, dagsljus, inte rusning. Använd accelerationsfältet för att anpassa hastigheten till trafiken och söka en säker lucka. Målet är att kunna köra in utan att behöva stanna, men kör aldrig ut om det inte kan ske säkert. Säkerheten går före flytet. Planera också en avfart i förväg.",
     studentCan: [
-      "Använda accelerationsfältet för att närma sig trafiken, och välja en lucka utan att stanna på rampen.",
-      "Lägga sig i höger fil och hålla avstånd framåt när ni väl är inne.",
-      "Börja leta avfarten i tid, byta fil lugnt och sänka farten på avfartsfältet, inte ute i körfältet.",
+      "Använda accelerationsfältet för att anpassa hastigheten till trafiken, söka en säker lucka och lämna fältet så snart det kan ske säkert.",
+      "Låta bli att köra ut bara för att undvika ett stopp.",
+      "Börja leta avfarten i tid. Om det finns ett avfartsfält tar ni det så snart det kan ske, och sänker farten där. Om avfarten missas kan ni ta nästa.",
     ],
     supervisorWatches: [
-      "Om eleven stannar eller nästan stannar på rampen. Då är det för tidigt, eller så behövs ett varv till där du pekar ut luckorna först.",
+      "Om eleven återkommande tappar fart så mycket att en säker infart blir svår trots en normal trafiksituation. Då kan miljön vara för svår ännu. Ett enstaka stopp betyder inte att eleven inte är redo.",
       "Om blicken fastnar på hastighetsmätaren i stället för på luckan.",
-      "Om en missad avfart blir en sen inbromsning. Nästa avfart är rätt beslut.",
+      "Om en missad avfart blir en sen inbromsning i körfältet. Då kan ni ta nästa avfart.",
     ],
     steps: [
-      "Åk påfarten en gång som samtal, om eleven aldrig kört den: var fältet tar slut, var ni tittar, vilken avfart ni ska ta.",
-      "Eleven kör in. Hela fältet får användas. Om det är tätt: fortsätt i fältet och vänta på lucka, stanna inte.",
-      "En kort stund i höger fil. Inget filbyte “för att prova”.",
-      "Säg avfarten tidigt. Eleven ska hinna se skylten själv.",
-      "Om ni missar den: ta nästa. Prata om det när ni står stilla, inte mitt i filen.",
+      "Prata igenom påfarten innan ni kör den, om eleven aldrig kört den: var fältet tar slut, var ni tittar, vilken avfart ni ska ta.",
+      "Accelerationsfältet används för att närma sig trafikens fart och hitta en lucka. Lämna fältet så snart det kan ske säkert. Om luckan inte finns: sakta in eller stanna hellre än att köra ut.",
+      "En kort stund i höger körfält, om det passar trafiken. På det här passet behöver ni inte byta fil bara för att prova.",
+      "Säg avfarten tidigt, så eleven hinner se skylten.",
+      "Om ni missar den: ta nästa. Prata om det när ni står stilla.",
     ],
     mistakes: [
-      "Att stanna på påfarten för att vänta in en lucka.",
-      "Att byta till vänster fil utan att ni ska förbi någon.",
-      "Att bromsa i körfältet för att hinna en avfart som redan är förbi.",
+      "Att köra ut i en för liten lucka bara för att slippa stanna.",
+      "Att byta till vänster fil på ett första pass, utan att ni ska förbi någon.",
+      "Att bromsa sent i körfältet för att hinna en avfart som redan är förbi. Nästa avfart kan vara lugnare.",
     ],
     readyWhen:
-      "När samma påfart går att köra utan att någon av er håller andan, och avfarten var planerad. En annan påfart kan vänta till nästa pass. Landsvägen ni redan kan är fortfarande hemmaplan om motorvägen kändes för stor.",
+      "När samma påfart går att köra med en säker lucka, och avfarten var planerad. Ett stopp som gjordes för att luckan inte räckte är inte ett misslyckande. En annan påfart kan vänta till nästa pass. Landsvägen ni redan kan är fortfarande hemmaplan om motorvägen kändes för stor.",
     cta:
-      "Skriv vilken påfart och vilken avfart, och om nästa gång ska vara samma ställe. Ett motorvägspass som upprepas är mer värt än tre nya.",
+      "Skriv vilken påfart och vilken avfart, och om nästa gång kan vara samma ställe. Samma påfart en gång till kan vara lättare att följa upp än tre nya.",
   },
 ];
 
@@ -365,8 +366,8 @@ const hubSections: GuideSection[] = [
   {
     heading: "Elev och handledare",
     paragraphs: [
-      "Eleven är den som ska kunna köra själv till slut. Handledaren sitter bredvid, väljer miljö efter vad eleven klarar och säger till i tid — och är tyst när det går.",
-      "Det kan vara en förälder, en partner eller någon annan vuxen som är godkänd handledare för just den här eleven. Körpasset ändrar inte vem som är ansvarig i bilen. Det hjälper er att komma ihåg vad ni tränade.",
+      "Eleven är den som ska kunna köra själv till slut. Handledaren sitter bredvid, väljer miljö efter vad eleven klarar och säger till i tid — och kan vara tyst när det går.",
+      "Juridiskt räknas handledaren som förare och ansvarar för körningen. Det står hos Transportstyrelsen, tillsammans med vad som krävs för att få vara handledare. Körpasset ändrar inte det ansvaret. Appen hjälper er att komma ihåg vad ni tränade.",
     ],
   },
   {
@@ -379,22 +380,22 @@ const hubSections: GuideSection[] = [
   {
     heading: "Så kan ni planera träningen",
     paragraphs: [
-      "Börja med det eleven ska kunna i den miljö ni faktiskt har. En tom parkering och en villagata räcker långt. Skriv tre rader före passet: var ni kör, vad ni övar, vad som vore ett bra slut.",
+      "Börja med det eleven kan öva i den miljö ni faktiskt har. En stor tom yta räcker långt i början. Annan trafik kan vänta tills manövreringen fungerar och handledaren bedömer att det är säkert. Skriv tre rader före passet: var ni kör, vad ni övar, vad som vore ett bra slut.",
       "Lägg inte ett nytt moment och en ny plats på samma dag. Om rondellen är ny, kör en rondell ni känner. Om landsvägen är ny, ta en utfart ni redan åkt.",
     ],
   },
   {
     heading: "Hur ofta ni bör köra",
     paragraphs: [
-      "Det finns inget Körpasset-schema med ett visst antal timmar. Korta pass som återkommer gör mer än ett långt pass någon gång i månaden. Många kommer längre med två lugna varv i veckan än med en söndag som tar slut i irritation.",
-      "Om en vecka faller bort: börja nästa gång där ni slutade. Samma moment, samma plats. Ett uppehåll är inte ett skäl att ta något svårare.",
+      "Det finns inget Körpasset-schema med ett visst antal timmar eller pass i veckan. Korta, återkommande pass kan vara lättare att planera och följa upp än ett långt pass med många olika moment.",
+      "Om en vecka faller bort kan ni börja nästa gång där ni slutade, med samma moment och samma plats, i stället för att ta något svårare.",
     ],
   },
   {
     heading: "Från enkla moment till svårare",
     paragraphs: [
-      "En ordning som brukar hålla är den här. Först start och stopp på lugn plats. Sedan backning och parkering där det är gott om utrymme. Därefter omärkta korsningar och en liten rondell. Landsväg när tätorten är odramatisk. Motorväg sist av de här, på en påfart ni känner.",
-      "Hoppa inte för att något “känns viktigt inför uppkörningen”. Ett moment som sitter i en enkel miljö går att ta med till en svårare. Ett moment som bara överlevdes i den svåra miljön behöver ofta göras om.",
+      "Ett möjligt upplägg är att börja med start och stopp på en lugn plats. Sedan backning och parkering där det är gott om utrymme. Därefter omärkta korsningar och en liten rondell. Landsväg när tätorten känns lugn. Motorväg sist av de här, på en påfart ni känner. Det är ett praktiskt förslag, inte ett myndighetskrav och inte något som krävs för uppkörning. Anpassa efter elevens nivå och den trafikmiljö ni har.",
+      "Ni behöver inte ta ett svårare moment bara för att det känns som nästa steg. Ett moment som sitter i en enkel miljö går att ta med till en svårare. Ett moment som bara tog sig igenom i den svåra miljön kan vara värt att göra om.",
     ],
   },
   {
@@ -447,7 +448,7 @@ export const SUPERVISOR_GUIDE: StandaloneGuide = {
     {
       heading: "Rollen bredvid",
       paragraphs: [
-        "Handledaren är inte en andreförare som tar över så fort det blir osäkert, och inte en passagerare som hoppas att det löser sig. Du väljer väg efter vad eleven kan, ger en instruktion tidigt nog att hinna användas, och tar en paus när det stannar av.",
+        "Juridiskt räknas du som handledare som förare och ansvarar för körningen. Din roll i träningen är samtidigt att låta eleven göra så mycket som situationen och elevens förmåga tillåter. Du behöver inte detaljstyra så fort eleven tvekar, och du är inte en passagerare som hoppas att det löser sig.",
         "I bilen är trafiksäkerheten först. Om du behöver bryta, bryt lugnt och kör åt sidan. Pratet om vad som hände kan vänta tills ni står stilla.",
       ],
     },
@@ -473,7 +474,7 @@ export const SUPERVISOR_GUIDE: StandaloneGuide = {
     {
       heading: "Håll passet lugnt",
       paragraphs: [
-        "Korta pass håller. Om rösten höjs, om eleven slutar svara eller om du börjar styra varje meter: avbryt och kör hem, eller byt till något eleven redan kan.",
+        "Korta pass kan vara lättare att hålla lugna. Om rösten höjs, om eleven slutar svara eller om du börjar styra varje meter: avbryt och kör hem, eller byt till något eleven redan kan.",
         "Instruktioner i tid, och gärna varför, slår en lång utläggning mitt i manövern. När momentet sitter kan du vara tyst. Tystnaden är träningen.",
       ],
     },
