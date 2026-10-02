@@ -102,6 +102,11 @@ describe("four-tab IA and journey context", () => {
     assert.doesNotMatch(studentHome.body, /app-bar__nav/);
     assert.doesNotMatch(studentHome.body, /<a href="\/konto">Konto<\/a>/);
     assert.doesNotMatch(studentHome.body, /<a href="\/hjalp">Hjälp<\/a>/);
+    assert.match(studentHome.body, /class="support-bubble"/);
+    assert.match(studentHome.body, /Rapportera en bugg/);
+    assert.match(studentHome.body, /Skriv till support/);
+    assert.match(studentHome.body, /data-support-href="\/hjalp\?topic=technical"/);
+    assert.match(supervisorHome.body, /class="support-bubble"/);
     assert.doesNotMatch(studentHome.body, />Fokus</);
     await app.close();
   });

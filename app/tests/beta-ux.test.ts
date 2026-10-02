@@ -468,6 +468,23 @@ describe("beta UX HTTP", () => {
     assert.match(help.body, /<h1>Hjälp<\/h1>/);
     assert.match(help.body, /handledarguiden/);
     assert.match(help.body, /\/api\/client-error/);
+    assert.doesNotMatch(help.body, /class="support-bubble"/);
+
+    const bug = await app.inject({
+      method: "GET",
+      url: "/hjalp?topic=technical&from=/invite/secret-token",
+    });
+    assert.equal(bug.statusCode, 200);
+    assert.match(bug.body, /<h1>Rapportera en bugg<\/h1>/);
+    assert.match(bug.body, /value="technical" selected/);
+    assert.match(bug.body, /name="from" value="\/invite\/\[redacted\]"/);
+    assert.doesNotMatch(bug.body, /secret-token/);
+
+    const offsite = await app.inject({
+      method: "GET",
+      url: "/hjalp?from=https://evil.example/phish",
+    });
+    assert.doesNotMatch(offsite.body, /evil\.example/);
 
     const posted = await injectWithSession(app, session(userId), {
       method: "POST",
@@ -486,6 +503,20 @@ describe("beta UX HTTP", () => {
     assert.match(sent[0].text, /E-post: saknas/);
     assert.match(sent[0].text, new RegExp(`/admin/support/users/${userId}`));
     assert.equal(sent[0].replyTo, undefined);
+
+    const withPage = await injectWithSession(app, session(userId), {
+      method: "POST",
+      url: "/hjalp",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({
+        topic: "technical",
+        message: "Knappen för att spara fokus gör inget.",
+        from: "/journey/abc?token=sekret",
+      }),
+    });
+    assert.equal(withPage.statusCode, 200);
+    assert.match(sent[1].text, /Sida: \/journey\/abc\?token=\[redacted\]/);
+    assert.doesNotMatch(sent[1].text, /sekret/);
 
     const invalid = await app.inject({
       method: "POST",

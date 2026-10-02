@@ -46,6 +46,8 @@ export interface AppLayoutOptions {
   journeyId?: string;
   role?: "student" | "supervisor";
   activeTab?: AppTab | null;
+  /** Set false on the help form itself, where the bubble would cover the fields. */
+  supportBubble?: boolean;
 }
 
 function tabIcon(name: AppTab): string {
@@ -72,6 +74,51 @@ function appNav(options: AppLayoutOptions = {}): string {
   </nav>`;
 }
 
+function supportBubble(): string {
+  return `<div class="support-bubble">
+    <details class="support-bubble__details">
+      <summary class="support-bubble__button">
+        <svg class="support-bubble__icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 7.25h12a2.25 2.25 0 0 1 2.25 2.25v5.5A2.25 2.25 0 0 1 18 17.25h-5.2L8.2 20v-2.75H6A2.25 2.25 0 0 1 3.75 15V9.5A2.25 2.25 0 0 1 6 7.25z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+        <span>Hjälp</span>
+      </summary>
+      <div class="support-bubble__panel">
+        <p class="support-bubble__title">Hur kan vi hjälpa till?</p>
+        <p class="support-bubble__text">Rapportera en bugg eller skriv till supporten.</p>
+        <a class="btn btn-primary" data-support-href="/hjalp?topic=technical" href="/hjalp?topic=technical">Rapportera en bugg</a>
+        <a class="btn btn-secondary" data-support-href="/hjalp" href="/hjalp">Skriv till support</a>
+      </div>
+    </details>
+  </div>
+  <script>
+    (function () {
+      var root = document.querySelector(".support-bubble");
+      if (!root) return;
+      var details = root.querySelector("details");
+      var path = location.pathname || "/";
+      var search = location.search || "";
+      if (search && (path + search).length <= 180) path += search;
+      root.querySelectorAll("[data-support-href]").forEach(function (link) {
+        var base = link.getAttribute("data-support-href");
+        if (!base) return;
+        link.href = base + (base.indexOf("?") === -1 ? "?" : "&") + "from=" + encodeURIComponent(path);
+      });
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && details && details.open) details.open = false;
+      });
+      document.addEventListener("click", function (event) {
+        if (!details || !details.open) return;
+        var target = event.target;
+        if (target && root.contains(target)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        details.open = false;
+      }, true);
+    })();
+  </script>`;
+}
+
 /** Product pages. No public cookie banner — Apple Review loads this in the iOS WebView. */
 export function layout(title: string, body: string, options: AppLayoutOptions = {}): string {
   return `<!DOCTYPE html>
@@ -84,7 +131,7 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
   ${faviconLink()}
   <link rel="stylesheet" href="/app.css">
 </head>
-<body class="app">
+<body class="app${options.supportBubble === false ? "" : " app--support"}">
   <header class="app-bar">
     <a class="app-bar__brand" href="/resa">
       <img src="${BRAND_ASSETS.logo}" alt="Körpasset">
@@ -94,6 +141,7 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
     ${body}
   </main>
   ${appNav(options)}
+  ${options.supportBubble === false ? "" : supportBubble()}
   <script>
     window.addEventListener("error", function (event) {
       try {
