@@ -98,6 +98,16 @@ describe("stuck help emails", () => {
     setMailerForTests(null);
   });
 
+  it("reports the open app again when the page becomes visible or the native app resumes", async () => {
+    const app = await createTestApp();
+    const page = await app.inject({ method: "GET", url: "/app" });
+    assert.equal(page.statusCode, 200);
+    assert.match(page.body, /fetch\("\/api\/client"/);
+    assert.match(page.body, /visibilitychange/);
+    assert.match(page.body, /appStateChange/);
+    await app.close();
+  });
+
   it("sends once when there is no journey, 25h of quiet, and an email", async () => {
     const user = await quietAccount("Nora", "nora@example.com", 25);
     const summary = await run();
