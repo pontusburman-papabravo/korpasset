@@ -52,7 +52,7 @@ describe("account state is a central product-session rule", () => {
       { method: "GET", url: "/" },
     );
     assert.equal(home.statusCode, 200);
-    assert.match(home.body, /Bli betatestare/);
+    assert.match(home.body, /Ladda ner på App Store/);
 
     const account = await injectWithSession(
       app,

@@ -156,7 +156,7 @@ a { color: inherit; }
 }
 
 .hero {
-  padding: 3rem 0 2rem;
+  padding: 1.25rem 0 2rem;
 }
 
 .photo-strip {
@@ -194,11 +194,13 @@ a { color: inherit; }
   flex-wrap: wrap;
   gap: 1rem;
   align-items: center;
-  margin: 1.5rem 0 0.75rem;
+  margin: 0.5rem 0 0.75rem;
 }
 
 .hero__ctas .btn-primary,
-.hero__ctas .btn-secondary { width: auto; padding: 0.85rem 1.4rem; }
+.hero__ctas .btn-secondary { width: 100%; padding: 0.85rem 1.4rem; }
+
+.hero__ctas .btn-link { flex-basis: 100%; }
 
 .hero__trust {
   color: var(--muted);
@@ -535,6 +537,8 @@ label.interest-choice {
 .legal a.btn-primary { width: auto; max-width: 22rem; }
 
 @media (min-width: 48rem) {
+  .hero { padding: 3rem 0 2rem; }
+  .hero__ctas { margin: 1.5rem 0 0.75rem; }
   .site-nav__links { display: flex; }
   .site-nav__cta--mobile { display: none; }
   .hero__grid { grid-template-columns: 1.1fr 0.9fr; align-items: center; }
@@ -545,6 +549,9 @@ label.interest-choice {
   .photo-strip figure:last-child { grid-column: auto; }
   .photo-strip img { height: 13.5rem; }
   .download-card .btn-primary { width: auto; min-width: 14rem; }
+  .hero__ctas .btn-primary,
+  .hero__ctas .btn-secondary { width: auto; }
+  .hero__ctas .btn-link { flex-basis: auto; }
 }
 
 .admin-shell {

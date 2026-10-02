@@ -7,7 +7,7 @@ import {
   setMailerForTests,
 } from "../src/services/email.js";
 import { LEAD_SIGNAL_MAX_AGE_SECONDS } from "../src/http/consent.js";
-import { TESTFLIGHT_JOIN_URL, TRANSPORTSTYRELSEN_LINKS } from "../src/http/landing.js";
+import { APP_STORE_URL, TRANSPORTSTYRELSEN_LINKS } from "../src/http/landing.js";
 import { createTestApp } from "./helpers.js";
 import { formBody } from "./http-helpers.js";
 import { resetDatabaseData } from "./setup.js";
@@ -27,7 +27,12 @@ describe("landing and interest waitlist", () => {
     const response = await app.inject({ method: "GET", url: "/" });
     assert.equal(response.statusCode, 200);
     assert.match(response.body, /Övningskörning med bättre koll/);
-    assert.match(response.body, /Bli betatestare/);
+    assert.match(response.body, /Ladda ner på App Store/);
+    assert.match(response.body, /Android – anmäl dig/);
+    assert.match(response.body, /tidig testfas och gratis att använda/);
+    assert.doesNotMatch(response.body, /Bli betatestare/);
+    assert.doesNotMatch(response.body, /TestFlight/i);
+    assert.doesNotMatch(response.body, /testflight\.apple\.com/);
     assert.doesNotMatch(response.body, /platser fyllda/);
     assert.doesNotMatch(response.body, /första 25/);
     assert.doesNotMatch(response.body, /role="progressbar"/);
@@ -35,15 +40,13 @@ describe("landing and interest waitlist", () => {
     assert.match(response.body, /En handledarguide som kommer ihåg/);
     assert.match(response.body, /bok i handskfacket/);
     assert.match(response.body, /action="\/interest"/);
-    assert.match(response.body, new RegExp(TESTFLIGHT_JOIN_URL.replaceAll("/", "\\/")));
-    assert.match(response.body, /Ladda ner för iPhone/);
-    assert.match(response.body, /Lämna mejl för Android/);
-    assert.match(response.body, /öppet test/);
-    assert.match(response.body, /väntar på granskning/);
+    assert.match(response.body, new RegExp(APP_STORE_URL.replaceAll("/", "\\/").replaceAll("%", "\\%")));
+    assert.match(response.body, /Google Play-versionen väntar på godkännande/);
+    assert.doesNotMatch(response.body, /play\.google\.com/);
     assert.match(response.body, /name="platform_android" value="yes"/);
     assert.doesNotMatch(response.body, /name="platform_ios"/);
     assert.match(response.body, /integritetspolicyn/);
-    assert.match(response.body, /Ingen betalning under betan/);
+    assert.match(response.body, /Körpasset hjälper körkortselev och handledare att övningsköra med en plan/);
     assert.match(response.body, /oavsett om ni just börjat eller redan kört ett år/);
     assert.match(response.body, /Mamma, pappa, partner, syskon/);
     assert.match(response.body, /Vi har redan övningskört ett tag/);
@@ -437,7 +440,7 @@ describe("landing and interest waitlist", () => {
     assert.ok(externals.length >= 5);
     const allowedExternal = new Set<string>([
       ...Object.values(TRANSPORTSTYRELSEN_LINKS),
-      TESTFLIGHT_JOIN_URL,
+      APP_STORE_URL,
     ]);
     for (const href of externals) {
       assert.ok(allowedExternal.has(href), href);
@@ -506,9 +509,9 @@ describe("landing and interest waitlist", () => {
     assert.doesNotMatch(form, /class="consent"/);
     assert.match(form, /name="platform_android" value="yes"/);
     assert.doesNotMatch(form, /name="platform_ios"/);
-    assert.match(form, /class="interest-choice"[\s\S]*name="consent"[\s\S]*Jag vill bli kontaktad om betan/);
-    assert.match(home.body, /id="iphone"[\s\S]*TestFlight[\s\S]*id="android"[\s\S]*öppet test/);
-    assert.match(form, /Jag vill bli kontaktad om betan[\s\S]*Bli betatestare/);
+    assert.match(form, /class="interest-choice"[\s\S]*name="consent"[\s\S]*Jag vill bli kontaktad om Körpasset/);
+    assert.match(home.body, /id="iphone"[\s\S]*App Store[\s\S]*id="android"[\s\S]*väntar på godkännande/);
+    assert.match(form, /Jag vill bli kontaktad om Körpasset[\s\S]*Anmäl dig/);
 
     assert.match(home.body, /<div class="consent" data-consent-root/);
     const consentCss = fs.readFileSync(new URL("../public/consent.css", import.meta.url), "utf8");
@@ -535,8 +538,8 @@ describe("landing and interest waitlist", () => {
     assert.equal(invalid.statusCode, 400);
     const interest = invalid.body.match(/<section[^>]*id="intresse"[\s\S]*?<\/section>/)?.[0];
     assert.ok(interest);
-    assert.match(interest, /role="alert"[\s\S]*Bekräfta att du vill bli kontaktad om betan/);
-    const errorAt = interest.indexOf("Bekräfta att du vill bli kontaktad om betan");
+    assert.match(interest, /role="alert"[\s\S]*Bekräfta att du vill bli kontaktad om Körpasset/);
+    const errorAt = interest.indexOf("Bekräfta att du vill bli kontaktad om Körpasset");
     const formAt = interest.indexOf("<form");
     assert.ok(errorAt >= 0 && formAt > errorAt);
     assert.match(interest, /id="intresse"[\s\S]*scrollIntoView/);

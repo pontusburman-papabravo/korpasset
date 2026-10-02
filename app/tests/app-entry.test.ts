@@ -316,7 +316,7 @@ describe("app entry (GET /app) and production onboarding", () => {
     const app = await createTestApp();
     const anonymous = await app.inject({ method: "GET", url: "/" });
     assert.equal(anonymous.statusCode, 200);
-    assert.match(anonymous.body, /Bli betatestare/);
+    assert.match(anonymous.body, /Ladda ner på App Store/);
     assert.doesNotMatch(anonymous.body, /Fortsätt med Apple/);
     assert.doesNotMatch(anonymous.body, /Starta min körkortsresa/);
 
@@ -326,7 +326,7 @@ describe("app entry (GET /app) and production onboarding", () => {
       { method: "GET", url: "/" },
     );
     assert.equal(signedIn.statusCode, 200);
-    assert.match(signedIn.body, /Bli betatestare/);
+    assert.match(signedIn.body, /Ladda ner på App Store/);
     assert.doesNotMatch(signedIn.body, /Fortsätt med Apple/);
     await app.close();
   });
