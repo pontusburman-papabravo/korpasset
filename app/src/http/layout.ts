@@ -182,6 +182,7 @@ export function siteLayout(
     documentTitle?: string;
     robots?: string;
     jsonLd?: unknown;
+    ogType?: string;
     /** Admin pages stay free of the public cookie banner and analytics tag. */
     consent?: boolean;
   } = {},
@@ -194,6 +195,7 @@ export function siteLayout(
   const canonicalUrl = publicUrl(options.path ?? "/");
   const imageUrl = publicUrl(BRAND_ASSETS.ogImage);
   const robots = options.robots ?? "index, follow";
+  const ogType = options.ogType ?? "website";
   const structuredData = options.jsonLd ? `\n  ${jsonLdScript(options.jsonLd)}` : "";
   const consent = options.consent === false ? "" : `\n  ${consentHead()}`;
   const consentMarkup = options.consent === false ? "" : `\n  ${consentBody()}`;
@@ -221,7 +223,7 @@ export function siteLayout(
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="${escapeHtml(`${SITE_NAME} – övningskörning för att ta körkort`)}">
   <meta property="og:url" content="${escapeHtml(canonicalUrl)}">
-  <meta property="og:type" content="website">
+  <meta property="og:type" content="${escapeHtml(ogType)}">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${escapeHtml(pageTitle)}">
   <meta name="twitter:description" content="${escapeHtml(description)}">

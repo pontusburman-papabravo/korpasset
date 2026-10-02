@@ -1,5 +1,6 @@
 import { type InterestRole } from "../services/interest.js";
 import { BRAND_ASSETS, escapeHtml, errorBanner, primaryButton, siteLayout } from "./layout.js";
+import { HOME_GUIDE_CARDS, HUB_PATH, SUPERVISOR_PATH } from "./guide-content.js";
 import {
   publicPageJsonLd,
   SITE_DESCRIPTION,
@@ -168,6 +169,7 @@ export function renderLandingPage(options: {
        ${trafficPhotos()}
        ${howItWorks()}
        ${supervisorGuide()}
+       ${practiceGuides()}
        ${whoItsFor()}
        ${whyItExists()}
        ${officialRules()}
@@ -180,12 +182,13 @@ export function renderLandingPage(options: {
       path: "/",
       documentTitle: LANDING_DOCUMENT_TITLE,
       consent: options.consent !== false,
+      // FAQ stays visible in the page. FAQPage JSON-LD is omitted: Google retired that rich result in May 2026.
       jsonLd: publicPageJsonLd({
         path: "/",
         title: LANDING_DOCUMENT_TITLE,
         description: LANDING_DESCRIPTION,
-        faq: LANDING_FAQ,
         includeApp: true,
+        appDownloadUrl: TESTFLIGHT_JOIN_URL,
       }),
     },
   );
@@ -280,6 +283,7 @@ export function siteHeader(
     ${siteLogo("/")}
     <nav class="site-nav__links" aria-label="Huvudmeny">
       <a href="/#sa-funkar-det">Övningskörning</a>
+      <a href="${HUB_PATH}">Guider</a>
       <a href="/#regler">Regler</a>
       <a href="/#intresse" class="site-nav__cta">Ladda ner</a>
     </nav>
@@ -303,6 +307,8 @@ export function siteFooter(
         <p>Stöd för privat övningskörning när ni ska ta körkort.</p>
       </div>
       <div>
+        <a href="${HUB_PATH}">Övningskörning</a>
+        <a href="${SUPERVISOR_PATH}">Handledare</a>
         <a href="/integritet">Integritet</a>
         ${cookiePolicy}
         ${cookieSettings}
@@ -417,6 +423,27 @@ function supervisorGuide(): string {
         <li>Steg ni kan bocka av under körpasset.</li>
       </ul>
       <p>Det är träningsstöd, inte en teoriapp och inte ett officiellt körkortsresultat. Körpasset ersätter inte Transportstyrelsens regler och är inte någon annans handledarbok.</p>
+      <p>Innan ni sätter er i bilen kan ni läsa <a href="${HUB_PATH}">guiden om privat övningskörning</a> och <a href="${SUPERVISOR_PATH}">vad handledaren kan tänka på</a>.</p>
+    </div>
+  </section>`;
+}
+
+function practiceGuides(): string {
+  const cards = HOME_GUIDE_CARDS.map(
+    (guide) => `<a class="value-card guide-card" href="${escapeHtml(guide.path)}">
+          <h3>${escapeHtml(guide.cardTitle)}</h3>
+          <p>${escapeHtml(guide.cardBlurb)}</p>
+        </a>`,
+  ).join("");
+  return `<section class="site-section site-section--cream" id="guider" aria-labelledby="guider-heading">
+    <div class="site-inner">
+      <p class="eyebrow">Guider</p>
+      <h2 id="guider-heading">Guider för övningskörning</h2>
+      <p class="lede">Korta upplägg för körkortselev och handledare. Ett moment per pass, så ni vet vad ni ska titta efter.</p>
+      <div class="card-grid">
+        ${cards}
+      </div>
+      <p><a class="btn-link" href="${HUB_PATH}">Alla guider om övningskörning</a> · <a class="btn-link" href="${SUPERVISOR_PATH}">För handledare</a></p>
     </div>
   </section>`;
 }

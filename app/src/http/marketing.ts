@@ -21,6 +21,7 @@ import {
   privacyPage,
   termsPage,
 } from "./legal.js";
+import { registerGuideRoutes } from "./guides.js";
 import { robotsTxt, sitemapXml } from "./seo.js";
 import { INTEREST_RATE_LIMIT, allowRequest } from "./rate-limit.js";
 
@@ -97,6 +98,8 @@ function interestPageOptions(request: FastifyRequest) {
 }
 
 export async function registerMarketingRoutes(app: FastifyInstance): Promise<void> {
+  await registerGuideRoutes(app);
+
   app.get("/robots.txt", async (_request, reply) => {
     return reply
       .type("text/plain; charset=utf-8")
