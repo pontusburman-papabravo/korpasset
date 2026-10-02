@@ -1,0 +1,72 @@
+Körpasset — App Store Connect, svenska, version 1.0
+Skärmbilder: artifacts/app-store/iphone-6.5/
+Format: 1284 × 2778 px (iPhone 6,5"). Ladda upp i den här ordningen.
+De tre första visas på installationsbladet. App Preview behövs inte.
+
+1. 01-ovningskor-med-en-plan.png
+2. 02-vad-tranar-ni-pa-idag.png
+3. 03-hur-gick-det.png
+4. 04-sa-gick-det.png
+5. 05-i-bilen.png
+
+Promotional Text
+109 / 170
+
+Övningskör med en plan. Elev och handledare väljer dagens moment, ser hur det gick och vad ni tar nästa gång.
+
+Description
+965 / 4000
+
+Körpasset är appen för privat övningskörning mot svenskt B-körkort. Den är till för körkortseleven och handledaren som kör tillsammans.
+
+Tre frågor håller ihop varje körpass:
+
+Vad ska vi träna på idag?
+Hur gick det?
+Vad bör vi träna på nästa gång?
+
+Eleven startar en körkortsresa och bjuder in en eller flera handledare. Inför passet väljer ni två eller tre moment, till exempel speglar, rondell eller hastighet. Under körningen kan handledaren bocka av det ni övat, när det är säkert. Efteråt bedömer handledaren varje moment: behöver hjälp, med påminnelse eller utan hjälp. Nästa tips utgår från era egna körpass.
+
+Ni ser samma resa. Flera handledare kan vara med, så historiken inte stannar i en enda telefon.
+
+Körpasset är inte en teoriapp, inte en trafikskola och inte ett officiellt körkortsprov. Appen är inte utvecklad av, ansluten till eller godkänd av Transportstyrelsen eller Trafikverket. Den säger inte att eleven är redo för uppkörning.
+
+Papa Bravo AB
+
+Keywords
+96 / 100
+
+övningskörning,körkort,handledare,körkortselev,B-körkort,övningsköra,körpass,uppkörning,förälder
+
+Support URL
+https://korpasset.se/kontakt
+
+Marketing URL
+https://korpasset.se
+
+Version
+1.0
+
+Copyright
+2026 Papa Bravo AB
+
+Routing App Coverage File
+Lämna tom. Körpasset är inte en navigationsapp.
+
+App Clip / iMessage
+Lämna tomt.
+
+Sign-in required
+Nej. Ingen användare och inget lösenord.
+
+App Review Notes
+The app is in Swedish. No account password is required. Open the app and enter a first name on the first screen, then tap "Starta min körkortsresa". Invite a supervisor from the journey screen if you want to review a drive. Körpasset helps a learner and a private supervisor plan practice drives for a Swedish category B licence. It is not an official Transportstyrelsen or Trafikverket service, and it does not claim the learner is ready for the driving test. The app uses HTTPS only.
+
+Contact Information
+First name: Pontus
+Last name: Burman
+Email: support@korpasset.se
+Phone: fyll i ditt mobilnummer här. Det finns inte i repot, och App Review kräver ett nummer.
+
+App Store Version Release
+Manually release this version
