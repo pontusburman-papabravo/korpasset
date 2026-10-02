@@ -118,7 +118,7 @@ import {
   setHandoffCookie,
 } from "./handoff-context.js";
 import { supervisorGuideForSkillKey } from "../domain/supervisor-guide.js";
-import { PLAY_STORE_URL, renderLandingPage, TESTFLIGHT_JOIN_URL } from "./landing.js";
+import { APP_STORE_URL, PLAY_STORE_URL, renderLandingPage } from "./landing.js";
 import { campaignSearch } from "./marketing.js";
 import {
   coachingStepsForSkillKey,
@@ -1037,10 +1037,10 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
          <div id="invite-open-app" class="stack" hidden>
            <p id="invite-open-status">Har du Körpasset installerat öppnas inbjudan i appen. Annars väljer du App Store eller Google Play och öppnar samma länk igen.</p>
            <div id="invite-download" class="stack">
-             <a class="btn btn-primary" id="invite-app-store" href="${escapeHtml(TESTFLIGHT_JOIN_URL)}" rel="noopener noreferrer">Ladda ner i App Store</a>
+             <a class="btn btn-primary" id="invite-app-store" href="${escapeHtml(APP_STORE_URL)}" rel="noopener noreferrer">Ladda ner i App Store</a>
              <a class="btn btn-secondary" id="invite-play-store" href="${escapeHtml(PLAY_STORE_URL)}" rel="noopener noreferrer">Ladda ner på Google Play</a>
            </div>
-           <p class="muted" id="invite-install-fallback">På iPhone går nedladdningen via TestFlight under betan. Inbjudan ligger kvar på <strong>korpasset.se/invite/…</strong> och försvinner inte om du loggar in.</p>
+           <p class="muted" id="invite-install-fallback">Inbjudan ligger kvar på <strong>korpasset.se/invite/…</strong> och försvinner inte om du loggar in.</p>
            <button type="button" class="btn btn-secondary" id="invite-open-app-link">Öppna i Körpasset</button>
          </div>
          ${

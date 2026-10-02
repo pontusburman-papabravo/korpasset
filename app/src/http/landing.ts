@@ -22,6 +22,8 @@ const ROLE_LABELS: Record<InterestRole, string> = {
 
 export const TESTFLIGHT_JOIN_URL = "https://testflight.apple.com/join/MjyuvkzB";
 
+export const APP_STORE_URL = "https://apps.apple.com/se/app/korpasset/id6814100094";
+
 export const PLAY_STORE_URL =
   "https://play.google.com/store/apps/details?id=se.korpasset.app";
 
