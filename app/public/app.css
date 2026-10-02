@@ -40,6 +40,10 @@ body.app {
   padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
 }
 
+body.app.app--support {
+  padding-bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
+}
+
 .container {
   max-width: 28rem;
   margin: 0 auto;
@@ -117,6 +121,86 @@ body.app {
   display: block;
   width: 1.4rem;
   height: 1.4rem;
+}
+
+.support-bubble {
+  position: fixed;
+  z-index: 30;
+  right: max(1rem, calc((100vw - 28rem) / 2 + 1rem), env(safe-area-inset-right, 0px));
+  bottom: calc(4.6rem + env(safe-area-inset-bottom, 0px));
+}
+
+.support-bubble__details {
+  position: relative;
+}
+
+.support-bubble__details:not([open]) .support-bubble__panel {
+  display: none;
+}
+
+.support-bubble__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 3rem;
+  padding: 0.55rem 1.05rem 0.55rem 0.8rem;
+  border-radius: 999px;
+  background: var(--navy);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1;
+  list-style: none;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(26, 43, 76, 0.28);
+  user-select: none;
+}
+
+.support-bubble__button::-webkit-details-marker {
+  display: none;
+}
+
+.support-bubble__button:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+}
+
+.support-bubble__details[open] .support-bubble__button {
+  background: #243656;
+}
+
+.support-bubble__icon {
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--teal);
+}
+
+.support-bubble__panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.65rem);
+  width: min(18rem, calc(100vw - 2rem));
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: 0 16px 40px rgba(26, 43, 76, 0.18);
+}
+
+.support-bubble__title {
+  margin: 0 0 0.35rem;
+  color: var(--navy);
+  font-weight: 700;
+}
+
+.support-bubble__text {
+  margin: 0 0 0.85rem;
+  font-size: 0.95rem;
+}
+
+.support-bubble__panel .btn + .btn {
+  margin-top: 0.5rem;
 }
 
 .eyebrow {
@@ -286,7 +370,7 @@ a.journey-choice .journey-choice__meta {
 
 .account-delete {
   scroll-margin-top: 1rem;
-  scroll-margin-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+  scroll-margin-bottom: calc(9rem + env(safe-area-inset-bottom, 0px));
 }
 
 .practice-item {

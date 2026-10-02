@@ -20,16 +20,47 @@ import { parseUserClientReport, recordUserClient } from "../services/user-client
 export const FEEDBACK_RATE_LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 };
 export const CLIENT_ERROR_RATE_LIMIT = { limit: 20, windowMs: 10 * 60 * 1000 };
 
-function helpForm(errorMessage?: string, values: { topic?: string; message?: string } = {}): string {
+const HELP_LAYOUT = { supportBubble: false } as const;
+
+/** Local app path to attach to a support mail. Drops off-site values and invite tokens. */
+export function readSupportPage(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  if (
+    !trimmed.startsWith("/") ||
+    trimmed.startsWith("//") ||
+    trimmed.includes("\\") ||
+    trimmed.includes("\0") ||
+    trimmed.length > 200 ||
+    /[\r\n]/.test(trimmed)
+  ) {
+    return "";
+  }
+  return redactRequestPath(trimmed).slice(0, 200);
+}
+
+function helpForm(
+  errorMessage?: string,
+  values: { topic?: string; message?: string; from?: string } = {},
+): string {
+  const topicValue = FEEDBACK_TOPICS.some((item) => item.value === values.topic)
+    ? values.topic
+    : undefined;
+  const from = readSupportPage(values.from);
+  const bugReport = topicValue === "technical";
   const options = FEEDBACK_TOPICS.map(
     (topic) =>
-      `<option value="${topic.value}"${values.topic === topic.value ? " selected" : ""}>${escapeHtml(topic.label)}</option>`,
+      `<option value="${topic.value}"${topicValue === topic.value ? " selected" : ""}>${escapeHtml(topic.label)}</option>`,
   ).join("");
+  const intro = bugReport
+    ? `<p>Beskriv vad som gick fel. Vi läser under betan.</p>`
+    : `<p>I resan finns handledarguiden: tips, frågor och steg för varje moment.</p>
+    <p>Berätta vad som strular. Vi läser under betan.</p>`;
   return `${errorMessage ? errorBanner(errorMessage) : ""}
-    <h1>Hjälp</h1>
-    <p>I resan finns handledarguiden: tips, frågor och steg för varje moment.</p>
-    <p>Berätta vad som strular. Vi läser under betan.</p>
+    <h1>${bugReport ? "Rapportera en bugg" : "Hjälp"}</h1>
+    ${intro}
     <form method="post" action="/hjalp" class="stack">
+      ${from ? `<input type="hidden" name="from" value="${escapeHtml(from)}">` : ""}
       <div>
         <label for="topic">Vad gäller det?</label>
         <select id="topic" name="topic" required class="supervisor-select">${options}</select>
@@ -45,10 +76,20 @@ function helpForm(errorMessage?: string, values: { topic?: string; message?: str
 
 export async function registerHelpRoutes(app: FastifyInstance): Promise<void> {
   app.get("/hjalp", async (request, reply) => {
-    return reply.type("text/html").send(layoutForRequest(request, "Hjälp", helpForm()));
+    const query = (request.query ?? {}) as { topic?: string; from?: string };
+    const bugReport = query.topic === "technical";
+    return reply.type("text/html").send(
+      layoutForRequest(
+        request,
+        bugReport ? "Rapportera en bugg" : "Hjälp",
+        helpForm(undefined, { topic: query.topic, from: query.from }),
+        HELP_LAYOUT,
+      ),
+    );
   });
 
   app.post("/hjalp", async (request, reply) => {
+    const body = (request.body ?? {}) as { topic?: string; message?: string; from?: string };
     if (
       !allowRequest(
         `feedback:${request.ip || "unknown"}`,
@@ -60,14 +101,15 @@ export async function registerHelpRoutes(app: FastifyInstance): Promise<void> {
         layoutForRequest(
           request,
           "Hjälp",
-          helpForm("För många försök. Vänta en stund och prova igen."),
+          helpForm("För många försök. Vänta en stund och prova igen.", body),
+          HELP_LAYOUT,
         ),
       );
     }
 
-    const body = (request.body ?? {}) as { topic?: string; message?: string };
     const topic = FEEDBACK_TOPICS.find((item) => item.value === body.topic);
     const message = body.message?.trim() ?? "";
+    const from = readSupportPage(body.from);
     if (!topic || message.length < 4) {
       return reply.status(400).type("text/html").send(
         layoutForRequest(
@@ -76,7 +118,9 @@ export async function registerHelpRoutes(app: FastifyInstance): Promise<void> {
           helpForm("Välj ett ämne och skriv några rader.", {
             topic: body.topic,
             message: body.message,
+            from,
           }),
+          HELP_LAYOUT,
         ),
       );
     }
@@ -94,6 +138,7 @@ export async function registerHelpRoutes(app: FastifyInstance): Promise<void> {
       `Inloggning: ${contact?.identityLines.join(", ") || "-"}`,
       `Användare: ${userId ?? "ej inloggad"}`,
       adminUrl ? `Konto: ${adminUrl}` : null,
+      from ? `Sida: ${from}` : null,
       "",
       message.slice(0, 2000),
     ]
@@ -125,6 +170,7 @@ export async function registerHelpRoutes(app: FastifyInstance): Promise<void> {
         "Tack",
         `${successBanner("Tack — vi har tagit emot det.")}
          <p><a class="btn btn-secondary" href="/mer">Tillbaka</a></p>`,
+        HELP_LAYOUT,
       ),
     );
   });
