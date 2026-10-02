@@ -1,4 +1,8 @@
 import { getPool } from "../db/pool.js";
+import {
+  getAccountHelpEmailState,
+  type AccountHelpEmailState,
+} from "./help-email.js";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -58,6 +62,7 @@ export interface SupportUserView {
   completedDriveCount: number;
   observationCount: number;
   relatedWaitlist: SupportWaitlistHit[];
+  helpEmail: AccountHelpEmailState | null;
 }
 
 function mapWaitlist(row: Record<string, unknown>): SupportWaitlistHit {
@@ -314,6 +319,7 @@ export async function getSupportUserView(userId: string): Promise<SupportUserVie
     completedDriveCount: Number(counts.rows[0]?.completed_drives ?? 0),
     observationCount: Number(counts.rows[0]?.observations ?? 0),
     relatedWaitlist,
+    helpEmail: await getAccountHelpEmailState(user.id),
   };
 }
 

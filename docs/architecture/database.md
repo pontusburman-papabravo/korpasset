@@ -26,6 +26,9 @@ Motivering: kolumnspecifik `ON DELETE SET NULL` på composite foreign keys, som 
 | [`db/migrations/0014_unlink_deleted_account_history.sql`](../../db/migrations/0014_unlink_deleted_account_history.sql) | Frikoppla raderade konton från körhistorik med explicit `*_deleted`-markör |
 | [`db/migrations/0015_training_focus_created_by.sql`](../../db/migrations/0015_training_focus_created_by.sql) | Vem som satte den gemensamma nästa-körpass-planen (`created_by_user_id`) |
 | [`db/migrations/0016_auth_identity_apple_refresh_token.sql`](../../db/migrations/0016_auth_identity_apple_refresh_token.sql) | Sign in with Apple refresh token på `auth_identities` |
+| [`db/migrations/0017_oauth_handoffs.sql`](../../db/migrations/0017_oauth_handoffs.sql) | Engångskod som flyttar Google-inloggning tillbaka till Android-appen |
+| [`db/migrations/0018_user_client_seen.sql`](../../db/migrations/0018_user_client_seen.sql) | Senaste appöppning och rapporterad appversion på `users` |
+| [`db/migrations/0019_account_help_emails.sql`](../../db/migrations/0019_account_help_emails.sql) | Skickade hjälpmejl för de två första onboardingstoppen (`account_help_emails`) |
 
 Runtime-applikationen tillämpar samma filer via [`app/src/db/migrate.ts`](../../app/src/db/migrate.ts) och tabellen `schema_migrations`. Redan migrerade databaser stämplas, SQL körs inte om. Deploy: [Production](../operations/production.md).
 

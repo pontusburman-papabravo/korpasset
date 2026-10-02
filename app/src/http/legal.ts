@@ -136,7 +136,7 @@ export function privacyPage(options: PublicConsentOptions = {}): string {
      <p>Vi använder externa leverantörer när det behövs för att driva Körpasset:</p>
      <ul>
        <li>server och databas hos en hostingleverantör inom EU/EES</li>
-       <li>e-post via Resend, för bekräftelse på intresseanmälan och administratörsmejl</li>
+       <li>e-post via Resend, för bekräftelse på intresseanmälan, administratörsmejl och ett hjälpmejl när ett konto stått still i starten</li>
        <li>inloggning och identitet via Sign in with Apple och Sign in with Google</li>
      </ul>
      <p>Sådana leverantörer får bara behandla personuppgifter i den omfattning som behövs för respektive tjänst och enligt tillämpliga avtal och dataskyddsregler.</p>
@@ -149,6 +149,7 @@ export function privacyPage(options: PublicConsentOptions = {}): string {
      <p>Personuppgifter från en intresseanmälan raderas senast 18 månader efter anmälan, tidigare om du begär det eller när betakön inte längre behövs.</p>
      <p>Ett automatiskt jobb i tjänsten tar bort intresseanmälningar som är 18 månader gamla eller äldre. Administratör kan radera en anmälan tidigare om du begär det.</p>
      <p>Uppgifter i ett Körpasset-konto och en körkortsresa sparas så länge de behövs för att tillhandahålla tjänsten. Det finns inget automatiskt jobb som raderar inaktiva konton.</p>
+     <p>Ett automatiskt jobb kan skicka ett hjälpmejl när ett konto har stått still i minst 24 timmar på ett av de två första stegen: ingen körkortsresa, eller en resa utan ansluten handledare. Samma steg ger högst ett mejl. Saknas e-postadress skickas inget.</p>
 
      <h2>Säkerhet</h2>
      <p>Körpassets server och databas är placerade inom EU/EES.</p>
