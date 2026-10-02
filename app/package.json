@@ -10,6 +10,7 @@
     "migrate": "tsx src/db/migrate.ts",
     "seed": "tsx src/db/seed-taxonomy.ts",
     "admin:create": "tsx src/cli/create-admin.ts",
+    "mail:broadcast": "tsx src/cli/broadcast-email.ts",
     "test": "tsx --import ./tests/register-hooks.ts --test --test-concurrency=1 tests/**/*.test.ts"
   },
   "dependencies": {

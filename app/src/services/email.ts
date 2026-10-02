@@ -19,6 +19,33 @@ export interface OutboundEmail {
   subject: string;
   text: string;
   replyTo?: string;
+  /** Overrides EMAIL_FROM for this message only. */
+  from?: string;
+}
+
+/** One address. A comma, semicolon, or space would put several people on the same message. */
+export function singleRecipient(to: string): string {
+  const value = to.trim();
+  if (!value || /[,;\s]/.test(value)) {
+    throw new EmailSendError("Ett mejl får bara en mottagare");
+  }
+  return value;
+}
+
+export function resendMessage(email: OutboundEmail): {
+  from: string;
+  to: [string];
+  subject: string;
+  text: string;
+  reply_to?: [string];
+} {
+  return {
+    from: email.from?.trim() || config.emailFrom || DEFAULT_FROM,
+    to: [singleRecipient(email.to)],
+    subject: email.subject,
+    text: email.text,
+    ...(email.replyTo ? { reply_to: [singleRecipient(email.replyTo)] as [string] } : {}),
+  };
 }
 
 export interface Mailer {
@@ -47,13 +74,7 @@ function resendMailer(): Mailer {
           authorization: `Bearer ${apiKey}`,
           "content-type": "application/json",
         },
-        body: JSON.stringify({
-          from: config.emailFrom || DEFAULT_FROM,
-          to: [email.to],
-          subject: email.subject,
-          text: email.text,
-          ...(email.replyTo ? { reply_to: [email.replyTo] } : {}),
-        }),
+        body: JSON.stringify(resendMessage(email)),
       });
       if (!response.ok) {
         throw new EmailSendError(`Resend responded ${response.status}`);

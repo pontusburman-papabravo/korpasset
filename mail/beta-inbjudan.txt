@@ -1,0 +1,26 @@
+Hej!
+
+Vi söker nu några familjer som vill hjälpa oss att testa Körpasset – en ny app för privat övningskörning.
+
+Körpasset är tänkt att göra det enklare för elev och handledare att hålla ihop övningskörningen, följa utvecklingen och se vad man behöver träna mer på.
+
+Betan är gratis och ni kan börja testa direkt.
+
+Har ni iPhone:
+https://testflight.apple.com/join/MjyuvkzB
+
+På iPhone installeras betan via Apples app TestFlight. Om ni inte redan har TestFlight får ni hjälp att installera den när ni öppnar länken.
+
+Har ni Android:
+https://play.google.com/apps/testing/se.korpasset.app
+
+Ni behöver inte skicka någon e-postadress eller bli tillagda manuellt – öppna bara länken på den telefon där ni vill testa appen.
+
+Vi blir väldigt glada om ni använder appen som ni normalt skulle göra och berättar om något känns otydligt, krångligt eller saknas. Både små och stora synpunkter är värdefulla.
+
+Tack för att ni vill hjälpa oss bygga Körpasset!
+
+/ Pontus
+
+ÖVNING IDAG. FRIHET IMORGON.
+Körpasset
