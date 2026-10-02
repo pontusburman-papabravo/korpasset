@@ -131,6 +131,55 @@ export function waitlistAdminNotifyText(signup: InterestSignup): string {
   ].join("\n");
 }
 
+export function noJourneyHelpEmailText(appUrl: string): string {
+  return [
+    "Hej,",
+    "",
+    "Du har ett konto i Körpasset, men starten är inte klar.",
+    "",
+    "Om du är elev: öppna appen och skapa din körkortsresa.",
+    "Om du är handledare: öppna inbjudan från eleven och acceptera den.",
+    "",
+    "Behöver du hjälp att komma vidare? Svara på det här mejlet.",
+    "",
+    `Öppna Körpasset: ${appUrl}`,
+    "",
+    "Hälsningar",
+    "Körpasset",
+  ].join("\n");
+}
+
+export function noConnectedSupervisorHelpEmailText(appUrl: string): string {
+  return [
+    "Hej,",
+    "",
+    "Du har kommit igång med din körkortsresa, men ännu ingen ansluten handledare. Behöver du hjälp att bjuda in din handledare?",
+    "",
+    `Öppna Körpasset och bjud in handledaren: ${appUrl}`,
+    "",
+    "Hälsningar",
+    "Körpasset",
+  ].join("\n");
+}
+
+export async function sendNoJourneyHelpEmail(to: string): Promise<void> {
+  const appUrl = `${config.appBaseUrl}/app`;
+  await getMailer().send({
+    to,
+    subject: "Behöver du hjälp att komma vidare i Körpasset?",
+    text: noJourneyHelpEmailText(appUrl),
+  });
+}
+
+export async function sendNoConnectedSupervisorHelpEmail(to: string): Promise<void> {
+  const appUrl = `${config.appBaseUrl}/app`;
+  await getMailer().send({
+    to,
+    subject: "Behöver du hjälp att bjuda in din handledare?",
+    text: noConnectedSupervisorHelpEmailText(appUrl),
+  });
+}
+
 export async function notifyWaitlistSignup(
   signup: InterestSignup,
   created: boolean,

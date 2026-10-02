@@ -2,6 +2,7 @@ import { buildServer } from "./http/server.js";
 import { assertProductionConfig, config, isProduction } from "./config.js";
 import { applyMigrations } from "./db/migrate.js";
 import { seedTaxonomy } from "./db/seed-taxonomy.js";
+import { startHelpEmailJob } from "./jobs/help-email.js";
 import { startWaitlistRetentionJob } from "./jobs/waitlist-retention.js";
 
 function logFatal(error: unknown): void {
@@ -43,6 +44,7 @@ async function main(): Promise<void> {
     }
   }
   startWaitlistRetentionJob(app.log);
+  startHelpEmailJob(app.log);
   app.log.info(
     {
       url: config.appBaseUrl,

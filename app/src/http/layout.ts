@@ -140,6 +140,15 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
           });
         } catch (ignore) {}
       }
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") send();
+      });
+      var appPlugin = cap && cap.Plugins && cap.Plugins.App;
+      if (appPlugin && typeof appPlugin.addListener === "function") {
+        appPlugin.addListener("appStateChange", function (state) {
+          if (state && state.isActive) send();
+        });
+      }
       if (!cap || typeof cap.isNativePlatform !== "function" || !cap.isNativePlatform()) {
         send();
         return;

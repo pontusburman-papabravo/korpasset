@@ -1066,6 +1066,32 @@ export function supportSearchPage(
   );
 }
 
+function helpEmailStopLabel(stop: "no_journey" | "no_connected_supervisor" | null): string {
+  if (stop === "no_journey") return "Ingen resa";
+  if (stop === "no_connected_supervisor") return "Ingen ansluten handledare";
+  return "Inget av de två första stoppen";
+}
+
+function helpEmailSection(view: SupportUserView): string {
+  const state = view.helpEmail;
+  if (!state) return "";
+  const sent =
+    state.sent.length === 0
+      ? "<p>Inget hjälpmejl skickat.</p>"
+      : `<ul>${state.sent
+          .map(
+            (item) =>
+              `<li>${escapeHtml(helpEmailStopLabel(item.type))} skickades ${escapeHtml(formatWhen(item.sentAt))}</li>`,
+          )
+          .join("")}</ul>`;
+  return `<section>
+    <h2>Hjälpmejl</h2>
+    <p>Senast aktiv: ${escapeHtml(formatLastActive(state.lastActivityAt))}</p>
+    <p>Tidigt stopp: ${escapeHtml(helpEmailStopLabel(state.stop))}</p>
+    ${sent}
+  </section>`;
+}
+
 function loginSection(view: SupportUserView): string {
   if (view.accountState === "deleted") {
     return `<section>
@@ -1188,6 +1214,7 @@ export function supportUserPage(
          ${primaryButton("Radera konto")}
        </form>`;
 
+  const helpEmail = helpEmailSection(view);
   const backHref = options.editable ? "/admin/users" : "/admin/support";
   const backLabel = options.editable ? "Alla användare" : "Support";
   return adminPage(
@@ -1218,6 +1245,7 @@ export function supportUserPage(
            <tbody>${journeyRows || `<tr><td colspan="5">Inga journeys.</td></tr>`}</tbody>
          </table>
        </section>
+       ${helpEmail}
        ${waitlistNote}
        ${gdprForm}
      </main>`,
