@@ -107,7 +107,7 @@ describe("public SEO files and metadata", () => {
     assert.equal(appNode.operatingSystem, "iOS");
     assert.equal(appNode.applicationCategory, "EducationalApplication");
     assert.match(String(appNode.description), /övningskörning/);
-    assert.match(String(appNode.downloadUrl), /^https:\/\/testflight\.apple\.com\//);
+    assert.match(String(appNode.downloadUrl), /^https:\/\/apps\.apple\.com\/se\/app\//);
     assert.equal(graphNodes(homeLd).filter((node) => node["@type"] === "SoftwareApplication").length, 1);
     assert.match(response.body, /Vad är Körpasset\?/);
     await app.close();

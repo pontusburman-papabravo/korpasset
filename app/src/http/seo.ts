@@ -168,7 +168,7 @@ export function publicPageJsonLd(options: {
       name: SITE_NAME,
       url: origin,
       applicationCategory: "EducationalApplication",
-      // iOS ships via TestFlight. Android is not in open testing, so it is omitted.
+      // iOS is in the App Store. Android is published but still waiting for Google approval, so it is omitted.
       operatingSystem: "iOS",
       inLanguage: "sv-SE",
       description: SITE_DESCRIPTION,

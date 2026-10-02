@@ -20,7 +20,8 @@ const ROLE_LABELS: Record<InterestRole, string> = {
   other: "Annat",
 };
 
-export const TESTFLIGHT_JOIN_URL = "https://testflight.apple.com/join/MjyuvkzB";
+export const APP_STORE_URL =
+  "https://apps.apple.com/se/app/k%C3%B6rpasset/id6814100094";
 
 export const TRANSPORTSTYRELSEN_LINKS = {
   ovningskora:
@@ -42,8 +43,8 @@ function tsLink(href: string, label: string): string {
   return `<a href="${escapeHtml(href)}" rel="noopener noreferrer" target="_blank">${escapeHtml(label)}</a>`;
 }
 
-function testFlightButton(label: string): string {
-  return `<a class="btn btn-primary" href="${TESTFLIGHT_JOIN_URL}" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
+function appStoreButton(label: string): string {
+  return `<a class="btn btn-primary" href="${APP_STORE_URL}" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
 }
 
 const LANDING_FAQ: Array<FaqItem & { answerHtml?: string }> = [
@@ -53,20 +54,20 @@ const LANDING_FAQ: Array<FaqItem & { answerHtml?: string }> = [
       "Ett enkelt stöd för privat övningskörning när ni ska ta körkort. Körkortselev och handledare håller koll på vad ni har tränat på, dokumenterar körpassen och ser utvecklingen över tid.",
   },
   {
-    question: "Vem kan bli betatestare?",
+    question: "Vem kan använda Körpasset?",
     answer:
-      "Elever, handledare och föräldrar som övningskör privat mot B-körkort. På iPhone laddar du ner betan via TestFlight. På Android lämnar du mejl tills Google öppnat för öppet test — en anmälan ger inte automatisk access.",
+      "Elever, handledare och föräldrar som övningskör privat mot B-körkort. På iPhone laddar du ner appen i App Store. På Android anmäler du dig här tills Google Play-versionen är godkänd.",
   },
   {
     question: "Hur laddar jag ner Körpasset?",
     answer:
-      "På iPhone via TestFlight: https://testflight.apple.com/join/MjyuvkzB. På Android lämnar du din mejladress tills Google öppnat för öppet test. Vi väntar på granskning.",
-    answerHtml: `På iPhone via <a href="${TESTFLIGHT_JOIN_URL}" rel="noopener noreferrer">TestFlight</a>. På Android lämnar du din mejladress tills Google öppnat för öppet test. Vi väntar på granskning.`,
+      "På iPhone i App Store: https://apps.apple.com/se/app/k%C3%B6rpasset/id6814100094. På Android anmäler du dig på den här sidan. Google Play-versionen väntar på godkännande.",
+    answerHtml: `På iPhone i <a href="${APP_STORE_URL}" rel="noopener noreferrer">App Store</a>. På Android anmäler du dig på den här sidan. Google Play-versionen väntar på godkännande.`,
   },
   {
-    question: "Kostar betan något?",
+    question: "Kostar Körpasset något?",
     answer:
-      "Nej. Körpasset är gratis under betan. En anmälan är inget löfte om livstidsfri användning, och betalning införs inte via den här sidan.",
+      "Nej. Körpasset är fortfarande i en tidig testfas och gratis att använda. Det är inget löfte om att det förblir gratis, och betalning införs inte via den här sidan.",
   },
   {
     question: "Kan jag ha flera handledare?",
@@ -188,7 +189,7 @@ export function renderLandingPage(options: {
         title: LANDING_DOCUMENT_TITLE,
         description: LANDING_DESCRIPTION,
         includeApp: true,
-        appDownloadUrl: TESTFLIGHT_JOIN_URL,
+        appDownloadUrl: APP_STORE_URL,
       }),
     },
   );
@@ -201,17 +202,17 @@ export function renderInterestThanksPage(options: PublicConsentOptions = {}): st
      <main>
        <section class="site-section site-section--cream">
          <div class="site-inner site-inner--narrow">
-           <p class="eyebrow">Betan</p>
+           <p class="eyebrow">Testa gratis</p>
            <h1>Tack — vi hör av oss.</h1>
-           <p class="lede">Din intresseanmälan är inne. Vi skickar en bekräftelse till din mejladress och hör av oss när Android-testet är öppet — inte automatisk access.</p>
-           <p>Har du iPhone kan du ladda ner appen direkt via <a href="${TESTFLIGHT_JOIN_URL}" rel="noopener noreferrer">TestFlight</a>.</p>
+           <p class="lede">Din anmälan är inne. Vi skickar en bekräftelse till din mejladress och hör av oss när Android-appen är godkänd i Google Play.</p>
+           <p>Har du iPhone kan du ladda ner appen direkt i <a href="${APP_STORE_URL}" rel="noopener noreferrer">App Store</a>.</p>
            <p><a class="btn-link" href="/">Tillbaka till startsidan</a></p>
          </div>
        </section>
      </main>
      ${siteFooter({ cookieSettings: options.consent !== false })}`,
     {
-      description: "Tack för din intresseanmälan till Körpassets beta.",
+      description: "Tack för din anmälan till Körpasset.",
       path: "/interest/tack",
       robots: "noindex, follow",
       consent: options.consent !== false,
@@ -285,9 +286,9 @@ export function siteHeader(
       <a href="/#sa-funkar-det">Övningskörning</a>
       <a href="${HUB_PATH}">Guider</a>
       <a href="/#regler">Regler</a>
-      <a href="/#intresse" class="site-nav__cta">Ladda ner</a>
+      <a href="/#intresse" class="site-nav__cta">Testa gratis</a>
     </nav>
-    <a class="site-nav__cta site-nav__cta--mobile" href="${escapeHtml(ctaHref)}">Ladda ner</a>
+    <a class="site-nav__cta site-nav__cta--mobile" href="${escapeHtml(ctaHref)}">Testa gratis</a>
   </header>`;
 }
 
@@ -331,11 +332,11 @@ function hero(): string {
         <p class="lede">Körpasset hjälper körkortselev och handledare att övningsköra med en plan — oavsett om ni just börjat eller redan kört ett år.</p>
         <p>Håll koll på vad ni har tränat på, dokumentera körpassen och samarbeta när mamma, pappa eller syskon turas om som handledare under övningskörningen. Ett stöd för att träna inför körkort och uppkörning. Eleven behöver körkortstillstånd.</p>
         <div class="hero__ctas">
-          ${testFlightButton("Ladda ner för iPhone")}
-          <a class="btn btn-secondary" href="#android">Lämna mejl för Android</a>
+          ${appStoreButton("Ladda ner på App Store")}
+          <a class="btn btn-secondary" href="#android">Android – anmäl dig</a>
           <a class="btn-link" href="#sa-funkar-det">Så fungerar det</a>
         </div>
-        <p class="hero__trust">Gratis under betan · iPhone via TestFlight · Android efter Googles granskning</p>
+        <p class="hero__trust">Körpasset är fortfarande i en tidig testfas och gratis att använda.</p>
         <p class="hero__tagline">${BRAND_TAGLINE}</p>
       </div>
       ${heroCard()}
@@ -546,20 +547,19 @@ function interestSection(
 
   return `<section class="site-section site-section--cta" id="intresse" data-interest-form>
     <div class="site-inner site-inner--narrow">
-      <p class="eyebrow">Beta</p>
+      <p class="eyebrow">Testa gratis</p>
       <h2>Ladda ner Körpasset</h2>
-      <p class="lede">På iPhone laddar du ner direkt. På Android lämnar du mejl tills Google öppnat för öppet test.</p>
+      <p class="lede">På iPhone laddar du ner i App Store. På Android anmäler du dig här.</p>
       <div class="download-paths">
         <div class="download-card" id="iphone">
           <h3>iPhone</h3>
-          <p>Ladda ner via TestFlight. Öppna länken på iPhone, installera TestFlight om du inte redan har den, och gå med i testet.</p>
-          <p class="download-note">Gratis under betan.</p>
-          ${testFlightButton("Ladda ner för iPhone")}
+          <p>Appen finns i App Store.</p>
+          ${appStoreButton("Ladda ner på App Store")}
         </div>
         <div class="download-card" id="android">
           <h3>Android</h3>
-          <p>Google Play har inte öppnat för öppet test än. Vi väntar på granskning. Lämna din mejladress så hör vi av oss när det går att ladda ner.</p>
-          <p>Ingen betalning under betan.</p>
+          <p>Anmäl dig här. Google Play-versionen väntar på godkännande.</p>
+          <p>Körpasset är fortfarande i en tidig testfas och gratis att använda.</p>
           ${formError}
           <form method="post" action="${escapeHtml(action)}" class="interest-form" novalidate>
             <div class="hp" aria-hidden="true">
@@ -593,9 +593,9 @@ function interestSection(
             </div>
             <label class="interest-choice">
               <input type="checkbox" name="consent" value="yes" required>
-              <span>Jag vill bli kontaktad om betan. Vi använder uppgifterna bara för det. Läs mer i <a href="/integritet">integritetspolicyn</a>.</span>
+              <span>Jag vill bli kontaktad om Körpasset. Vi använder uppgifterna bara för det. Läs mer i <a href="/integritet">integritetspolicyn</a>.</span>
             </label>
-            ${primaryButton("Bli betatestare")}
+            ${primaryButton("Anmäl dig")}
           </form>
         </div>
       </div>

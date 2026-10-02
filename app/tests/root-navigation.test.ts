@@ -222,7 +222,7 @@ describe("app navigation (GET /app)", () => {
     const response = await app.inject({ method: "GET", url: "/" });
     assert.equal(response.statusCode, 200);
     assert.match(response.body, /Övningskörning med bättre koll/);
-    assert.match(response.body, /Bli betatestare/);
+    assert.match(response.body, /Ladda ner på App Store/);
 
     const onboarding = await app.inject({ method: "GET", url: "/onboarding" });
     assert.equal(onboarding.statusCode, 200);

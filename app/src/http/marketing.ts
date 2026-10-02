@@ -160,7 +160,7 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
     if (body.consent !== "yes") {
       return reply.status(400).type("text/html").send(
         renderInterestFormError(
-          "Bekräfta att du vill bli kontaktad om betan.",
+          "Bekräfta att du vill bli kontaktad om Körpasset.",
           values,
           interestPageOptions(request),
         ),

@@ -46,7 +46,7 @@ describe("app oauth HTTP (FR-11)", () => {
     const app = await createTestApp();
     const response = await app.inject({ method: "GET", url: "/" });
     assert.equal(response.statusCode, 200);
-    assert.match(response.body, /Bli betatestare/);
+    assert.match(response.body, /Ladda ner på App Store/);
     assert.doesNotMatch(response.body, /Fortsätt med Apple/);
     await app.close();
   });

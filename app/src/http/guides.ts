@@ -12,7 +12,7 @@ import {
   type StandaloneGuide,
 } from "./guide-content.js";
 import {
-  TESTFLIGHT_JOIN_URL,
+  APP_STORE_URL,
   TRANSPORTSTYRELSEN_LINKS,
   siteFooter,
   siteHeader,
@@ -42,8 +42,8 @@ function crumb(items: BreadcrumbItem[]): string {
 }
 
 function downloadCta(): string {
-  return `<p><a class="btn btn-primary" href="/#intresse">Ladda ner Körpasset</a></p>
-    <p class="muted">På iPhone går det via <a href="${TESTFLIGHT_JOIN_URL}" rel="noopener noreferrer">TestFlight</a>. På Android lämnar du mejl tills öppet test finns.</p>`;
+  return `<p><a class="btn btn-primary" href="${APP_STORE_URL}" rel="noopener noreferrer">Ladda ner på App Store</a></p>
+    <p class="muted">På iPhone finns appen i App Store. På Android <a href="/#android">anmäler du dig här</a>. Google Play-versionen väntar på godkännande.</p>`;
 }
 
 function nearbyLinks(guide: MomentGuide): string {
