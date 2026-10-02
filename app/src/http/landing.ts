@@ -20,7 +20,10 @@ const ROLE_LABELS: Record<InterestRole, string> = {
   other: "Annat",
 };
 
-export const TESTFLIGHT_JOIN_URL = "https://testflight.apple.com/join/MjyuvkzB";
+export const APP_STORE_URL = "https://apps.apple.com/se/app/korpasset/id6814100094";
+
+export const PLAY_STORE_URL =
+  "https://play.google.com/store/apps/details?id=se.korpasset.app";
 
 export const TRANSPORTSTYRELSEN_LINKS = {
   ovningskora:
@@ -42,8 +45,8 @@ function tsLink(href: string, label: string): string {
   return `<a href="${escapeHtml(href)}" rel="noopener noreferrer" target="_blank">${escapeHtml(label)}</a>`;
 }
 
-function testFlightButton(label: string): string {
-  return `<a class="btn btn-primary" href="${TESTFLIGHT_JOIN_URL}" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
+function appStoreButton(label: string): string {
+  return `<a class="btn btn-primary" href="${APP_STORE_URL}" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
 }
 
 const LANDING_FAQ: Array<FaqItem & { answerHtml?: string }> = [
@@ -55,13 +58,13 @@ const LANDING_FAQ: Array<FaqItem & { answerHtml?: string }> = [
   {
     question: "Vem kan bli betatestare?",
     answer:
-      "Elever, handledare och föräldrar som övningskör privat mot B-körkort. På iPhone laddar du ner betan via TestFlight. På Android lämnar du mejl tills Google öppnat för öppet test — en anmälan ger inte automatisk access.",
+      "Elever, handledare och föräldrar som övningskör privat mot B-körkort. På iPhone laddar du ner appen i App Store. På Android lämnar du mejl tills Google öppnat för öppet test — en anmälan ger inte automatisk access.",
   },
   {
     question: "Hur laddar jag ner Körpasset?",
     answer:
-      "På iPhone via TestFlight: https://testflight.apple.com/join/MjyuvkzB. På Android lämnar du din mejladress tills Google öppnat för öppet test. Vi väntar på granskning.",
-    answerHtml: `På iPhone via <a href="${TESTFLIGHT_JOIN_URL}" rel="noopener noreferrer">TestFlight</a>. På Android lämnar du din mejladress tills Google öppnat för öppet test. Vi väntar på granskning.`,
+      "På iPhone i App Store: https://apps.apple.com/se/app/korpasset/id6814100094. På Android lämnar du din mejladress tills Google öppnat för öppet test. Vi väntar på granskning.",
+    answerHtml: `På iPhone i <a href="${APP_STORE_URL}" rel="noopener noreferrer">App Store</a>. På Android lämnar du din mejladress tills Google öppnat för öppet test. Vi väntar på granskning.`,
   },
   {
     question: "Kostar betan något?",
@@ -188,7 +191,7 @@ export function renderLandingPage(options: {
         title: LANDING_DOCUMENT_TITLE,
         description: LANDING_DESCRIPTION,
         includeApp: true,
-        appDownloadUrl: TESTFLIGHT_JOIN_URL,
+        appDownloadUrl: APP_STORE_URL,
       }),
     },
   );
@@ -204,7 +207,7 @@ export function renderInterestThanksPage(options: PublicConsentOptions = {}): st
            <p class="eyebrow">Betan</p>
            <h1>Tack — vi hör av oss.</h1>
            <p class="lede">Din intresseanmälan är inne. Vi skickar en bekräftelse till din mejladress och hör av oss när Android-testet är öppet — inte automatisk access.</p>
-           <p>Har du iPhone kan du ladda ner appen direkt via <a href="${TESTFLIGHT_JOIN_URL}" rel="noopener noreferrer">TestFlight</a>.</p>
+           <p>Har du iPhone kan du ladda ner appen direkt i <a href="${APP_STORE_URL}" rel="noopener noreferrer">App Store</a>.</p>
            <p><a class="btn-link" href="/">Tillbaka till startsidan</a></p>
          </div>
        </section>
@@ -331,11 +334,11 @@ function hero(): string {
         <p class="lede">Körpasset hjälper körkortselev och handledare att övningsköra med en plan — oavsett om ni just börjat eller redan kört ett år.</p>
         <p>Håll koll på vad ni har tränat på, dokumentera körpassen och samarbeta när mamma, pappa eller syskon turas om som handledare under övningskörningen. Ett stöd för att träna inför körkort och uppkörning. Eleven behöver körkortstillstånd.</p>
         <div class="hero__ctas">
-          ${testFlightButton("Ladda ner för iPhone")}
+          ${appStoreButton("Ladda ner för iPhone")}
           <a class="btn btn-secondary" href="#android">Lämna mejl för Android</a>
           <a class="btn-link" href="#sa-funkar-det">Så fungerar det</a>
         </div>
-        <p class="hero__trust">Gratis under betan · iPhone via TestFlight · Android efter Googles granskning</p>
+        <p class="hero__trust">Gratis under betan · iPhone i App Store · Android efter Googles granskning</p>
         <p class="hero__tagline">${BRAND_TAGLINE}</p>
       </div>
       ${heroCard()}
@@ -552,9 +555,9 @@ function interestSection(
       <div class="download-paths">
         <div class="download-card" id="iphone">
           <h3>iPhone</h3>
-          <p>Ladda ner via TestFlight. Öppna länken på iPhone, installera TestFlight om du inte redan har den, och gå med i testet.</p>
+          <p>Ladda ner i App Store.</p>
           <p class="download-note">Gratis under betan.</p>
-          ${testFlightButton("Ladda ner för iPhone")}
+          ${appStoreButton("Ladda ner för iPhone")}
         </div>
         <div class="download-card" id="android">
           <h3>Android</h3>
