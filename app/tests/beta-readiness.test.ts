@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { createSessionToken } from "../src/auth/session.js";
 import { sanitizeSha256Fingerprints } from "../src/config.js";
+import { PLAY_STORE_URL, TESTFLIGHT_JOIN_URL } from "../src/http/landing.js";
 import { acceptInvitation, createInvitation } from "../src/services/invitations.js";
 import { createJourneyForStudent } from "../src/services/journeys.js";
 import { createTestApp } from "./helpers.js";
@@ -46,9 +47,14 @@ describe("beta readiness", () => {
     });
     assert.equal(response.statusCode, 200);
     assert.match(response.body, /id="invite-install-fallback"/);
-    assert.match(response.body, /installera Körpasset och öppna samma länk igen/);
+    assert.match(response.body, /Ladda ner i App Store/);
+    assert.match(response.body, /Ladda ner på Google Play/);
+    assert.match(response.body, /id="invite-app-store"/);
+    assert.match(response.body, /id="invite-play-store"/);
+    assert.match(response.body, new RegExp(TESTFLIGHT_JOIN_URL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.match(response.body, new RegExp(PLAY_STORE_URL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.match(response.body, new RegExp(`action="/invite/${invitation.token}/accept"`));
-    assert.match(response.body, /korpasset:\/\/invite\//);
+    assert.doesNotMatch(response.body, /href="korpasset:\/\//);
     await app.close();
   });
 

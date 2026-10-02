@@ -15,24 +15,39 @@ const sceneDelegate = readFileSync(
 );
 
 function element(attrs: Record<string, string> = {}) {
-  return {
+  const el = {
     hidden: attrs.hidden === "true",
+    textContent: "",
     attrs: { ...attrs },
+    listeners: {} as Record<string, (event: { preventDefault: () => void }) => void>,
     setAttribute(name: string, value: string) {
       this.attrs[name] = value;
     },
     getAttribute(name: string) {
       return this.attrs[name] ?? null;
     },
+    addEventListener(type: string, fn: (event: { preventDefault: () => void }) => void) {
+      this.listeners[type] = fn;
+    },
   };
+  return el;
 }
 
-function load(pathname: string, native: boolean, panelHidden = true) {
+function load(
+  pathname: string,
+  native: boolean,
+  panelHidden = true,
+  options: { search?: string; userAgent?: string; platform?: string; maxTouchPoints?: number } = {},
+) {
+  const assigns: string[] = [];
   const panel = element({
     hidden: panelHidden ? "true" : "false",
     id: "invite-open-app",
   });
-  const link = element({ id: "invite-open-app-link", href: "" });
+  const link = element({ id: "invite-open-app-link" });
+  const status = element({ id: "invite-open-status" });
+  const iosStore = element({ id: "invite-app-store", class: "btn btn-primary" });
+  const playStore = element({ id: "invite-play-store", class: "btn btn-secondary" });
   const form = element({ action: `/invite/token/accept` });
   const created: Array<{ textContent: string; attrs: Record<string, string> }> = [];
   const parent = {
@@ -43,6 +58,9 @@ function load(pathname: string, native: boolean, panelHidden = true) {
   const nodes = new Map<string, ReturnType<typeof element>>([
     ["invite-open-app", panel],
     ["invite-open-app-link", link],
+    ["invite-open-status", status],
+    ["invite-app-store", iosStore],
+    ["invite-play-store", playStore],
   ]);
   const sandbox: Record<string, unknown> = {
     URL,
@@ -76,7 +94,21 @@ function load(pathname: string, native: boolean, panelHidden = true) {
       body: parent,
     },
     window: {
-      location: { pathname, search: "", href: `https://korpasset.se${pathname}`, assign() {} },
+      location: {
+        pathname,
+        search: options.search ?? "",
+        href: `https://korpasset.se${pathname}${options.search ?? ""}`,
+        assign(url: string) {
+          assigns.push(url);
+        },
+      },
+      navigator: {
+        userAgent: options.userAgent ?? "",
+        platform: options.platform ?? "",
+        maxTouchPoints: options.maxTouchPoints ?? 0,
+      },
+      setTimeout,
+      clearTimeout,
       sessionStorage: {
         getItem() {
           return null;
@@ -90,15 +122,60 @@ function load(pathname: string, native: boolean, panelHidden = true) {
     },
   };
   runInContext(script, createContext(sandbox));
-  return { panel, link, form, created };
+  const api = (sandbox.window as { KORPASSET_DEEPLINK: {
+    inviteOpenUrl: (token: string, platform: string) => string;
+    openInviteFromBrowser: (token: string) => string;
+    browserPlatform: () => string;
+  } }).KORPASSET_DEEPLINK;
+  return { panel, link, form, created, assigns, status, iosStore, playStore, api };
 }
 
 describe("invitation link opens the app", () => {
-  it("points a browser at korpasset://invite and keeps the web form", () => {
+  it("shows store choice in the browser and does not navigate to korpasset://", () => {
     const page = load("/invite/abc_DEF-123", false);
     assert.equal(page.panel.hidden, false);
-    assert.equal(page.link.attrs.href, "korpasset://invite/abc_DEF-123");
+    assert.equal(page.link.attrs.href, undefined);
+    assert.equal(page.assigns.length, 0);
+    assert.equal(page.iosStore.attrs.class, "btn btn-primary");
+    assert.equal(page.playStore.attrs.class, "btn btn-secondary");
     assert.equal(page.form.hidden, false);
+  });
+
+  it("opens an installed iPhone app only from the explicit button", () => {
+    const page = load("/invite/abc_DEF-123", false, true, {
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)",
+    });
+    assert.equal(page.assigns.length, 0);
+    assert.equal(page.api.browserPlatform(), "ios");
+    assert.equal(page.api.inviteOpenUrl("abc_DEF-123", "ios"), "korpasset://invite/abc_DEF-123");
+    page.link.listeners.click({ preventDefault() {} });
+    assert.deepEqual(page.assigns, ["korpasset://invite/abc_DEF-123"]);
+  });
+
+  it("checks for the Android app and falls back to the store choice", () => {
+    const page = load("/invite/abc_DEF-123", false, true, {
+      userAgent: "Mozilla/5.0 (Linux; Android 14; Pixel) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile",
+    });
+    assert.equal(page.api.browserPlatform(), "android");
+    assert.equal(page.playStore.attrs.class, "btn btn-primary");
+    assert.equal(page.iosStore.attrs.class, "btn btn-secondary");
+    assert.equal(page.assigns.length, 1);
+    assert.match(page.assigns[0], /^intent:\/\/invite\/abc_DEF-123#Intent;/);
+    assert.match(page.assigns[0], /scheme=korpasset/);
+    assert.match(page.assigns[0], /package=se\.korpasset\.app/);
+    assert.match(
+      page.assigns[0],
+      /S\.browser_fallback_url=https%3A%2F%2Fkorpasset\.se%2Finvite%2Fabc_DEF-123%3Finstall%3D1/,
+    );
+  });
+
+  it("stays on the store choice when Android already reported the app missing", () => {
+    const page = load("/invite/abc_DEF-123", false, true, {
+      search: "?install=1",
+      userAgent: "Mozilla/5.0 (Linux; Android 14; Pixel) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile",
+    });
+    assert.deepEqual(page.assigns, []);
+    assert.match(page.status.textContent, /App Store eller Google Play/);
   });
 
   it("keeps the accept form inside the native app and hides Öppna i Körpasset", () => {

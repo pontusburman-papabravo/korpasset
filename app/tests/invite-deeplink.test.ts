@@ -364,7 +364,9 @@ describe("invalid invite page", () => {
       url: `/invite/${invitation.token}`,
     });
     assert.equal(response.statusCode, 200);
-    assert.match(response.body, new RegExp(`href="korpasset://invite/${invitation.token}"`));
+    assert.match(response.body, /Ladda ner i App Store/);
+    assert.match(response.body, /Ladda ner på Google Play/);
+    assert.doesNotMatch(response.body, /href="korpasset:\/\//);
     assert.doesNotMatch(response.body, /Fortsätt med Apple/);
     await app.close();
   });

@@ -1419,9 +1419,134 @@
     return consumeIncomingUrl("https://korpasset.se" + inviteDestination(token), eventType, ctx);
   }
 
+  const INVITE_MISSING_APP =
+    "Appen är inte installerad. Välj App Store eller Google Play, installera Körpasset och öppna samma länk igen.";
+  let inviteOpenTimer = 0;
+
   function hideInviteOpenApp() {
     const panel = document.getElementById("invite-open-app");
     if (panel) panel.hidden = true;
+  }
+
+  function setInviteOpenStatus(text) {
+    const status = document.getElementById("invite-open-status");
+    if (status) status.textContent = text;
+  }
+
+  function browserPlatform() {
+    const nav = window.navigator || {};
+    const ua = String(nav.userAgent || "");
+    if (/Android/i.test(ua)) return "android";
+    if (/iPhone|iPad|iPod/i.test(ua)) return "ios";
+    if (nav.platform === "MacIntel" && Number(nav.maxTouchPoints) > 1) return "ios";
+    return "other";
+  }
+
+  function androidIntentSupported() {
+    const ua = String((window.navigator || {}).userAgent || "");
+    if (!/Android/i.test(ua)) return false;
+    if (/Firefox\//i.test(ua)) return false;
+    return true;
+  }
+
+  function installRequested() {
+    const search = String((window.location && window.location.search) || "");
+    return /(?:^|[?&])install=1(?:&|$)/.test(search);
+  }
+
+  function inviteAttemptKey(token) {
+    return "korpasset.inviteOpenAttempted:" + token;
+  }
+
+  function inviteOpenAttempted(token) {
+    try {
+      return window.sessionStorage.getItem(inviteAttemptKey(token)) === "1";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function rememberInviteOpenAttempt(token) {
+    try {
+      window.sessionStorage.setItem(inviteAttemptKey(token), "1");
+    } catch (error) {
+      /* Private mode can block storage. The install=1 fallback still stops a loop. */
+    }
+  }
+
+  // Android Chrome opens the app via an intent and, when it is missing,
+  // returns to this page so the store choice can be shown. iOS Safari shows
+  // "adressen är ogiltig" for a custom scheme with no installed app, so that
+  // address is never the link href and is only used from the explicit button.
+  function inviteOpenUrl(token, plat) {
+    if (!TOKEN.test(token)) return "";
+    if (plat === "android") {
+      const fallback = "https://korpasset.se/invite/" + token + "?install=1";
+      return (
+        "intent://invite/" +
+        token +
+        "#Intent;scheme=korpasset;package=se.korpasset.app;S.browser_fallback_url=" +
+        encodeURIComponent(fallback) +
+        ";end"
+      );
+    }
+    if (plat === "ios") return "korpasset://invite/" + token;
+    return "";
+  }
+
+  function setButtonTone(el, primary) {
+    if (!el || typeof el.setAttribute !== "function") return;
+    el.setAttribute("class", primary ? "btn btn-primary" : "btn btn-secondary");
+  }
+
+  function applyInviteStoreChoice(plat) {
+    setButtonTone(document.getElementById("invite-app-store"), plat !== "android");
+    setButtonTone(document.getElementById("invite-play-store"), plat === "android");
+  }
+
+  function openInviteFromBrowser(token) {
+    const plat = browserPlatform();
+    if (plat === "android" && !androidIntentSupported()) {
+      setInviteOpenStatus(INVITE_MISSING_APP);
+      return "stores";
+    }
+    const url = inviteOpenUrl(token, plat);
+    if (!url) {
+      setInviteOpenStatus(INVITE_MISSING_APP);
+      return "stores";
+    }
+    if (plat === "ios") {
+      setInviteOpenStatus(
+        "Öppnar Körpasset… Om appen inte är installerad väljer du App Store eller Google Play.",
+      );
+      if (typeof window.clearTimeout === "function") window.clearTimeout(inviteOpenTimer);
+      if (typeof window.setTimeout === "function") {
+        inviteOpenTimer = window.setTimeout(function () {
+          let hidden = false;
+          try {
+            hidden = document.hidden === true || document.visibilityState === "hidden";
+          } catch (error) {
+            hidden = false;
+          }
+          if (!hidden) setInviteOpenStatus(INVITE_MISSING_APP);
+        }, 1200);
+      }
+    }
+    window.location.assign(url);
+    return plat === "android" ? "android-intent" : "ios-scheme";
+  }
+
+  function bindInviteOpenButton() {
+    const link = document.getElementById("invite-open-app-link");
+    if (!link || link.getAttribute("data-invite-bound") === "1") return;
+    if (typeof link.addEventListener !== "function") return;
+    link.setAttribute("data-invite-bound", "1");
+    link.addEventListener("click", function (event) {
+      if (event && event.preventDefault) event.preventDefault();
+      const match = (window.location.pathname || "").match(/^\/invite\/([A-Za-z0-9_-]+)$/);
+      if (!match) return;
+      openInviteFromBrowser(match[1]);
+    });
   }
 
   function prepareInviteHandoff() {
@@ -1429,13 +1554,28 @@
       hideInviteOpenApp();
       return;
     }
-    const match = window.location.pathname.match(/^\/invite\/([A-Za-z0-9_-]+)$/);
+    const match = (window.location.pathname || "").match(/^\/invite\/([A-Za-z0-9_-]+)$/);
     if (!match) return;
     const panel = document.getElementById("invite-open-app");
     if (!panel) return;
     panel.hidden = false;
-    const link = document.getElementById("invite-open-app-link");
-    if (link) link.setAttribute("href", "korpasset://invite/" + match[1]);
+    bindInviteOpenButton();
+    applyInviteStoreChoice(browserPlatform());
+    if (installRequested()) {
+      setInviteOpenStatus(INVITE_MISSING_APP);
+      return;
+    }
+    // Universal Links already tried to open the iOS app before this page
+    // loaded. Assigning korpasset:// here is what makes Safari say the
+    // address is invalid when the app is not installed.
+    if (
+      browserPlatform() === "android" &&
+      androidIntentSupported() &&
+      !inviteOpenAttempted(match[1])
+    ) {
+      rememberInviteOpenAttempt(match[1]);
+      openInviteFromBrowser(match[1]);
+    }
   }
 
   function prepareNativeInviteLogin() {
@@ -1564,6 +1704,9 @@
     consumePendingIfNeeded: consumePendingIfNeeded,
     inviteDestination: inviteDestination,
     deeplinkDebugUiEnabled: deeplinkDebugUiEnabled,
+    browserPlatform: browserPlatform,
+    inviteOpenUrl: inviteOpenUrl,
+    openInviteFromBrowser: openInviteFromBrowser,
   };
 
   document.addEventListener("click", function (event) {

@@ -22,6 +22,9 @@ const ROLE_LABELS: Record<InterestRole, string> = {
 
 export const TESTFLIGHT_JOIN_URL = "https://testflight.apple.com/join/MjyuvkzB";
 
+export const PLAY_STORE_URL =
+  "https://play.google.com/store/apps/details?id=se.korpasset.app";
+
 export const TRANSPORTSTYRELSEN_LINKS = {
   ovningskora:
     "https://www.transportstyrelsen.se/sv/vagtrafik/korkort/ta-korkort/handledarskap-och-ovningskorning/ovningskora/",
