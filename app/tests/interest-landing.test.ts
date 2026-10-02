@@ -7,7 +7,7 @@ import {
   setMailerForTests,
 } from "../src/services/email.js";
 import { LEAD_SIGNAL_MAX_AGE_SECONDS } from "../src/http/consent.js";
-import { TESTFLIGHT_JOIN_URL, TRANSPORTSTYRELSEN_LINKS } from "../src/http/landing.js";
+import { APP_STORE_URL, TRANSPORTSTYRELSEN_LINKS } from "../src/http/landing.js";
 import { createTestApp } from "./helpers.js";
 import { formBody } from "./http-helpers.js";
 import { resetDatabaseData } from "./setup.js";
@@ -35,7 +35,8 @@ describe("landing and interest waitlist", () => {
     assert.match(response.body, /En handledarguide som kommer ihåg/);
     assert.match(response.body, /bok i handskfacket/);
     assert.match(response.body, /action="\/interest"/);
-    assert.match(response.body, new RegExp(TESTFLIGHT_JOIN_URL.replaceAll("/", "\\/")));
+    assert.match(response.body, new RegExp(APP_STORE_URL.replaceAll("/", "\\/")));
+    assert.doesNotMatch(response.body, /testflight/i);
     assert.match(response.body, /Ladda ner för iPhone/);
     assert.match(response.body, /Lämna mejl för Android/);
     assert.match(response.body, /öppet test/);
@@ -437,7 +438,7 @@ describe("landing and interest waitlist", () => {
     assert.ok(externals.length >= 5);
     const allowedExternal = new Set<string>([
       ...Object.values(TRANSPORTSTYRELSEN_LINKS),
-      TESTFLIGHT_JOIN_URL,
+      APP_STORE_URL,
     ]);
     for (const href of externals) {
       assert.ok(allowedExternal.has(href), href);
@@ -507,7 +508,7 @@ describe("landing and interest waitlist", () => {
     assert.match(form, /name="platform_android" value="yes"/);
     assert.doesNotMatch(form, /name="platform_ios"/);
     assert.match(form, /class="interest-choice"[\s\S]*name="consent"[\s\S]*Jag vill bli kontaktad om betan/);
-    assert.match(home.body, /id="iphone"[\s\S]*TestFlight[\s\S]*id="android"[\s\S]*öppet test/);
+    assert.match(home.body, /id="iphone"[\s\S]*App Store[\s\S]*id="android"[\s\S]*öppet test/);
     assert.match(form, /Jag vill bli kontaktad om betan[\s\S]*Bli betatestare/);
 
     assert.match(home.body, /<div class="consent" data-consent-root/);
