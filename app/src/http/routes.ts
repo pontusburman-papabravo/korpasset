@@ -84,6 +84,7 @@ import {
   layout,
   primaryButton,
   errorBanner,
+  successBanner,
   invitationAlreadyUsedPage,
   oauthContinuePanel,
 } from "./layout.js";
@@ -94,6 +95,7 @@ import {
   resolveActiveJourney,
   setActiveJourneyCookie,
 } from "./active-journey.js";
+import { isFeedbackSentQuery } from "./help.js";
 import { journeyIdentityForRole } from "./journey-identity.js";
 import {
   renderJourneyPickerPage,
@@ -413,6 +415,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
 
   app.get("/mer", async (request, reply) => {
     const userId = requireSessionUserId(request);
+    const sent = isFeedbackSentQuery(request.query);
     const resolved = await resolveActiveJourney(userId, readActiveJourneyId(request));
     if (resolved) {
       setActiveJourneyCookie(reply, resolved.journey.id);
@@ -435,6 +438,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
           canStartOwnJourney: !journeys.some((journey) => journey.studentUserId === userId),
           leaveJourneyId:
             resolved?.role === "supervisor" ? resolved.journey.id : null,
+          notice: sent ? successBanner("Tack — vi har tagit emot det.") : undefined,
         }),
         {
           journeyId: resolved?.journey.id,

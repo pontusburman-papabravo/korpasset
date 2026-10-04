@@ -19,6 +19,17 @@ import { parseUserClientReport, recordUserClient } from "../services/user-client
 
 export const FEEDBACK_RATE_LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 };
 export const CLIENT_ERROR_RATE_LIMIT = { limit: 20, windowMs: 10 * 60 * 1000 };
+export const FEEDBACK_SENT_QUERY = "skickat=1";
+
+export function isFeedbackSentQuery(query: unknown): boolean {
+  const value = (query as { skickat?: string | string[] } | undefined)?.skickat;
+  return (Array.isArray(value) ? value[0] : value) === "1";
+}
+
+export function helpThanks(backHref: string): string {
+  return `${successBanner("Tack — vi har tagit emot det.")}
+    <p><a class="btn btn-secondary" href="${escapeHtml(backHref)}">Tillbaka</a></p>`;
+}
 
 const HELP_LAYOUT = { supportBubble: false } as const;
 
@@ -77,6 +88,11 @@ function helpForm(
 export async function registerHelpRoutes(app: FastifyInstance): Promise<void> {
   app.get("/hjalp", async (request, reply) => {
     const query = (request.query ?? {}) as { topic?: string; from?: string };
+    if (isFeedbackSentQuery(query)) {
+      return reply.type("text/html").send(
+        layoutForRequest(request, "Tack", helpThanks("/app"), HELP_LAYOUT),
+      );
+    }
     const bugReport = query.topic === "technical";
     return reply.type("text/html").send(
       layoutForRequest(
@@ -164,15 +180,8 @@ export async function registerHelpRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
-    return reply.type("text/html").send(
-      layoutForRequest(
-        request,
-        "Tack",
-        `${successBanner("Tack — vi har tagit emot det.")}
-         <p><a class="btn btn-secondary" href="/mer">Tillbaka</a></p>`,
-        HELP_LAYOUT,
-      ),
-    );
+    const dest = userId ? `/mer?${FEEDBACK_SENT_QUERY}` : `/hjalp?${FEEDBACK_SENT_QUERY}`;
+    return reply.redirect(dest, 303);
   });
 
   app.post("/api/client-error", async (request, reply) => {

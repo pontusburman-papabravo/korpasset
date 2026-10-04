@@ -495,8 +495,14 @@ describe("beta UX HTTP", () => {
         message: "Kunde inte välja dagens fokus.",
       }),
     });
-    assert.equal(posted.statusCode, 200);
-    assert.match(posted.body, /Tack — vi har tagit emot det/);
+    assert.equal(posted.statusCode, 303);
+    assert.equal(posted.headers.location, "/mer?skickat=1");
+    const thanks = await injectWithSession(app, session(userId), {
+      method: "GET",
+      url: "/mer?skickat=1",
+    });
+    assert.equal(thanks.statusCode, 200);
+    assert.match(thanks.body, /Tack — vi har tagit emot det/);
     assert.equal(sent.length, 1);
     assert.match(sent[0].subject, /Välja dagens fokus/);
     assert.match(sent[0].text, new RegExp(userId));
@@ -514,7 +520,8 @@ describe("beta UX HTTP", () => {
         from: "/journey/abc?token=sekret",
       }),
     });
-    assert.equal(withPage.statusCode, 200);
+    assert.equal(withPage.statusCode, 303);
+    assert.equal(withPage.headers.location, "/mer?skickat=1");
     assert.match(sent[1].text, /Sida: \/journey\/abc\?token=\[redacted\]/);
     assert.doesNotMatch(sent[1].text, /sekret/);
 
@@ -525,6 +532,22 @@ describe("beta UX HTTP", () => {
       payload: formBody({ topic: "other", message: "hej" }),
     });
     assert.equal(invalid.statusCode, 400);
+
+    const anon = await app.inject({
+      method: "POST",
+      url: "/hjalp",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: formBody({
+        topic: "other",
+        message: "Utloggad feedback ska inte lämna en POST-sida.",
+      }),
+    });
+    assert.equal(anon.statusCode, 303);
+    assert.equal(anon.headers.location, "/hjalp?skickat=1");
+    const anonThanks = await app.inject({ method: "GET", url: "/hjalp?skickat=1" });
+    assert.equal(anonThanks.statusCode, 200);
+    assert.match(anonThanks.body, /Tack — vi har tagit emot det/);
+    assert.doesNotMatch(anonThanks.body, /<form method="post" action="\/hjalp"/);
 
     const beacon = await app.inject({
       method: "POST",
@@ -577,7 +600,8 @@ describe("beta UX HTTP", () => {
         message: "Hur gör jag så här?",
       }),
     });
-    assert.equal(posted.statusCode, 200);
+    assert.equal(posted.statusCode, 303);
+    assert.equal(posted.headers.location, "/mer?skickat=1");
     assert.equal(sent.length, 1);
     assert.equal(sent[0].replyTo, "pontus@example.com");
     assert.match(sent[0].text, /E-post: pontus@example.com/);

@@ -74,6 +74,7 @@ export function renderMorePage(options: {
   journeyCount: number;
   canStartOwnJourney?: boolean;
   leaveJourneyId?: string | null;
+  notice?: string;
 }): string {
   const identity = options.identity
     ? renderJourneyIdentity(options.identity)
@@ -90,7 +91,8 @@ export function renderMorePage(options: {
          <button type="submit" class="btn btn-secondary">Lämna resan</button>
        </form>`
     : "";
-  return `${identity}
+  return `${options.notice ?? ""}
+    ${identity}
     ${switcher}
     ${startOwn}
     <nav class="more-menu" aria-label="Mer">
