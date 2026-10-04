@@ -30,7 +30,7 @@ import {
   listRecentInterestSignups,
 } from "../services/admin-stats.js";
 import { filterUsageJourneys, getAdminUsage, usageListFilter } from "../services/admin-usage.js";
-import { getAdminProductStats, getJourneyUsageDetail, statsPeriod } from "../services/admin-product-stats.js";
+import { getAdminProductStats, getJourneyUsageDetail, statsPeriod, tipsFilter } from "../services/admin-product-stats.js";
 import { journeyUsageDetailBody } from "./admin-product-pages.js";
 import { latestJourneyWeeklyEmail } from "../services/weekly-summary-mail.js";
 import {
@@ -407,12 +407,12 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   app.get("/admin/statistik", async (request, reply) => {
     if (!(await requireAdmin(request, reply))) return;
-    const query = request.query as { period?: string };
+    const query = request.query as { period?: string; tips?: string };
     const period = statsPeriod(query.period);
     const [stats, usage, product] = await Promise.all([
       getAdminBetaStats(),
       getAdminUsage(),
-      getAdminProductStats(period),
+      getAdminProductStats(period, tipsFilter(query.tips)),
     ]);
     return reply.type("text/html").send(statistikPage(stats, usage, product));
   });

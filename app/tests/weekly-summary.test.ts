@@ -399,6 +399,18 @@ describe("weekly summary mail", () => {
     assert.equal(row.rows[0].provider_message_id, "msg-1");
     assert.equal(row.rows[0].account_id, student.userId);
     assert.equal(row.rows[0].journey_id, student.journey.id);
+    const code = await getPool().query(
+      `SELECT referral_code FROM users WHERE id = $1`,
+      [student.userId],
+    );
+    const referralCode = String(code.rows[0].referral_code);
+    assert.match(referralCode, /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/);
+    assert.match(
+      sent[0]?.text ?? "",
+      new RegExp(`/tips\\?r=${referralCode}&source=weekly_email`),
+    );
+    assert.doesNotMatch(sent[0]?.text ?? "", new RegExp(student.userId));
+    assert.doesNotMatch(sent[0]?.text ?? "", /nora@example.com/);
   });
 
   it("counts a new full checklist only when it happens inside the week", async () => {

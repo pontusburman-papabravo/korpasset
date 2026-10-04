@@ -18,8 +18,9 @@ Server-side observation i tabellen `product_events`. Inga namn, e-post, fritext,
 | `created_at` | Tidpunkt |
 | `share_surface` | `app` / `website` / `weekly_email` på delningshändelser, annars NULL |
 | `client_platform` | `ios` / `android` / `web` på delningshändelser, annars NULL |
+| `referrer_user_id` | Konto som äger referral-koden. Samma person som `user_id` när någon tipsar. På ett besök är `user_id` NULL och `referrer_user_id` är den som tipsade. |
 
-Admin-statistik räknar användning från **domäntabeller**. Delning är undantaget: knappar, besök och registreringar via tips-länken räknas härifrån och visas under Statistik → Delning.
+Admin-statistik räknar användning från **domäntabeller**. Tips och delningar är undantaget och visas under Statistik → Tips & delningar.
 
 ## Events före den här observationen
 
@@ -119,17 +120,19 @@ Det är inte bevisad kausal effekt av nudgen. Inget `stale_drive_nudge_converted
 
 ## Delning
 
-Gemensam länk `https://korpasset.se/tips?ref=share_app`, `share_website` eller `share_weekly_email`. Ingen personlig referral-kod, inget namn, ingen e-post och ingen körstatistik i URL:en eller i texten som delas.
+Inloggad användare delar `https://korpasset.se/tips?r=<kod>&source=app|website|weekly_email`. Koden är åtta tecken ur `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`, slumpad en gång per konto och lagrad i `users.referral_code`. Den innehåller inte user-id, e-post, namn eller journey-id. Utloggad delning använder `?source=` utan `r`. Äldre `?ref=share_app|share_website|share_weekly_email` anger fortfarande yta, men identifierar ingen person.
 
 | Event | Semantik | Metadata |
 | --- | --- | --- |
-| `share_prompt_viewed` | Tipsrutan visades i appen eller på webbplatsen. `/tips` loggar inte den här raden. | `share_surface`, `client_platform`, `user_id` och `journey_id` när sessionen har tillgång |
-| `share_started` | Användaren tryckte Tipsa, Dela eller Kopiera länk. | samma |
+| `share_prompt_viewed` | Tipsrutan visades i appen eller på webbplatsen. `/tips` loggar inte den här raden. | `user_id`, `referrer_user_id`, `share_surface`, `client_platform`, `journey_id` och `actor_role` när sessionen har en resa |
+| `share_started` | Användaren tryckte Tipsa, Dela eller Kopiera länk. Det är inte bevis på att meddelandet skickades. Admin kallar det Delningsknappen använd. | samma |
 | `share_link_copied` | Länken kopierades, antingen som val eller som reserv när delning saknas. | samma |
 | `share_completed` | Systemets delningsruta eller Web Share API slutfördes. Avbruten delning räknas inte. | samma |
-| `share_landing_viewed` | Någon öppnade `GET /tips`. | `share_surface` från `ref` om den är känd, annars NULL |
-| `share_registration` | En resa skapades (`POST /start`) eller en ny intresseanmälan sparades medan cookien fanns. | `journey_id` och `user_id` bara när en resa skapas |
+| `share_landing_viewed` | Någon annan öppnade en giltig personlig länk. Admin kallar det Länken öppnad. | `user_id` är NULL. `referrer_user_id` är kodens konto. `share_surface` kommer från `source` eller äldre `ref` |
+| `share_registration` | Ett nytt konto skapades medan den första giltiga koden fanns kvar. Admin kallar det Registrering via tips. | `user_id` är det nya kontot, `referrer_user_id` är den som tipsade |
 
-Cookien `korpasset_share_ref` är HttpOnly, SameSite=Lax, path `/`, 14 dygn. Den sätts på `/tips` när `ref` är en av de tre kända koderna. Den följer inte med in i App Store-installationen, så en registrering i appen efter nedladdning syns inte som `share_registration`. Samma webbläsare som öppnade länken kan däremot skapa resa eller lämna mejl.
+Besöksloggen sparar inte besökarens konto. En omladdning med samma kod i samma webbläsarsession (`korpasset_referral_seen`, HttpOnly, utan `Max-Age`) skriver inte en ny rad. En inloggad användare som öppnar sin egen länk ger inget besök.
 
-Veckomejlet länkar till sidan. Mejlklienten öppnar ingen delningsruta, och utskicket i sig är inte `share_prompt_viewed`.
+Cookien `korpasset_referral` är HttpOnly, SameSite=Lax, path `/`, 30 dygn. Värdet är `kod.yta.unixsekunder` för första klicket. En senare kod ersätter den inte så länge den första fortfarande tillhör ett konto som inte är raderat. Vid nytt konto (`POST /start` utan befintlig session, eller OAuth när kontot skapas) skrivs `referred_by_user_id`, `referred_by_code` och `referred_at` om fältet fortfarande är tomt. En andra referrer kan inte vinna. Intresseanmälan är inte ett konto. Cookien följer inte med in i App Store-installationen.
+
+Raderad eller okänd kod ger en vanlig `/tips`-sida, ingen cookie och inget besök. Veckomejlet länkar med elevens kod och `source=weekly_email`. Utskicket i sig är inte `share_started`.

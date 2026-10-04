@@ -53,6 +53,7 @@ export interface ProductEventInput {
   daysSinceDriveBucket?: DaysSinceDriveBucket | null;
   shareSurface?: "app" | "website" | "weekly_email" | null;
   clientPlatform?: "ios" | "android" | "web" | null;
+  referrerUserId?: string | null;
 }
 
 export function daysSinceDriveBucket(days: number): DaysSinceDriveBucket {
@@ -70,9 +71,10 @@ export async function recordProductEvent(
   await db.query(
     `INSERT INTO product_events (
        event_name, journey_id, user_id, actor_role, supervisor_count, focus_skill_count,
-       event_source, practice_stage, days_since_drive_bucket, share_surface, client_platform
+       event_source, practice_stage, days_since_drive_bucket, share_surface, client_platform,
+       referrer_user_id
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
     [
       input.name,
       input.journeyId ?? null,
@@ -85,6 +87,7 @@ export async function recordProductEvent(
       input.daysSinceDriveBucket ?? null,
       input.shareSurface ?? null,
       input.clientPlatform ?? null,
+      input.referrerUserId ?? null,
     ],
   );
 }

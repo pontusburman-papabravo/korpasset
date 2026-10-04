@@ -10,6 +10,8 @@ import { rememberAppleRefreshTokenFromAuthorizationCode } from "../services/appl
 import { continueWithOAuth } from "../services/oauth-accounts.js";
 import { acceptInvitation } from "../services/invitations.js";
 import { getReusableSessionUserId, getUserById } from "../services/users.js";
+import { attributeReferralSignup, platformFromUserAgent } from "../services/share.js";
+import { readReferralCookie } from "./share.js";
 import { createOAuthHandoff } from "../services/oauth-handoff.js";
 import { signedInRedirectPath } from "./navigation.js";
 import { readOnboardingTrack } from "./onboarding-track.js";
@@ -179,6 +181,13 @@ async function completeOAuthLogin(
         request.log.warn(fields, message);
       },
     );
+  }
+  if (result.created && !result.claimedGuest) {
+    await attributeReferralSignup({
+      newUserId: result.userId,
+      cookieValue: readReferralCookie(request),
+      platform: platformFromUserAgent(request.headers["user-agent"]),
+    });
   }
   let redirectTo = await signedInRedirectPath(result.userId, readOnboardingTrack(request));
   const inviteToken = parseInviteReturnTo(input.returnTo);

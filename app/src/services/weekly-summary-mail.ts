@@ -2,7 +2,7 @@ import { config } from "../config.js";
 import { getPool } from "../db/pool.js";
 import { EmailSendError, getMailer } from "./email.js";
 import { buildWeeklySummaryEmail } from "./weekly-summary-email.js";
-import { shareUrl } from "./share.js";
+import { personalShareUrl } from "./share.js";
 import {
   getJourneyWeeklySummary,
   isWeeklySummarySendWindow,
@@ -282,7 +282,7 @@ async function deliverOne(
       summary,
       previous,
       appUrl: appUrl(),
-      shareUrl: shareUrl("weekly_email"),
+      shareUrl: await personalShareUrl(row.account_id, "weekly_email"),
     });
     const result = await getMailer().send({
       to: row.email!.trim(),

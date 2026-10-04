@@ -119,8 +119,13 @@ import {
 } from "./handoff-context.js";
 import { supervisorGuideForSkillKey } from "../domain/supervisor-guide.js";
 import { APP_STORE_URL, PLAY_STORE_URL, renderLandingPage } from "./landing.js";
-import { shareUrl, platformFromUserAgent, recordShareEvent } from "../services/share.js";
-import { readShareSurface } from "./share.js";
+import {
+  attributeReferralSignup,
+  personalShareUrl,
+  platformFromUserAgent,
+  shareUrl,
+} from "../services/share.js";
+import { readReferralCookie } from "./share.js";
 import { driveDoneSharePrompt } from "./share-widget.js";
 import { campaignSearch } from "./marketing.js";
 import {
@@ -336,10 +341,15 @@ function canCreateStudentJourney(accountState: string | null | undefined): boole
 
 export async function registerRoutes(app: FastifyInstance): Promise<void> {
   app.get("/", async (request, reply) => {
+    const userId = await getReusableSessionUserId(getSessionUserId(request));
+    const shareLink = userId
+      ? await personalShareUrl(userId, "website")
+      : shareUrl("website");
     return reply.type("text/html").send(
       renderLandingPage({
         consent: wantsPublicCookieConsent(request),
         interestAction: `/interest${campaignSearch(request.query)}`,
+        shareLink,
       }),
     );
   });
@@ -554,13 +564,11 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       );
       setSessionCookie(reply, userId);
       clearHandoffCookie(reply);
-      const shareSurface = readShareSurface(request);
-      if (shareSurface) {
-        await recordShareEvent({
-          name: "share_registration",
-          surface: shareSurface,
+      if (!sessionUserId) {
+        await attributeReferralSignup({
+          newUserId: userId,
+          cookieValue: readReferralCookie(request),
           platform: platformFromUserAgent(request.headers["user-agent"]),
-          userId,
           journeyId: journey.id,
           actorRole: "student",
         });
@@ -1646,7 +1654,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
              ${recList}
            </section>
            <a class="btn btn-primary" href="/journey/${escapeHtml(journeyId)}">Tillbaka till resan</a>
-           ${driveDoneSharePrompt(shareUrl("app"))}`,
+           ${driveDoneSharePrompt(await personalShareUrl(userId, "app"))}`,
           { journeyId, role: access.role },
         ),
       );

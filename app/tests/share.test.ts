@@ -12,11 +12,21 @@ import { createAdminUser } from "../src/services/admin-users.js";
 import { getAdminProductStats } from "../src/services/admin-product-stats.js";
 import { createJourneyForStudent } from "../src/services/journeys.js";
 import {
+  REFERRAL_CODE_ALPHABET,
+  REFERRAL_COOKIE,
+  REFERRAL_MAX_AGE_SECONDS,
+  REFERRAL_SEEN_COOKIE,
   SHARE_TEXT,
   SHARE_TITLE,
+  attributeReferralSignup,
+  ensureReferralCode,
+  isReferralCode,
+  personalShareUrl,
+  referralCookieValue,
   sharePayloadHasPersonalData,
   shareUrl,
 } from "../src/services/share.js";
+import { createGuestUser } from "../src/services/users.js";
 import { APP_STORE_URL, PLAY_STORE_URL } from "../src/http/landing.js";
 import { buildWeeklySummaryEmail } from "../src/services/weekly-summary-email.js";
 import {
@@ -31,6 +41,7 @@ const IPHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)";
 const ANDROID_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8)";
 const DESKTOP_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)";
 const FORBIDDEN = ["Värva en vän", "Bjud in och få", "Hjälp oss växa"];
+const REFERRAL_CODE = `[${REFERRAL_CODE_ALPHABET}]{8}`;
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -290,10 +301,23 @@ describe("share helper", () => {
     for (const surface of ["app", "website", "weekly_email"] as const) {
       const url = shareUrl(surface, "https://korpasset.se");
       assert.equal(sharePayloadHasPersonalData(SHARE_TEXT, url), false);
-      assert.match(url, new RegExp(`/tips\\?ref=share_${surface}$`));
+      assert.match(url, new RegExp(`/tips\\?source=${surface}$`));
+      const personal = `https://korpasset.se/tips?r=AB7K29CD&source=${surface}`;
+      assert.equal(sharePayloadHasPersonalData(SHARE_TEXT, personal), false);
     }
     assert.equal(
       sharePayloadHasPersonalData(SHARE_TEXT, "https://korpasset.se/tips?ref=share_app&email=a@b.se"),
+      true,
+    );
+    assert.equal(
+      sharePayloadHasPersonalData(SHARE_TEXT, "https://korpasset.se/tips?user_id=123"),
+      true,
+    );
+    assert.equal(
+      sharePayloadHasPersonalData(
+        SHARE_TEXT,
+        "https://korpasset.se/tips?r=11111111-1111-4111-8111-111111111111&source=app",
+      ),
       true,
     );
     assert.equal(
@@ -357,27 +381,18 @@ describe("share surfaces", () => {
       assert.match(page.body, /Google Play är inte öppet för alla än/);
       assert.match(page.body, /href="\/#android"/);
       assert.match(page.body, /id="tips-open-app" href="\/app"/);
-      assert.match(page.body, /data-share-url="[^"]*\/tips\?ref=share_weekly_email"/);
+      assert.match(page.body, /data-share-url="[^"]*\/tips\?source=website"/);
       assert.match(page.body, /data-share-silent-view="1"/);
       assert.match(page.body, />Dela</);
       assert.match(page.body, />Kopiera länk</);
       assert.match(page.body, /src="\/share\.js"/);
-      const cookie = page.cookies.find((entry) => entry.name === "korpasset_share_ref");
-      assert.equal(cookie?.value, "share_weekly_email");
-      assert.equal(cookie?.httpOnly, true);
+      assert.equal(page.cookies.find((entry) => entry.name === REFERRAL_COOKIE), undefined);
       for (const phrase of FORBIDDEN) assert.equal(page.body.includes(phrase), false);
     }
     const rows = await getPool().query(
-      `SELECT share_surface, client_platform FROM product_events WHERE event_name = 'share_landing_viewed' ORDER BY client_platform`,
+      `SELECT count(*)::int AS n FROM product_events WHERE event_name = 'share_landing_viewed'`,
     );
-    assert.deepEqual(
-      rows.rows.map((row) => [row.share_surface, row.client_platform]),
-      [
-        ["weekly_email", "android"],
-        ["weekly_email", "ios"],
-        ["weekly_email", "web"],
-      ],
-    );
+    assert.equal(rows.rows[0].n, 0);
     await app.close();
   });
 
@@ -390,7 +405,7 @@ describe("share surfaces", () => {
     assert.match(home.body, /Tipsa gärna någon annan som snart ska börja\./);
     assert.match(home.body, />Tipsa en vän</);
     assert.match(home.body, /data-share-surface="website"/);
-    assert.match(home.body, /data-share-url="[^"]*\/tips\?ref=share_website"/);
+    assert.match(home.body, /data-share-url="[^"]*\/tips\?source=website"/);
     assert.match(home.body, new RegExp(`data-share-text="${escapeRegExp(SHARE_TEXT)}"`));
     assert.doesNotMatch(home.body, /data-share-url="[^"]*(Ella|Hemlig|email=)/);
     assert.match(home.body, /src="\/share\.js"/);
@@ -404,7 +419,11 @@ describe("share surfaces", () => {
     assert.match(account.body, /Gillar du Körpasset\?/);
     assert.match(account.body, /Tipsa någon som också övningskör\./);
     assert.match(account.body, /data-share-surface="app"/);
-    assert.match(account.body, /data-share-url="[^"]*\/tips\?ref=share_app"/);
+    assert.match(
+      account.body,
+      new RegExp(`data-share-url="[^"]*/tips\\?r=${REFERRAL_CODE}&amp;source=app"`),
+    );
+    assert.equal(account.body.includes(student.userId), false);
     assert.doesNotMatch(account.body, /data-share-text="[^"]*Ella/);
     for (const phrase of FORBIDDEN) {
       assert.equal(home.body.includes(phrase), false);
@@ -433,6 +452,10 @@ describe("share surfaces", () => {
     assert.ok(back > 0 && share > back);
     assert.match(page.body, /class="btn btn-primary"[^>]*>Tillbaka till resan/);
     assert.match(page.body, /data-share-surface="app"/);
+    assert.match(
+      page.body,
+      new RegExp(`data-share-url="[^"]*/tips\\?r=${REFERRAL_CODE}&amp;source=app"`),
+    );
     assert.doesNotMatch(page.body, /role="dialog"|share-modal/);
     assert.doesNotMatch(page.body, /data-share-url="[^"]*Ella/);
     await app.close();
@@ -468,7 +491,6 @@ describe("share surfaces", () => {
         "content-type": "application/x-www-form-urlencoded",
         "user-agent": ANDROID_UA,
       },
-      cookies: { korpasset_share_ref: "share_weekly_email" },
       payload: formBody({ name: "Nova Hemlig" }),
     });
     assert.equal(created.statusCode, 302);
@@ -480,7 +502,6 @@ describe("share surfaces", () => {
         "content-type": "application/x-www-form-urlencoded",
         "user-agent": DESKTOP_UA,
       },
-      cookies: { korpasset_share_ref: "share_website" },
       payload: formBody({
         name: "Anna Andersson",
         email: "anna.tips@example.com",
@@ -490,59 +511,33 @@ describe("share surfaces", () => {
       }),
     });
     assert.equal(interest.statusCode, 302);
-    const again = await app.inject({
-      method: "POST",
-      url: "/interest",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      cookies: { korpasset_share_ref: "share_website" },
-      payload: formBody({
-        name: "Anna Andersson",
-        email: "anna.tips@example.com",
-        role: "parent",
-        platform_android: "yes",
-        consent: "yes",
-      }),
-    });
-    assert.equal(again.statusCode, 302);
 
     const events = await getPool().query(
       `SELECT event_name, share_surface, client_platform, user_id, journey_id, actor_role,
-              row_to_json(product_events)::text AS raw
+              referrer_user_id, row_to_json(product_events)::text AS raw
        FROM product_events
        WHERE event_name LIKE 'share_%'
        ORDER BY created_at`,
     );
     const names = events.rows.map((row) => `${row.event_name}:${row.share_surface}:${row.client_platform}`);
     assert.ok(names.includes("share_started:app:ios"));
-    assert.ok(names.includes("share_registration:weekly_email:android"));
-    assert.ok(names.includes("share_registration:website:web"));
-    assert.equal(names.filter((name) => name.startsWith("share_registration:website")).length, 1);
+    assert.equal(names.some((name) => name.startsWith("share_registration")), false);
     const button = events.rows.find((row) => row.event_name === "share_started");
     assert.equal(button.user_id, started.userId);
+    assert.equal(button.referrer_user_id, started.userId);
     assert.equal(button.journey_id, started.journey.id);
     assert.equal(button.actor_role, "student");
-    const signup = events.rows.find(
-      (row) => row.event_name === "share_registration" && row.share_surface === "website",
-    );
-    assert.equal(signup.user_id, null);
-    assert.equal(signup.journey_id, null);
     for (const row of events.rows) {
       assert.equal(String(row.raw).includes("anna.tips@example.com"), false);
       assert.equal(String(row.raw).includes("Nova Hemlig"), false);
       assert.equal(String(row.raw).includes("Ella Hemlig"), false);
     }
 
-    const landing = await app.inject({
-      method: "GET",
-      url: "/tips?ref=share_app",
-      headers: { "user-agent": IPHONE_UA },
-    });
-    assert.equal(landing.statusCode, 200);
-
     const stats = await getAdminProductStats("30");
-    assert.equal(stats.share.started, 1);
-    assert.equal(stats.share.registrations, 2);
-    assert.equal(stats.share.landingViews, 1);
+    assert.equal(stats.tips.windows.all.uniqueSharers, 1);
+    assert.equal(stats.tips.windows.all.shareStarts, 1);
+    assert.equal(stats.tips.windows.all.signups, 0);
+    assert.equal(stats.tips.windows.all.visits, 0);
     const admin = await createAdminUser("ops@korpasset.se", "korrekt-losen-12");
     const page = await app.inject({
       method: "GET",
@@ -550,10 +545,334 @@ describe("share surfaces", () => {
       cookies: { korpasset_admin: createAdminToken(admin.id) },
     });
     assert.equal(page.statusCode, 200);
-    assert.match(page.body, /data-share-stats/);
-    assert.match(page.body, /Delningsknappar<\/p>\s*<p class="admin-kpi__value">1<\/p>/);
-    assert.match(page.body, /Registreringar via delning<\/p>\s*<p class="admin-kpi__value">2<\/p>/);
-    assert.match(page.body, /Besök via delning/);
+    assert.match(page.body, /data-tips-stats/);
+    assert.match(page.body, /Tips &amp; delningar/);
+    assert.match(
+      page.body,
+      /Delningsknappen använd<\/td>\s*<td>1<\/td>\s*<td>1<\/td>\s*<td>1<\/td>/,
+    );
+    assert.match(
+      page.body,
+      /Registrering via tips<\/td>\s*<td>0<\/td>\s*<td>0<\/td>\s*<td>0<\/td>/,
+    );
+    await app.close();
+  });
+});
+
+describe("referral attribution", () => {
+  beforeEach(async () => {
+    await resetDatabaseData();
+  });
+
+  it("gives a logged-in user a stable code that hides the account id", async () => {
+    const student = await createJourneyForStudent("Anna Andersson");
+    const first = await ensureReferralCode(student.userId);
+    const second = await ensureReferralCode(student.userId);
+    assert.equal(first, second);
+    assert.equal(isReferralCode(first), true);
+    assert.equal(first.includes(student.userId), false);
+    assert.equal(first.includes(student.userId.replaceAll("-", "")), false);
+    const url = await personalShareUrl(student.userId, "app", "https://korpasset.se");
+    assert.match(url, new RegExp(`/tips\\?r=${first}&source=app$`));
+    assert.equal(sharePayloadHasPersonalData(SHARE_TEXT, url), false);
+    assert.equal(url.includes(student.userId), false);
+    assert.equal(url.includes("Anna"), false);
+  });
+
+  it("ties the weekly email link to the student and records one visit", async () => {
+    const student = await createJourneyForStudent("Anna Andersson");
+    const url = await personalShareUrl(student.userId, "weekly_email", "https://korpasset.se");
+    const code = url.match(new RegExp(`r=(${REFERRAL_CODE})`))?.[1];
+    assert.ok(code);
+    assert.equal(url.includes(student.userId), false);
+    const email = buildWeeklySummaryEmail({
+      displayName: "Anna Andersson",
+      summary: blankSummary(),
+      previous: null,
+      appUrl: "https://korpasset.se/app",
+      shareUrl: url,
+    });
+    assert.match(email.text, new RegExp(escapeRegExp(url)));
+    assert.doesNotMatch(email.text, new RegExp(student.userId));
+    assert.equal(sharePayloadHasPersonalData(SHARE_TEXT, url), false);
+
+    const app = await createTestApp();
+    const first = await app.inject({
+      method: "GET",
+      url: `/tips?r=${code}&source=weekly_email`,
+      headers: { "user-agent": DESKTOP_UA },
+    });
+    assert.equal(first.statusCode, 200);
+    assert.doesNotMatch(first.body, /Anna/);
+    assert.match(first.body, /data-share-url="[^"]*\/tips\?source=website"/);
+    const referral = first.cookies.find((entry) => entry.name === REFERRAL_COOKIE);
+    const seen = first.cookies.find((entry) => entry.name === REFERRAL_SEEN_COOKIE);
+    assert.equal(referral?.httpOnly, true);
+    assert.equal(referral?.maxAge, REFERRAL_MAX_AGE_SECONDS);
+    assert.match(referral?.value ?? "", new RegExp(`^${code}\\.weekly_email\\.\\d+$`));
+    assert.equal(seen?.value, code);
+    assert.equal(seen?.maxAge, undefined);
+
+    const reload = await app.inject({
+      method: "GET",
+      url: `/tips?r=${code}&source=weekly_email`,
+      headers: { "user-agent": DESKTOP_UA },
+      cookies: {
+        [REFERRAL_COOKIE]: referral?.value ?? "",
+        [REFERRAL_SEEN_COOKIE]: seen?.value ?? "",
+      },
+    });
+    assert.equal(reload.statusCode, 200);
+    const visits = await getPool().query(
+      `SELECT user_id, referrer_user_id, share_surface
+       FROM product_events
+       WHERE event_name = 'share_landing_viewed'`,
+    );
+    assert.equal(visits.rowCount, 1);
+    assert.equal(visits.rows[0].user_id, null);
+    assert.equal(visits.rows[0].referrer_user_id, student.userId);
+    assert.equal(visits.rows[0].share_surface, "weekly_email");
+    await app.close();
+  });
+
+  it("attributes a signup to the first referrer only", async () => {
+    const anna = await createJourneyForStudent("Anna Andersson");
+    const erik = await createJourneyForStudent("Erik Svensson");
+    const annaCode = await ensureReferralCode(anna.userId);
+    const erikCode = await ensureReferralCode(erik.userId);
+    const app = await createTestApp();
+    const first = await app.inject({
+      method: "GET",
+      url: `/tips?r=${annaCode}&source=weekly_email`,
+    });
+    const annaCookie = first.cookies.find((entry) => entry.name === REFERRAL_COOKIE)?.value;
+    assert.ok(annaCookie);
+    const second = await app.inject({
+      method: "GET",
+      url: `/tips?r=${erikCode}&source=app`,
+      cookies: {
+        [REFERRAL_COOKIE]: annaCookie,
+        [REFERRAL_SEEN_COOKIE]: annaCode,
+      },
+    });
+    assert.equal(
+      second.cookies.find((entry) => entry.name === REFERRAL_COOKIE),
+      undefined,
+    );
+    const created = await app.inject({
+      method: "POST",
+      url: "/start",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        "user-agent": ANDROID_UA,
+      },
+      cookies: { [REFERRAL_COOKIE]: annaCookie },
+      payload: formBody({ name: "Nova Hemlig" }),
+    });
+    assert.equal(created.statusCode, 302);
+    const user = await getPool().query(
+      `SELECT id, referred_by_user_id, referred_by_code
+       FROM users WHERE display_name = 'Nova Hemlig'`,
+    );
+    assert.equal(user.rows[0].referred_by_user_id, anna.userId);
+    assert.equal(user.rows[0].referred_by_code, annaCode);
+    const again = await attributeReferralSignup({
+      newUserId: user.rows[0].id,
+      cookieValue: referralCookieValue(erikCode, "app"),
+      platform: "web",
+    });
+    assert.equal(again, false);
+    const still = await getPool().query(
+      `SELECT referred_by_user_id FROM users WHERE id = $1`,
+      [user.rows[0].id],
+    );
+    assert.equal(still.rows[0].referred_by_user_id, anna.userId);
+    const regs = await getPool().query(
+      `SELECT user_id, referrer_user_id, share_surface
+       FROM product_events WHERE event_name = 'share_registration'`,
+    );
+    assert.equal(regs.rowCount, 1);
+    assert.equal(regs.rows[0].user_id, user.rows[0].id);
+    assert.equal(regs.rows[0].referrer_user_id, anna.userId);
+    assert.equal(regs.rows[0].share_surface, "weekly_email");
+
+    const existing = await createGuestUser("Befintlig");
+    const skipped = await app.inject({
+      method: "POST",
+      url: "/start",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      cookies: {
+        [config.sessionCookieName]: createSessionToken(existing.id),
+        [REFERRAL_COOKIE]: referralCookieValue(erikCode, "website"),
+      },
+      payload: formBody({ name: "Befintlig" }),
+    });
+    assert.equal(skipped.statusCode, 302);
+    const existingRow = await getPool().query(
+      `SELECT referred_by_user_id FROM users WHERE id = $1`,
+      [existing.id],
+    );
+    assert.equal(existingRow.rows[0].referred_by_user_id, null);
+    await app.close();
+  });
+
+  it("ignores an invalid or deleted referral code and a self visit", async () => {
+    const student = await createJourneyForStudent("Anna Andersson");
+    const code = await ensureReferralCode(student.userId);
+    const app = await createTestApp();
+    const invalid = await app.inject({
+      method: "GET",
+      url: `/tips?r=${student.userId}&source=app`,
+    });
+    assert.equal(invalid.statusCode, 200);
+    assert.equal(invalid.cookies.find((entry) => entry.name === REFERRAL_COOKIE), undefined);
+    const unknown = await app.inject({
+      method: "GET",
+      url: "/tips?r=AB7K29CD&source=website",
+    });
+    assert.equal(unknown.statusCode, 200);
+    assert.equal(unknown.cookies.find((entry) => entry.name === REFERRAL_COOKIE), undefined);
+
+    const self = await app.inject({
+      method: "GET",
+      url: `/tips?r=${code}&source=weekly_email`,
+      cookies: { [config.sessionCookieName]: createSessionToken(student.userId) },
+    });
+    assert.equal(self.statusCode, 200);
+    assert.equal(self.cookies.find((entry) => entry.name === REFERRAL_COOKIE), undefined);
+    assert.match(
+      self.body,
+      new RegExp(`data-share-url="[^"]*/tips\\?r=${code}&amp;source=website"`),
+    );
+
+    await getPool().query(`UPDATE users SET account_state = 'deleted' WHERE id = $1`, [
+      student.userId,
+    ]);
+    const deleted = await app.inject({
+      method: "GET",
+      url: `/tips?r=${code}&source=app`,
+    });
+    assert.equal(deleted.statusCode, 200);
+    assert.equal(deleted.cookies.find((entry) => entry.name === REFERRAL_COOKIE), undefined);
+    const visits = await getPool().query(
+      `SELECT count(*)::int AS n FROM product_events WHERE event_name = 'share_landing_viewed'`,
+    );
+    assert.equal(visits.rows[0].n, 0);
+    const signup = await attributeReferralSignup({
+      newUserId: (await createGuestUser("Nova")).id,
+      cookieValue: referralCookieValue(code, "app"),
+      platform: "web",
+    });
+    assert.equal(signup, false);
+    await app.close();
+  });
+
+  it("shows unique referrers and referral signups in admin", async () => {
+    const anna = await createJourneyForStudent("Anna Andersson");
+    const erik = await createGuestUser("Erik Svensson");
+    await getPool().query(
+      `INSERT INTO journey_collaborators (journey_id, user_id, role, status)
+       VALUES ($1, $2, 'supervisor', 'active')`,
+      [anna.journey.id, erik.id],
+    );
+    const annaCode = await ensureReferralCode(anna.userId);
+    const app = await createTestApp();
+    const share = async (
+      userId: string,
+      journeyId: string,
+      surface: string,
+    ) => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/share",
+        headers: { "content-type": "application/json", "user-agent": DESKTOP_UA },
+        cookies: {
+          [config.sessionCookieName]: createSessionToken(userId),
+          korpasset_active_journey: journeyId,
+        },
+        payload: { event: "share_started", surface, platform: "web" },
+      });
+      assert.equal(response.statusCode, 204);
+    };
+    await share(anna.userId, anna.journey.id, "app");
+    await share(anna.userId, anna.journey.id, "app");
+    await app.inject({
+      method: "POST",
+      url: "/api/share",
+      headers: { "content-type": "application/json" },
+      cookies: {
+        [config.sessionCookieName]: createSessionToken(anna.userId),
+        korpasset_active_journey: anna.journey.id,
+      },
+      payload: { event: "share_link_copied", surface: "app", platform: "web" },
+    });
+    await share(erik.id, anna.journey.id, "website");
+
+    const visit = await app.inject({
+      method: "GET",
+      url: `/tips?r=${annaCode}&source=app`,
+    });
+    const cookie = visit.cookies.find((entry) => entry.name === REFERRAL_COOKIE)?.value;
+    const created = await app.inject({
+      method: "POST",
+      url: "/start",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      cookies: { [REFERRAL_COOKIE]: cookie ?? "" },
+      payload: formBody({ name: "Nova Hemlig" }),
+    });
+    assert.equal(created.statusCode, 302);
+
+    const stats = await getAdminProductStats("30");
+    assert.equal(stats.tips.windows.all.uniqueSharers, 2);
+    assert.equal(stats.tips.windows.all.shareStarts, 3);
+    assert.equal(stats.tips.windows.all.linksCopied, 1);
+    assert.equal(stats.tips.windows.all.visits, 1);
+    assert.equal(stats.tips.windows.all.signups, 1);
+    assert.equal(stats.tips.rows.length, 2);
+    assert.equal(stats.tips.rows[0]?.displayName, "Anna Andersson");
+    assert.equal(stats.tips.rows[0]?.role, "student");
+    assert.equal(stats.tips.rows[0]?.shares, 2);
+    assert.equal(stats.tips.rows[0]?.visits, 1);
+    assert.equal(stats.tips.rows[0]?.signups, 1);
+    assert.equal(stats.tips.rows[0]?.journeyId, anna.journey.id);
+    assert.deepEqual(stats.tips.rows[0]?.surfaces, ["app"]);
+    assert.equal(stats.tips.rows[1]?.displayName, "Erik Svensson");
+    assert.equal(stats.tips.rows[1]?.role, "supervisor");
+    assert.equal(stats.tips.rows[1]?.shares, 1);
+    assert.equal(stats.tips.rows[1]?.signups, 0);
+
+    const signupFilter = await getAdminProductStats("30", "signup");
+    assert.equal(signupFilter.tips.rows.length, 1);
+    assert.equal(signupFilter.tips.rows[0]?.displayName, "Anna Andersson");
+    const students = await getAdminProductStats("30", "student");
+    assert.deepEqual(students.tips.rows.map((row) => row.displayName), ["Anna Andersson"]);
+    const supervisors = await getAdminProductStats("30", "supervisor");
+    assert.deepEqual(supervisors.tips.rows.map((row) => row.displayName), ["Erik Svensson"]);
+    const website = await getAdminProductStats("30", "website");
+    assert.deepEqual(website.tips.rows.map((row) => row.displayName), ["Erik Svensson"]);
+
+    const admin = await createAdminUser("ops@korpasset.se", "korrekt-losen-12");
+    const page = await app.inject({
+      method: "GET",
+      url: "/admin/statistik?tips=all",
+      cookies: { korpasset_admin: createAdminToken(admin.id) },
+    });
+    assert.equal(page.statusCode, 200);
+    assert.match(
+      page.body,
+      /Unika användare som tipsat<\/td>\s*<td>2<\/td>\s*<td>2<\/td>\s*<td>2<\/td>/,
+    );
+    assert.match(
+      page.body,
+      /Registrering via tips<\/td>\s*<td>1<\/td>\s*<td>1<\/td>\s*<td>1<\/td>/,
+    );
+    assert.match(
+      page.body,
+      new RegExp(`href="/admin/statistik/resa/${anna.journey.id}"[^>]*>Anna Andersson`),
+    );
+    assert.match(page.body, new RegExp(`href="/admin/users/${erik.id}"[^>]*>Erik Svensson`));
+    assert.match(page.body, /Minst 1 registrering från tips/);
+    assert.match(page.body, />Elev</);
     await app.close();
   });
 });

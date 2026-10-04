@@ -84,6 +84,45 @@ export function statsPeriod(value: string | undefined): StatsPeriod {
   return STATS_PERIODS.includes(value as StatsPeriod) ? (value as StatsPeriod) : "30";
 }
 
+export const TIPS_FILTERS = [
+  "all",
+  "7d",
+  "30d",
+  "signup",
+  "student",
+  "supervisor",
+  "app",
+  "website",
+  "weekly_email",
+] as const;
+export type TipsFilter = (typeof TIPS_FILTERS)[number];
+
+export function tipsFilter(value: string | undefined): TipsFilter {
+  return TIPS_FILTERS.includes(value as TipsFilter) ? (value as TipsFilter) : "all";
+}
+
+export interface TipsWindow {
+  uniqueSharers: number;
+  shareStarts: number;
+  linksCopied: number;
+  visits: number;
+  signups: number;
+  activeUsers: number;
+  activeSharers: number;
+}
+
+export interface TipsLeaderRow {
+  userId: string;
+  displayName: string | null;
+  role: "student" | "supervisor" | null;
+  shares: number;
+  visits: number;
+  signups: number;
+  lastShareAt: string | null;
+  surfaces: string[];
+  journeyId: string | null;
+}
+
 export interface JourneyFact {
   journeyId: string;
   studentUserId: string;
@@ -254,19 +293,10 @@ export interface AdminProductStats {
     withCheckoff: number;
     events: Array<{ key: string; count: number }>;
   };
-  share: {
-    prompts: number;
-    started: number;
-    copied: number;
-    completed: number;
-    landingViews: number;
-    registrations: number;
-    rows: Array<{
-      event: string;
-      surface: string | null;
-      platform: string | null;
-      count: number;
-    }>;
+  tips: {
+    filter: TipsFilter;
+    windows: { d7: TipsWindow; d30: TipsWindow; all: TipsWindow };
+    rows: TipsLeaderRow[];
   };
   stuck: {
     signals: Array<{ key: StuckSignal; count: number }>;
@@ -1246,31 +1276,288 @@ async function featureUsage() {
   };
 }
 
-async function shareUsage() {
-  const result = await getPool().query(
-    `SELECT event_name, share_surface, client_platform, count(*)::int AS n
-     FROM product_events
-     WHERE event_name LIKE 'share_%'
-     GROUP BY event_name, share_surface, client_platform
-     ORDER BY event_name, share_surface NULLS LAST, client_platform NULLS LAST`,
-  );
-  const rows = result.rows.map((row) => ({
-    event: String(row.event_name),
-    surface: row.share_surface == null ? null : String(row.share_surface),
-    platform: row.client_platform == null ? null : String(row.client_platform),
-    count: num(row.n),
-  }));
-  const total = (event: string) =>
-    rows.filter((row) => row.event === event).reduce((sum, row) => sum + row.count, 0);
+function tipsWindow(row: Record<string, unknown>, prefix: "7" | "30" | "all"): TipsWindow {
+  const key = (name: string) => (prefix === "all" ? `${name}_all` : `${name}${prefix}`);
   return {
-    prompts: total("share_prompt_viewed"),
-    started: total("share_started"),
-    copied: total("share_link_copied"),
-    completed: total("share_completed"),
-    landingViews: total("share_landing_viewed"),
-    registrations: total("share_registration"),
-    rows,
+    uniqueSharers: num(row[key("unique")]),
+    shareStarts: num(row[key("starts")]),
+    linksCopied: num(row[key("copied")]),
+    visits: num(row[key("visits")]),
+    signups: num(row[key("signups")]),
+    activeUsers: num(row[key("active")]),
+    activeSharers: num(row[key("active_sharers")]),
   };
+}
+
+function tipsSince(filter: TipsFilter): string {
+  if (filter === "7d") return `created_at >= ${START_7}`;
+  if (filter === "30d") return `created_at >= ${START_30}`;
+  return "TRUE";
+}
+
+function mapTipsRow(row: Record<string, unknown>): TipsLeaderRow {
+  const role = row.role === "student" || row.role === "supervisor" ? row.role : null;
+  const surfaces = Array.isArray(row.surfaces) ? row.surfaces.map(String) : [];
+  const last = row.last_share;
+  return {
+    userId: String(row.user_id),
+    displayName: row.display_name == null ? null : String(row.display_name),
+    role,
+    shares: num(row.shares),
+    visits: num(row.visits),
+    signups: num(row.signups),
+    lastShareAt: last instanceof Date ? last.toISOString() : last ? String(last) : null,
+    surfaces,
+    journeyId: row.journey_id == null ? null : String(row.journey_id),
+  };
+}
+
+/**
+ * Tips & delningar.
+ *
+ * Delningsknappen använd is share_started. It is the button press, not proof
+ * that a native share sheet was sent.
+ * Länken öppnad is share_landing_viewed with a referrer. Anonymous /tips
+ * loads and a signed-in user opening their own link are not visits.
+ * Registrering via tips is share_registration for a new account. The first
+ * valid code wins. Interest signups are not accounts.
+ * Andel aktiva användare som tipsat is people active in the window who also
+ * pressed the button in that window, divided by active users. All-time uses
+ * live accounts.
+ */
+async function tipsUsage(filter: TipsFilter): Promise<AdminProductStats["tips"]> {
+  const [windows, rows] = await Promise.all([
+    tipsWindows(),
+    tipsLeaderboard(filter),
+  ]);
+  return { filter, windows, rows };
+}
+
+async function tipsWindows(): Promise<AdminProductStats["tips"]["windows"]> {
+  const result = await getPool().query(
+    `WITH bounds AS (
+       SELECT ${START_7} AS start7, ${START_30} AS start30
+     ),
+     live_users AS (
+       SELECT id, last_seen_at
+       FROM users
+       WHERE account_state <> 'deleted'
+     ),
+     drive_touch AS (
+       SELECT j.student_user_id AS user_id, d.ended_at AS at
+       FROM drives d
+       JOIN driving_journeys j ON j.id = d.journey_id
+       WHERE d.ended_at IS NOT NULL
+       UNION ALL
+       SELECT d.started_by_user_id, d.ended_at
+       FROM drives d
+       WHERE d.ended_at IS NOT NULL AND d.started_by_user_id IS NOT NULL
+       UNION ALL
+       SELECT d.supervisor_user_id, d.ended_at
+       FROM drives d
+       WHERE d.ended_at IS NOT NULL AND d.supervisor_user_id IS NOT NULL
+     ),
+     other_touch AS (
+       SELECT user_id, created_at AS at
+       FROM product_events
+       WHERE user_id IS NOT NULL
+       UNION ALL
+       SELECT observer_user_id, observed_at
+       FROM drive_observations
+       WHERE observer_user_id IS NOT NULL
+     ),
+     sharers AS (
+       SELECT user_id, created_at
+       FROM product_events
+       WHERE event_name = 'share_started' AND user_id IS NOT NULL
+     ),
+     copies AS (
+       SELECT created_at FROM product_events WHERE event_name = 'share_link_copied'
+     ),
+     visits AS (
+       SELECT created_at
+       FROM product_events
+       WHERE event_name = 'share_landing_viewed' AND referrer_user_id IS NOT NULL
+     ),
+     signups AS (
+       SELECT created_at
+       FROM product_events
+       WHERE event_name = 'share_registration' AND referrer_user_id IS NOT NULL
+     )
+     SELECT
+       (SELECT count(DISTINCT user_id)::int FROM sharers s, bounds b WHERE s.created_at >= b.start7) AS unique7,
+       (SELECT count(DISTINCT user_id)::int FROM sharers s, bounds b WHERE s.created_at >= b.start30) AS unique30,
+       (SELECT count(DISTINCT user_id)::int FROM sharers) AS unique_all,
+       (SELECT count(*)::int FROM sharers s, bounds b WHERE s.created_at >= b.start7) AS starts7,
+       (SELECT count(*)::int FROM sharers s, bounds b WHERE s.created_at >= b.start30) AS starts30,
+       (SELECT count(*)::int FROM sharers) AS starts_all,
+       (SELECT count(*)::int FROM copies c, bounds b WHERE c.created_at >= b.start7) AS copied7,
+       (SELECT count(*)::int FROM copies c, bounds b WHERE c.created_at >= b.start30) AS copied30,
+       (SELECT count(*)::int FROM copies) AS copied_all,
+       (SELECT count(*)::int FROM visits v, bounds b WHERE v.created_at >= b.start7) AS visits7,
+       (SELECT count(*)::int FROM visits v, bounds b WHERE v.created_at >= b.start30) AS visits30,
+       (SELECT count(*)::int FROM visits) AS visits_all,
+       (SELECT count(*)::int FROM signups g, bounds b WHERE g.created_at >= b.start7) AS signups7,
+       (SELECT count(*)::int FROM signups g, bounds b WHERE g.created_at >= b.start30) AS signups30,
+       (SELECT count(*)::int FROM signups) AS signups_all,
+       (SELECT count(*)::int FROM live_users u, bounds b
+         WHERE (
+           u.last_seen_at >= b.start7
+           OR EXISTS (SELECT 1 FROM drive_touch t WHERE t.user_id = u.id AND t.at >= b.start7)
+           OR EXISTS (SELECT 1 FROM other_touch t WHERE t.user_id = u.id AND t.at >= b.start7)
+         )
+         AND EXISTS (SELECT 1 FROM sharers s WHERE s.user_id = u.id AND s.created_at >= b.start7)
+       ) AS active_sharers7,
+       (SELECT count(*)::int FROM live_users u, bounds b
+         WHERE u.last_seen_at >= b.start7
+            OR EXISTS (SELECT 1 FROM drive_touch t WHERE t.user_id = u.id AND t.at >= b.start7)
+            OR EXISTS (SELECT 1 FROM other_touch t WHERE t.user_id = u.id AND t.at >= b.start7)
+       ) AS active7,
+       (SELECT count(*)::int FROM live_users u, bounds b
+         WHERE (
+           u.last_seen_at >= b.start30
+           OR EXISTS (SELECT 1 FROM drive_touch t WHERE t.user_id = u.id AND t.at >= b.start30)
+           OR EXISTS (SELECT 1 FROM other_touch t WHERE t.user_id = u.id AND t.at >= b.start30)
+         )
+         AND EXISTS (SELECT 1 FROM sharers s WHERE s.user_id = u.id AND s.created_at >= b.start30)
+       ) AS active_sharers30,
+       (SELECT count(*)::int FROM live_users u, bounds b
+         WHERE u.last_seen_at >= b.start30
+            OR EXISTS (SELECT 1 FROM drive_touch t WHERE t.user_id = u.id AND t.at >= b.start30)
+            OR EXISTS (SELECT 1 FROM other_touch t WHERE t.user_id = u.id AND t.at >= b.start30)
+       ) AS active30,
+       (SELECT count(*)::int FROM live_users u
+         WHERE EXISTS (SELECT 1 FROM sharers s WHERE s.user_id = u.id)
+       ) AS active_sharers_all,
+       (SELECT count(*)::int FROM live_users) AS active_all`,
+  );
+  const row = result.rows[0] ?? {};
+  return {
+    d7: tipsWindow(row, "7"),
+    d30: tipsWindow(row, "30"),
+    all: tipsWindow(row, "all"),
+  };
+}
+
+async function tipsLeaderboard(filter: TipsFilter): Promise<TipsLeaderRow[]> {
+  if (filter === "signup") {
+    const result = await getPool().query(
+      `WITH signups AS (
+         SELECT referrer_user_id AS user_id, count(*)::int AS signups
+         FROM product_events
+         WHERE event_name = 'share_registration' AND referrer_user_id IS NOT NULL
+         GROUP BY referrer_user_id
+       ),
+       starts AS (
+         SELECT user_id,
+                count(*)::int AS shares,
+                max(created_at) AS last_share,
+                (array_agg(actor_role ORDER BY created_at DESC)
+                  FILTER (WHERE actor_role IS NOT NULL))[1] AS role,
+                COALESCE(
+                  array_agg(DISTINCT share_surface) FILTER (WHERE share_surface IS NOT NULL),
+                  ARRAY[]::text[]
+                ) AS surfaces
+         FROM product_events
+         WHERE event_name = 'share_started' AND user_id IS NOT NULL
+         GROUP BY user_id
+       ),
+       visits AS (
+         SELECT referrer_user_id AS user_id, count(*)::int AS visits
+         FROM product_events
+         WHERE event_name = 'share_landing_viewed' AND referrer_user_id IS NOT NULL
+         GROUP BY referrer_user_id
+       )
+       SELECT u.id AS user_id,
+              u.display_name,
+              COALESCE(st.shares, 0) AS shares,
+              st.last_share,
+              st.role,
+              COALESCE(st.surfaces, ARRAY[]::text[]) AS surfaces,
+              COALESCE(v.visits, 0) AS visits,
+              g.signups,
+              j.id AS journey_id
+       FROM signups g
+       JOIN users u ON u.id = g.user_id
+       LEFT JOIN starts st ON st.user_id = g.user_id
+       LEFT JOIN visits v ON v.user_id = g.user_id
+       LEFT JOIN LATERAL (
+         SELECT id
+         FROM driving_journeys
+         WHERE student_user_id = u.id AND status = 'active'
+         ORDER BY created_at DESC
+         LIMIT 1
+       ) j ON true
+       ORDER BY COALESCE(st.shares, 0) DESC, st.last_share DESC NULLS LAST
+       LIMIT 100`,
+    );
+    return result.rows.map((row) => mapTipsRow(row));
+  }
+
+  const role = filter === "student" || filter === "supervisor" ? filter : null;
+  const surface =
+    filter === "app" || filter === "website" || filter === "weekly_email" ? filter : null;
+  const since = tipsSince(filter);
+  const result = await getPool().query(
+    `WITH starts AS (
+       SELECT user_id,
+              count(*)::int AS shares,
+              max(created_at) AS last_share,
+              (array_agg(actor_role ORDER BY created_at DESC)
+                FILTER (WHERE actor_role IS NOT NULL))[1] AS role,
+              COALESCE(
+                array_agg(DISTINCT share_surface) FILTER (WHERE share_surface IS NOT NULL),
+                ARRAY[]::text[]
+              ) AS surfaces
+       FROM product_events
+       WHERE event_name = 'share_started'
+         AND user_id IS NOT NULL
+         AND ${since}
+         AND ($1::text IS NULL OR actor_role = $1)
+         AND ($2::text IS NULL OR share_surface = $2)
+       GROUP BY user_id
+     ),
+     visits AS (
+       SELECT referrer_user_id AS user_id, count(*)::int AS visits
+       FROM product_events
+       WHERE event_name = 'share_landing_viewed'
+         AND referrer_user_id IS NOT NULL
+         AND ${since}
+       GROUP BY referrer_user_id
+     ),
+     signups AS (
+       SELECT referrer_user_id AS user_id, count(*)::int AS signups
+       FROM product_events
+       WHERE event_name = 'share_registration'
+         AND referrer_user_id IS NOT NULL
+         AND ${since}
+       GROUP BY referrer_user_id
+     )
+     SELECT u.id AS user_id,
+            u.display_name,
+            st.shares,
+            st.last_share,
+            st.role,
+            st.surfaces,
+            COALESCE(v.visits, 0) AS visits,
+            COALESCE(g.signups, 0) AS signups,
+            j.id AS journey_id
+     FROM starts st
+     JOIN users u ON u.id = st.user_id
+     LEFT JOIN visits v ON v.user_id = st.user_id
+     LEFT JOIN signups g ON g.user_id = st.user_id
+     LEFT JOIN LATERAL (
+       SELECT id
+       FROM driving_journeys
+       WHERE student_user_id = u.id AND status = 'active'
+       ORDER BY created_at DESC
+       LIMIT 1
+     ) j ON true
+     ORDER BY st.shares DESC, st.last_share DESC
+     LIMIT 100`,
+    [role, surface],
+  );
+  return result.rows.map((row) => mapTipsRow(row));
 }
 
 function perActiveStudent(facts: JourneyFact[]): {
@@ -1299,7 +1586,10 @@ function uniqueCompletedSkills(skills: SkillUsageRow[]): number {
   return skills.filter((skill) => skill.studentsCompleted > 0).length;
 }
 
-export async function getAdminProductStats(period: StatsPeriod = "30"): Promise<AdminProductStats> {
+export async function getAdminProductStats(
+  period: StatsPeriod = "30",
+  tips: TipsFilter = "all",
+): Promise<AdminProductStats> {
   const skills = await listSkillsForTaxonomy();
   const areaTitles = new Map(skills.map((skill) => [skill.areaKey, skill.areaTitle]));
   const areaOrder: string[] = [];
@@ -1320,7 +1610,7 @@ export async function getAdminProductStats(period: StatsPeriod = "30"): Promise<
     retention,
     supervisors,
     features,
-    share,
+    tipsStats,
   ] = await Promise.all([
     loadUsageWindows(),
     loadJourneyFacts(),
@@ -1334,7 +1624,7 @@ export async function getAdminProductStats(period: StatsPeriod = "30"): Promise<
     retentionCohorts(),
     supervisorAggregates(),
     featureUsage(),
-    shareUsage(),
+    tipsUsage(tips),
   ]);
 
   const bucketCounts = new Map<DriveCountBucket, number>(
@@ -1494,7 +1784,7 @@ export async function getAdminProductStats(period: StatsPeriod = "30"): Promise<
       withCheckoff: num(features.drives.with_checkoff),
       events: features.events,
     },
-    share,
+    tips: tipsStats,
     stuck: {
       signals: STUCK_SIGNALS.map((key) => ({ key, count: signals[key] })),
       journeysWithSignal,

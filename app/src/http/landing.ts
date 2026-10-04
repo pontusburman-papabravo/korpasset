@@ -134,12 +134,14 @@ const LANDING_FAQ: Array<FaqItem & { answerHtml?: string }> = [
 export interface PublicConsentOptions {
   consent?: boolean;
   interestAction?: string;
+  shareLink?: string;
 }
 
 export function renderLandingPage(options: {
   errorMessage?: string;
   consent?: boolean;
   interestAction?: string;
+  shareLink?: string;
   values?: {
     name?: string;
     email?: string;
@@ -179,7 +181,7 @@ export function renderLandingPage(options: {
        ${whyItExists()}
        ${officialRules()}
        ${faq()}
-       ${websiteShareSection(shareUrl("website"))}
+       ${websiteShareSection(options.shareLink ?? shareUrl("website"))}
        ${interestSection(formError, values, options.interestAction || "/interest")}
      </main>
      ${siteFooter({ cookieSettings: options.consent !== false })}
@@ -628,5 +630,6 @@ export function renderInterestFormError(
     values,
     consent: options.consent,
     interestAction: options.interestAction,
+    shareLink: options.shareLink,
   });
 }

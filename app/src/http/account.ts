@@ -22,7 +22,7 @@ import {
 } from "./layout.js";
 import { renderSignedInAs } from "./account-identity.js";
 import { clearActiveJourneyCookie } from "./active-journey.js";
-import { shareUrl } from "../services/share.js";
+import { personalShareUrl } from "../services/share.js";
 import { appShareCard } from "./share-widget.js";
 
 function deletedAccountPage(legacyAppleWithoutToken: boolean): string {
@@ -54,6 +54,7 @@ function accountPage(options: {
   displayName: string;
   linked: OAuthProvider[];
   identities: LinkedIdentity[];
+  shareLink: string;
   errorMessage?: string;
   nav?: AppLayoutOptions;
 }): string {
@@ -84,7 +85,7 @@ function accountPage(options: {
          ${providerRow("google", hasGoogle)}
        </ul>
      </section>
-     ${appShareCard(shareUrl("app"))}
+     ${appShareCard(options.shareLink)}
      <form method="post" action="/logout">
        <button type="submit" class="btn btn-secondary">Logga ut</button>
      </form>
@@ -113,6 +114,7 @@ async function renderAccountPage(
     displayName: user?.displayName ?? "",
     linked: identities.map((identity) => identity.provider),
     identities,
+    shareLink: await personalShareUrl(userId, "app"),
     errorMessage: extras.errorMessage,
   });
 }

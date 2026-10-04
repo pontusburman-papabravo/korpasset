@@ -61,4 +61,4 @@ Resans tidslinje under Statistik visar senaste veckomejl: vecka, status, tid och
 
 ## Tips
 
-Efter “Öppna Körpasset” och före “Vi hörs nästa söndag” finns en rad som tipsar om Körpasset. Länken går till `/tips?ref=share_weekly_email`, inte till App Store eller Google Play. Texten innehåller inget namn, ingen körstatistik och ingen personlig kod.
+Efter “Öppna Körpasset” och före “Vi hörs nästa söndag” finns en rad som tipsar om Körpasset. Länken går till `/tips?r=<kod>&source=weekly_email`, inte till App Store eller Google Play. Koden är elevens slumpade referral-kod. Mejlet innehåller inte e-post, namn, konto-id eller journey-id i URL:en, och ingen körstatistik i tipstexten.

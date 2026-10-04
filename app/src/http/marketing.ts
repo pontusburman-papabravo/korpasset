@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { wantsPublicCookieConsent } from "../auth/session.js";
+import { getSessionUserId, wantsPublicCookieConsent } from "../auth/session.js";
 import { config } from "../config.js";
 import { AppError } from "../errors.js";
 import {
@@ -10,8 +10,8 @@ import {
 } from "./consent.js";
 import { EmailSendError, notifyWaitlistSignup } from "../services/email.js";
 import { saveInterestSignup } from "../services/interest.js";
-import { platformFromUserAgent, recordShareEvent } from "../services/share.js";
-import { readShareSurface } from "./share.js";
+import { personalShareUrl, shareUrl } from "../services/share.js";
+import { getReusableSessionUserId } from "../services/users.js";
 import {
   renderInterestFormError,
   renderInterestThanksPage,
@@ -92,10 +92,12 @@ function publicConsent(request: FastifyRequest) {
   return { consent: wantsPublicCookieConsent(request) };
 }
 
-function interestPageOptions(request: FastifyRequest) {
+async function interestPageOptions(request: FastifyRequest) {
+  const userId = await getReusableSessionUserId(getSessionUserId(request));
   return {
     consent: wantsPublicCookieConsent(request),
     interestAction: `/interest${campaignSearch(request.query)}`,
+    shareLink: userId ? await personalShareUrl(userId, "website") : shareUrl("website"),
   };
 }
 
@@ -152,7 +154,7 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
         renderInterestFormError(
           "För många försök. Vänta en stund och prova igen.",
           formValues((request.body ?? {}) as Record<string, unknown>),
-          interestPageOptions(request),
+          await interestPageOptions(request),
         ),
       );
     }
@@ -164,7 +166,7 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
         renderInterestFormError(
           "Bekräfta att du vill bli kontaktad om betan.",
           values,
-          interestPageOptions(request),
+          await interestPageOptions(request),
         ),
       );
     }
@@ -179,14 +181,6 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
       }
       if (result.created) {
         markSavedLead(reply);
-        const shareSurface = readShareSurface(request);
-        if (shareSurface) {
-          await recordShareEvent({
-            name: "share_registration",
-            surface: shareSurface,
-            platform: platformFromUserAgent(request.headers["user-agent"]),
-          });
-        }
       }
       try {
         await notifyWaitlistSignup(result.signup, result.created);
@@ -205,7 +199,7 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
         renderInterestFormError(
           message,
           values,
-          interestPageOptions(request),
+          await interestPageOptions(request),
         ),
       );
     }

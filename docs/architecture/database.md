@@ -31,6 +31,7 @@ Motivering: kolumnspecifik `ON DELETE SET NULL` på composite foreign keys, som 
 | [`db/migrations/0019_account_help_emails.sql`](../../db/migrations/0019_account_help_emails.sql) | Skickade hjälpmejl för de två första onboardingstoppen (`account_help_emails`) |
 | [`db/migrations/0020_journey_weekly_emails.sql`](../../db/migrations/0020_journey_weekly_emails.sql) | Veckosammanfattning till eleven (`journey_weekly_emails`), en rad per resa och ISO-vecka |
 | [`db/migrations/0021_share_events.sql`](../../db/migrations/0021_share_events.sql) | Anonym delning på `product_events` (`share_surface`, `client_platform`) |
+| [`db/migrations/0022_referral_codes.sql`](../../db/migrations/0022_referral_codes.sql) | Personlig referral-kod på `users` och `referrer_user_id` på `product_events` |
 
 Runtime-applikationen tillämpar samma filer via [`app/src/db/migrate.ts`](../../app/src/db/migrate.ts) och tabellen `schema_migrations`. Redan migrerade databaser stämplas, SQL körs inte om. Deploy: [Production](../operations/production.md).
 

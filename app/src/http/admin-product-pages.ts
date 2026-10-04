@@ -3,6 +3,9 @@ import type {
   AreaUsageRow,
   JourneyUsageDetail,
   SkillUsageRow,
+  TipsFilter,
+  TipsLeaderRow,
+  TipsWindow,
 } from "../services/admin-product-stats.js";
 import { featureLabel } from "../services/admin-product-stats.js";
 import {
@@ -394,56 +397,108 @@ export function productStatsSections(stats: AdminProductStats): string {
       stats.features.events.map((event) => [textCell(featureLabel(event.key)), textCell(String(event.count))]),
     )}
   </section>
-  ${shareSection(stats)}`;
+  ${tipsSection(stats)}`;
 }
 
-const SHARE_EVENT_LABELS: Record<string, string> = {
-  share_prompt_viewed: "Visad tipsruta",
-  share_started: "Delningsknapp",
-  share_link_copied: "Kopierad länk",
-  share_completed: "Delning klar",
-  share_landing_viewed: "Besök via delning",
-  share_registration: "Registrering via delning",
+const TIPS_FILTERS: Array<[TipsFilter, string]> = [
+  ["all", "Alla som tipsat"],
+  ["7d", "Tipsat senaste 7 dagar"],
+  ["30d", "Tipsat senaste 30 dagar"],
+  ["signup", "Minst 1 registrering från tips"],
+  ["student", "Elev"],
+  ["supervisor", "Handledare"],
+  ["app", "App"],
+  ["website", "Webb"],
+  ["weekly_email", "Veckomejl"],
+];
+
+const TIPS_SURFACE_LABELS: Record<string, string> = {
+  app: "App",
+  website: "Webb",
+  weekly_email: "Veckomejl",
 };
 
-const SHARE_SURFACE_LABELS: Record<string, string> = {
-  app: "Appen",
-  website: "Webbplatsen",
-  weekly_email: "Veckomejlet",
-};
-
-const SHARE_PLATFORM_LABELS: Record<string, string> = {
-  ios: "iPhone",
-  android: "Android",
-  web: "Webb",
-};
-
-function shareLabel(map: Record<string, string>, value: string | null): string {
-  if (!value) return "—";
-  return map[value] ?? value;
+function tipsFilterLinks(period: string, current: TipsFilter): string {
+  return `<p class="admin-usage-filter" data-tips-filters>${TIPS_FILTERS.map(([value, label]) => {
+    const currentAttr = value === current ? ' aria-current="page"' : "";
+    return `<a href="/admin/statistik?period=${encodeURIComponent(period)}&amp;tips=${value}"${currentAttr}>${escapeHtml(label)}</a>`;
+  }).join(" ")}</p>`;
 }
 
-function shareSection(stats: AdminProductStats): string {
-  return `<section data-share-stats>
-    <h2>Delning</h2>
-    <p class="muted">Hur ofta någon tipsar om Körpasset, och hur många besök och registreringar som kommer via den anonyma länken. Volymer sedan funktionen fanns, inte filtrerat på perioden ovan. Ingen person syns här.</p>
-    <div class="admin-kpis">
-      ${kpi("Delningsknappar", String(stats.share.started))}
-      ${kpi("Kopierade länkar", String(stats.share.copied))}
-      ${kpi("Slutförda delningar", String(stats.share.completed))}
-      ${kpi("Visade tipsrutor", String(stats.share.prompts))}
-      ${kpi("Besök på tips-sidan", String(stats.share.landingViews))}
-      ${kpi("Registreringar via delning", String(stats.share.registrations))}
-    </div>
-    ${countTable(
-      ["Händelse", "Yta", "Plattform", "Antal"],
-      stats.share.rows.map((row) => [
-        textCell(shareLabel(SHARE_EVENT_LABELS, row.event)),
-        textCell(shareLabel(SHARE_SURFACE_LABELS, row.surface)),
-        textCell(shareLabel(SHARE_PLATFORM_LABELS, row.platform)),
-        textCell(String(row.count)),
-      ]),
-    )}
+function tipsRate(part: number, whole: number): string {
+  if (whole <= 0) return "—";
+  return formatShare(part, whole);
+}
+
+function tipsRole(role: TipsLeaderRow["role"]): string {
+  if (role === "student") return "Elev";
+  if (role === "supervisor") return "Handledare";
+  return "—";
+}
+
+function tipsSurfaces(surfaces: string[]): string {
+  const order = ["app", "website", "weekly_email"];
+  const labels = order
+    .filter((surface) => surfaces.includes(surface))
+    .map((surface) => TIPS_SURFACE_LABELS[surface] ?? surface);
+  return labels.length > 0 ? labels.join(", ") : "—";
+}
+
+function tipsDate(iso: string | null): string {
+  if (!iso) return "—";
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Stockholm",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso));
+}
+
+function tipsSection(stats: AdminProductStats): string {
+  const windows = stats.tips.windows;
+  const metric = (label: string, value: (window: TipsWindow) => string) =>
+    `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(value(windows.d7))}</td><td>${escapeHtml(value(windows.d30))}</td><td>${escapeHtml(value(windows.all))}</td></tr>`;
+  const body =
+    stats.tips.rows.length === 0
+      ? `<tr><td colspan="7">Ingen har tipsat i det här urvalet.</td></tr>`
+      : stats.tips.rows
+          .map((row) => {
+            const href = row.journeyId
+              ? `/admin/statistik/resa/${row.journeyId}`
+              : `/admin/users/${row.userId}`;
+            const name = row.displayName?.trim() || "Namnlöst konto";
+            return `<tr class="admin-tips-row">
+              <td><a class="admin-tips-row__link" href="${escapeHtml(href)}">${escapeHtml(name)}</a></td>
+              <td>${textCell(tipsRole(row.role))}</td>
+              <td>${textCell(String(row.shares))}</td>
+              <td>${textCell(String(row.visits))}</td>
+              <td>${textCell(String(row.signups))}</td>
+              <td>${textCell(tipsDate(row.lastShareAt))}</td>
+              <td>${textCell(tipsSurfaces(row.surfaces))}</td>
+            </tr>`;
+          })
+          .join("");
+  return `<section data-tips-stats>
+    <h2>Tips &amp; delningar</h2>
+    <p class="muted">Delningsknappen använd räknas när någon trycker Tipsa en vän. En delning i telefonens delningsruta kan avbrytas, så knappen är inte ett bevis på att meddelandet skickades. Länken öppnad är ett besök via en personlig tipslänk. Registrering via tips är ett nytt konto. Första giltiga koden sparas i 30 dagar och är den som kopplas till kontot. En omladdning i samma webbläsarsession räknas som ett besök. Siffrorna nedan är 7 dagar, 30 dagar och totalt, oberoende av filtret.</p>
+    <div class="admin-table-wrap"><table class="admin-table" data-tips-kpis>
+      <thead><tr><th>Mått</th><th>7 dagar</th><th>30 dagar</th><th>Totalt</th></tr></thead>
+      <tbody>
+        ${metric("Unika användare som tipsat", (window) => String(window.uniqueSharers))}
+        ${metric("Delningsknappen använd", (window) => String(window.shareStarts))}
+        ${metric("Kopierade länkar", (window) => String(window.linksCopied))}
+        ${metric("Länken öppnad", (window) => String(window.visits))}
+        ${metric("Registrering via tips", (window) => String(window.signups))}
+        ${metric("Konvertering besök → registrering", (window) => tipsRate(window.signups, window.visits))}
+        ${metric("Andel aktiva användare som tipsat", (window) => tipsRate(window.activeSharers, window.activeUsers))}
+      </tbody>
+    </table></div>
+    <h3>Användare som tipsar</h3>
+    ${tipsFilterLinks(stats.activity.period, stats.tips.filter)}
+    <div class="admin-table-wrap"><table class="admin-table" data-tips-leaderboard>
+      <thead><tr><th>Användare</th><th>Roll</th><th>Delningar</th><th>Besök</th><th>Registreringar</th><th>Senast</th><th>Källa</th></tr></thead>
+      <tbody>${body}</tbody>
+    </table></div>
   </section>`;
 }
 

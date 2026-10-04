@@ -2,16 +2,21 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { config } from "../config.js";
 import { getSessionUserId } from "../auth/session.js";
 import { wantsPublicCookieConsent } from "../auth/session.js";
-import { getJourneyAccess } from "../services/authorization.js";
 import {
-  SHARE_REF_COOKIE,
-  SHARE_REF_MAX_AGE_SECONDS,
+  REFERRAL_COOKIE,
+  REFERRAL_MAX_AGE_SECONDS,
+  REFERRAL_SEEN_COOKIE,
+  findReferrerByCode,
+  isReferralCode,
   isShareClientEvent,
   isSharePlatform,
   isShareSurface,
+  parseReferralCookie,
+  personalShareUrl,
   platformFromUserAgent,
   recordShareEvent,
-  shareRef,
+  referralCookieValue,
+  resolveShareActor,
   shareUrl,
   surfaceFromShareRef,
   type ShareSurface,
@@ -24,37 +29,54 @@ import { renderTipsPage } from "./share-widget.js";
 
 const SHARE_RATE_LIMIT = { limit: 40, windowMs: 10 * 60 * 1000 };
 
-export function readShareSurface(request: FastifyRequest): ShareSurface | null {
-  return surfaceFromShareRef(request.cookies[SHARE_REF_COOKIE]);
+export function readReferralCookie(request: FastifyRequest): string | undefined {
+  const value = request.cookies[REFERRAL_COOKIE];
+  return typeof value === "string" ? value : undefined;
 }
 
-export function setShareRefCookie(reply: FastifyReply, surface: ShareSurface): void {
-  reply.setCookie(SHARE_REF_COOKIE, shareRef(surface), {
+function cookieBase() {
+  return {
     path: "/",
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "lax" as const,
     secure: config.cookieSecure,
     signed: false,
-    maxAge: SHARE_REF_MAX_AGE_SECONDS,
-  });
+  };
+}
+
+function landingSurface(query: { source?: unknown; ref?: unknown }): ShareSurface {
+  if (isShareSurface(query.source)) return query.source;
+  return surfaceFromShareRef(query.ref) ?? "website";
 }
 
 export async function registerShareRoutes(app: FastifyInstance): Promise<void> {
   app.get("/tips", async (request, reply) => {
-    const ref = surfaceFromShareRef((request.query as { ref?: unknown }).ref);
-    if (ref) setShareRefCookie(reply, ref);
-    const surface = ref ?? readShareSurface(request);
+    const query = request.query as { r?: unknown; source?: unknown; ref?: unknown };
+    const rawCode = typeof query.r === "string" ? query.r.trim() : "";
+    const surface = landingSurface(query);
     const platform = platformFromUserAgent(request.headers["user-agent"]);
-    const userId = await getReusableSessionUserId(getSessionUserId(request));
-    const journey = await shareJourney(request, userId);
-    await recordShareEvent({
-      name: "share_landing_viewed",
-      surface,
-      platform,
-      userId,
-      journeyId: journey?.journeyId ?? null,
-      actorRole: journey?.actorRole ?? null,
-    });
+    const visitorId = await getReusableSessionUserId(getSessionUserId(request));
+    const referrer = isReferralCode(rawCode) ? await findReferrerByCode(rawCode) : null;
+    const selfVisit = Boolean(referrer && visitorId && referrer.userId === visitorId);
+
+    if (referrer && !selfVisit) {
+      const seen = request.cookies[REFERRAL_SEEN_COOKIE];
+      if (seen !== rawCode) {
+        await recordShareEvent({
+          name: "share_landing_viewed",
+          surface,
+          platform,
+          userId: null,
+          referrerUserId: referrer.userId,
+        });
+        reply.setCookie(REFERRAL_SEEN_COOKIE, rawCode, cookieBase());
+      }
+      await rememberFirstReferral(request, reply, rawCode, surface);
+    }
+
+    const shareLink = visitorId
+      ? await personalShareUrl(visitorId, "website")
+      : shareUrl("website");
     const consent = wantsPublicCookieConsent(request);
     return reply.type("text/html").send(
       renderTipsPage({
@@ -62,8 +84,8 @@ export async function registerShareRoutes(app: FastifyInstance): Promise<void> {
         footer: siteFooter({ cookieSettings: consent }),
         consent,
         platform,
-        surface: surface ?? "website",
-        shareLink: shareUrl(surface ?? "website"),
+        surface: "website",
+        shareLink,
         appStoreUrl: APP_STORE_URL,
         playStoreUrl: PLAY_STORE_URL,
       }),
@@ -92,27 +114,32 @@ export async function registerShareRoutes(app: FastifyInstance): Promise<void> {
       ? body.platform
       : platformFromUserAgent(request.headers["user-agent"]);
     const userId = await getReusableSessionUserId(getSessionUserId(request));
-    const journey = await shareJourney(request, userId);
+    const actor = userId
+      ? await resolveShareActor(userId, readActiveJourneyId(request))
+      : null;
     await recordShareEvent({
       name: body.event,
       surface: body.surface,
       platform,
       userId,
-      journeyId: journey?.journeyId ?? null,
-      actorRole: journey?.actorRole ?? null,
+      journeyId: actor?.journeyId ?? null,
+      actorRole: actor?.actorRole ?? null,
+      referrerUserId: userId,
     });
     return reply.status(204).send();
   });
 }
 
-async function shareJourney(
+async function rememberFirstReferral(
   request: FastifyRequest,
-  userId: string | null,
-): Promise<{ journeyId: string; actorRole: "student" | "supervisor" } | null> {
-  if (!userId) return null;
-  const journeyId = readActiveJourneyId(request);
-  if (!journeyId) return null;
-  const access = await getJourneyAccess(journeyId, userId);
-  if (!access) return null;
-  return { journeyId, actorRole: access.role };
+  reply: FastifyReply,
+  code: string,
+  surface: ShareSurface,
+): Promise<void> {
+  const existing = parseReferralCookie(request.cookies[REFERRAL_COOKIE]);
+  if (existing && (await findReferrerByCode(existing.code))) return;
+  reply.setCookie(REFERRAL_COOKIE, referralCookieValue(code, surface), {
+    ...cookieBase(),
+    maxAge: REFERRAL_MAX_AGE_SECONDS,
+  });
 }

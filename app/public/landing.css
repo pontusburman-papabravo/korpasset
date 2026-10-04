@@ -619,6 +619,13 @@ label.interest-choice {
 
 .admin-table a { color: var(--navy); font-weight: 700; }
 
+.admin-tips-row { position: relative; }
+.admin-tips-row a.admin-tips-row__link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
 .status {
   display: inline-block;
   padding: 0.15rem 0.5rem;
