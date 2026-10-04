@@ -48,6 +48,8 @@ import {
  */
 
 export const WEEKLY_SUMMARY_TEMPLATE = "weekly_summary";
+/** Product mail about the active journey. It does not read marketing opt-in. */
+export const WEEKLY_SUMMARY_MAIL_CATEGORY = "product" as const;
 const WEEKLY_SUMMARY_LOCK_KEY = 180_025;
 
 export type WeeklyMailSkipReason =
