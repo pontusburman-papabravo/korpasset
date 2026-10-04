@@ -503,6 +503,12 @@ describe("beta UX HTTP", () => {
     });
     assert.equal(thanks.statusCode, 200);
     assert.match(thanks.body, /Tack — vi har tagit emot det/);
+    const thanksAgain = await injectWithSession(app, session(userId), {
+      method: "GET",
+      url: "/mer?skickat=1",
+    });
+    assert.equal(thanksAgain.statusCode, 200);
+    assert.match(thanksAgain.body, /Tack — vi har tagit emot det/);
     assert.equal(sent.length, 1);
     assert.match(sent[0].subject, /Välja dagens fokus/);
     assert.match(sent[0].text, new RegExp(userId));
@@ -532,6 +538,7 @@ describe("beta UX HTTP", () => {
       payload: formBody({ topic: "other", message: "hej" }),
     });
     assert.equal(invalid.statusCode, 400);
+    assert.equal(sent.length, 2);
 
     const anon = await app.inject({
       method: "POST",
@@ -548,6 +555,10 @@ describe("beta UX HTTP", () => {
     assert.equal(anonThanks.statusCode, 200);
     assert.match(anonThanks.body, /Tack — vi har tagit emot det/);
     assert.doesNotMatch(anonThanks.body, /<form method="post" action="\/hjalp"/);
+    const anonAgain = await app.inject({ method: "GET", url: "/hjalp?skickat=1" });
+    assert.equal(anonAgain.statusCode, 200);
+    assert.match(anonAgain.body, /Tack — vi har tagit emot det/);
+    assert.equal(sent.length, 3);
 
     const beacon = await app.inject({
       method: "POST",
