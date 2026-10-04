@@ -393,6 +393,57 @@ export function productStatsSections(stats: AdminProductStats): string {
       ["Händelse", "Antal"],
       stats.features.events.map((event) => [textCell(featureLabel(event.key)), textCell(String(event.count))]),
     )}
+  </section>
+  ${shareSection(stats)}`;
+}
+
+const SHARE_EVENT_LABELS: Record<string, string> = {
+  share_prompt_viewed: "Visad tipsruta",
+  share_started: "Delningsknapp",
+  share_link_copied: "Kopierad länk",
+  share_completed: "Delning klar",
+  share_landing_viewed: "Besök via delning",
+  share_registration: "Registrering via delning",
+};
+
+const SHARE_SURFACE_LABELS: Record<string, string> = {
+  app: "Appen",
+  website: "Webbplatsen",
+  weekly_email: "Veckomejlet",
+};
+
+const SHARE_PLATFORM_LABELS: Record<string, string> = {
+  ios: "iPhone",
+  android: "Android",
+  web: "Webb",
+};
+
+function shareLabel(map: Record<string, string>, value: string | null): string {
+  if (!value) return "—";
+  return map[value] ?? value;
+}
+
+function shareSection(stats: AdminProductStats): string {
+  return `<section data-share-stats>
+    <h2>Delning</h2>
+    <p class="muted">Hur ofta någon tipsar om Körpasset, och hur många besök och registreringar som kommer via den anonyma länken. Volymer sedan funktionen fanns, inte filtrerat på perioden ovan. Ingen person syns här.</p>
+    <div class="admin-kpis">
+      ${kpi("Delningsknappar", String(stats.share.started))}
+      ${kpi("Kopierade länkar", String(stats.share.copied))}
+      ${kpi("Slutförda delningar", String(stats.share.completed))}
+      ${kpi("Visade tipsrutor", String(stats.share.prompts))}
+      ${kpi("Besök på tips-sidan", String(stats.share.landingViews))}
+      ${kpi("Registreringar via delning", String(stats.share.registrations))}
+    </div>
+    ${countTable(
+      ["Händelse", "Yta", "Plattform", "Antal"],
+      stats.share.rows.map((row) => [
+        textCell(shareLabel(SHARE_EVENT_LABELS, row.event)),
+        textCell(shareLabel(SHARE_SURFACE_LABELS, row.surface)),
+        textCell(shareLabel(SHARE_PLATFORM_LABELS, row.platform)),
+        textCell(String(row.count)),
+      ]),
+    )}
   </section>`;
 }
 

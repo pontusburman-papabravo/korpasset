@@ -1,4 +1,6 @@
 import { type InterestRole } from "../services/interest.js";
+import { shareUrl } from "../services/share.js";
+import { websiteShareSection } from "./share-widget.js";
 import { BRAND_ASSETS, escapeHtml, errorBanner, primaryButton, siteLayout } from "./layout.js";
 import { HOME_GUIDE_CARDS, HUB_PATH, SUPERVISOR_PATH } from "./guide-content.js";
 import {
@@ -177,9 +179,11 @@ export function renderLandingPage(options: {
        ${whyItExists()}
        ${officialRules()}
        ${faq()}
+       ${websiteShareSection(shareUrl("website"))}
        ${interestSection(formError, values, options.interestAction || "/interest")}
      </main>
-     ${siteFooter({ cookieSettings: options.consent !== false })}`,
+     ${siteFooter({ cookieSettings: options.consent !== false })}
+     <script src="/share.js" defer></script>`,
     {
       description: LANDING_DESCRIPTION,
       path: "/",

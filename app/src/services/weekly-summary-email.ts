@@ -1,3 +1,4 @@
+import { shareUrl as canonicalShareUrl } from "./share.js";
 import type { JourneyWeeklySummary } from "./weekly-summary.js";
 
 /**
@@ -154,9 +155,11 @@ export function buildWeeklySummaryEmail(input: {
   summary: JourneyWeeklySummary;
   previous: JourneyWeeklySummary | null;
   appUrl: string;
+  shareUrl?: string;
 }): { subject: string; text: string; html: string } {
   const name = greetingName(input.displayName);
   const summary = input.summary;
+  const tipsUrl = input.shareUrl ?? canonicalShareUrl("weekly_email");
   const paragraphs: string[] = [
     name ? `Hej ${name},` : "Hej,",
     "",
@@ -184,6 +187,12 @@ export function buildWeeklySummaryEmail(input: {
     "",
     `Öppna Körpasset: ${input.appUrl}`,
     "",
+    "Gillar du Körpasset?",
+    "",
+    "Känner du någon som också övningskör? Tipsa gärna om Körpasset.",
+    "",
+    `Tipsa en vän: ${tipsUrl}`,
+    "",
     "Vi hörs nästa söndag.",
     "",
     "Körpasset",
@@ -193,7 +202,7 @@ export function buildWeeklySummaryEmail(input: {
   return {
     subject: weeklySummarySubject(summary),
     text,
-    html: weeklySummaryHtml(text, input.appUrl),
+    html: weeklySummaryHtml(text, input.appUrl, tipsUrl),
   };
 }
 
@@ -205,13 +214,17 @@ function escapeHtml(value: string): string {
     .replaceAll('"', "&quot;");
 }
 
-function weeklySummaryHtml(text: string, appUrl: string): string {
+function weeklySummaryHtml(text: string, appUrl: string, shareLink: string): string {
   const link = `Öppna Körpasset: ${appUrl}`;
+  const tips = `Tipsa en vän: ${shareLink}`;
   const body = text
     .split("\n")
     .map((line) => {
       if (line === link) {
         return `<p><a href="${escapeHtml(appUrl)}">Öppna Körpasset</a></p>`;
+      }
+      if (line === tips) {
+        return `<p><a href="${escapeHtml(shareLink)}">Tipsa en vän</a></p>`;
       }
       if (line === "") return "";
       return `<p>${escapeHtml(line)}</p>`;

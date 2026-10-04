@@ -16,8 +16,10 @@ Server-side observation i tabellen `product_events`. Inga namn, e-post, fritext,
 | `practice_stage` | `unknown` / `just_started` / `building` / `near_test` vid skapande eller nudge |
 | `days_since_drive_bucket` | `5-7` / `8-14` / `15-30` / `31+` |
 | `created_at` | Tidpunkt |
+| `share_surface` | `app` / `website` / `weekly_email` på delningshändelser, annars NULL |
+| `client_platform` | `ios` / `android` / `web` på delningshändelser, annars NULL |
 
-Admin-statistik räknar fortfarande från **domäntabeller**, inte härifrån.
+Admin-statistik räknar användning från **domäntabeller**. Delning är undantaget: knappar, besök och registreringar via tips-länken räknas härifrån och visas under Statistik → Delning.
 
 ## Events före den här observationen
 
@@ -114,3 +116,20 @@ första stale_drive_nudge_shown efter senaste drive_completed
 ```
 
 Det är inte bevisad kausal effekt av nudgen. Inget `stale_drive_nudge_converted` i runtime.
+
+## Delning
+
+Gemensam länk `https://korpasset.se/tips?ref=share_app`, `share_website` eller `share_weekly_email`. Ingen personlig referral-kod, inget namn, ingen e-post och ingen körstatistik i URL:en eller i texten som delas.
+
+| Event | Semantik | Metadata |
+| --- | --- | --- |
+| `share_prompt_viewed` | Tipsrutan visades i appen eller på webbplatsen. `/tips` loggar inte den här raden. | `share_surface`, `client_platform`, `user_id` och `journey_id` när sessionen har tillgång |
+| `share_started` | Användaren tryckte Tipsa, Dela eller Kopiera länk. | samma |
+| `share_link_copied` | Länken kopierades, antingen som val eller som reserv när delning saknas. | samma |
+| `share_completed` | Systemets delningsruta eller Web Share API slutfördes. Avbruten delning räknas inte. | samma |
+| `share_landing_viewed` | Någon öppnade `GET /tips`. | `share_surface` från `ref` om den är känd, annars NULL |
+| `share_registration` | En resa skapades (`POST /start`) eller en ny intresseanmälan sparades medan cookien fanns. | `journey_id` och `user_id` bara när en resa skapas |
+
+Cookien `korpasset_share_ref` är HttpOnly, SameSite=Lax, path `/`, 14 dygn. Den sätts på `/tips` när `ref` är en av de tre kända koderna. Den följer inte med in i App Store-installationen, så en registrering i appen efter nedladdning syns inte som `share_registration`. Samma webbläsare som öppnade länken kan däremot skapa resa eller lämna mejl.
+
+Veckomejlet länkar till sidan. Mejlklienten öppnar ingen delningsruta, och utskicket i sig är inte `share_prompt_viewed`.

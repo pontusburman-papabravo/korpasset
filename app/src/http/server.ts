@@ -26,6 +26,7 @@ import { registerAccountRoutes } from "./account.js";
 import { registerOAuthRoutes } from "./oauth.js";
 import { registerAppleNotificationRoutes } from "./apple-notifications.js";
 import { registerRoutes } from "./routes.js";
+import { registerShareRoutes } from "./share.js";
 import { applySecurityHeaders } from "./security-headers.js";
 
 function isStaticAssetPath(url: string | undefined): boolean {
@@ -185,6 +186,7 @@ export async function buildServer() {
   await registerHelpRoutes(app);
   await registerAccountRoutes(app);
   await registerMarketingRoutes(app);
+  await registerShareRoutes(app);
   await registerAdminRoutes(app);
   await registerRoutes(app);
   return app;

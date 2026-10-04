@@ -58,3 +58,7 @@ Adressen lagras inte i tabellen. Loggen har vecka, konto-id, resa-id, tid, mall,
 ## Admin
 
 Resans tidslinje under Statistik visar senaste veckomejl: vecka, status, tid och mall. Det finns ingen knapp som skickar om.
+
+## Tips
+
+Efter “Öppna Körpasset” och före “Vi hörs nästa söndag” finns en rad som tipsar om Körpasset. Länken går till `/tips?ref=share_weekly_email`, inte till App Store eller Google Play. Texten innehåller inget namn, ingen körstatistik och ingen personlig kod.

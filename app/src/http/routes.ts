@@ -119,6 +119,9 @@ import {
 } from "./handoff-context.js";
 import { supervisorGuideForSkillKey } from "../domain/supervisor-guide.js";
 import { APP_STORE_URL, PLAY_STORE_URL, renderLandingPage } from "./landing.js";
+import { shareUrl, platformFromUserAgent, recordShareEvent } from "../services/share.js";
+import { readShareSurface } from "./share.js";
+import { driveDoneSharePrompt } from "./share-widget.js";
 import { campaignSearch } from "./marketing.js";
 import {
   coachingStepsForSkillKey,
@@ -551,6 +554,17 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       );
       setSessionCookie(reply, userId);
       clearHandoffCookie(reply);
+      const shareSurface = readShareSurface(request);
+      if (shareSurface) {
+        await recordShareEvent({
+          name: "share_registration",
+          surface: shareSurface,
+          platform: platformFromUserAgent(request.headers["user-agent"]),
+          userId,
+          journeyId: journey.id,
+          actorRole: "student",
+        });
+      }
       return reply.redirect(`/journey/${journey.id}`);
     } catch (error) {
       const { status, message } = handleError(error);
@@ -1631,7 +1645,8 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
              <h2>Nästa gång</h2>
              ${recList}
            </section>
-           <a class="btn btn-primary" href="/journey/${escapeHtml(journeyId)}">Tillbaka till resan</a>`,
+           <a class="btn btn-primary" href="/journey/${escapeHtml(journeyId)}">Tillbaka till resan</a>
+           ${driveDoneSharePrompt(shareUrl("app"))}`,
           { journeyId, role: access.role },
         ),
       );

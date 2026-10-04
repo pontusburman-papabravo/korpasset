@@ -784,3 +784,42 @@ label.interest-choice {
   font-size: 0.85em;
   word-break: break-all;
 }
+
+.share-prompt__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.share-prompt__actions .btn-primary,
+.share-prompt__actions .btn-secondary {
+  width: auto;
+}
+
+.tips-paths {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.tips-paths .download-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  color: inherit;
+}
+
+.tips-paths .download-card h2 {
+  margin-top: 0;
+}
+
+.tips-paths .download-card .btn {
+  width: 100%;
+}
+
+.tips-paths[data-platform="ios"] .tips-path--ios,
+.tips-paths[data-platform="android"] .tips-path--android,
+.tips-paths[data-platform="web"] .tips-path--web {
+  border-color: var(--navy);
+}

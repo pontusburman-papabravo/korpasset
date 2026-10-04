@@ -948,9 +948,11 @@
 
   function isLoginSurface() {
     try {
+      // Account linking on /konto uses data-oauth-provider too. Only the
+      // sign-in stacks should send an already signed-in person onward.
       return Boolean(
         document.querySelector &&
-          document.querySelector("[data-oauth-provider], .oauth-continue, .oauth-stack"),
+          document.querySelector(".oauth-continue, .oauth-stack"),
       );
     } catch (error) {
       return false;

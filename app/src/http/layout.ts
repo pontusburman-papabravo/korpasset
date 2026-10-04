@@ -173,6 +173,7 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
   </script>
   <script>window.KORPASSET_OAUTH = ${JSON.stringify(publicOAuthConfig())};</script>
   <script src="/app-oauth.js" defer></script>
+  <script src="/share.js" defer></script>
   <script>
     (function () {
       var body = { platform: "", version: "", build: "" };

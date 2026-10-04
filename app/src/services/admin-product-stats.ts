@@ -254,6 +254,20 @@ export interface AdminProductStats {
     withCheckoff: number;
     events: Array<{ key: string; count: number }>;
   };
+  share: {
+    prompts: number;
+    started: number;
+    copied: number;
+    completed: number;
+    landingViews: number;
+    registrations: number;
+    rows: Array<{
+      event: string;
+      surface: string | null;
+      platform: string | null;
+      count: number;
+    }>;
+  };
   stuck: {
     signals: Array<{ key: StuckSignal; count: number }>;
     journeysWithSignal: number;
@@ -1232,6 +1246,33 @@ async function featureUsage() {
   };
 }
 
+async function shareUsage() {
+  const result = await getPool().query(
+    `SELECT event_name, share_surface, client_platform, count(*)::int AS n
+     FROM product_events
+     WHERE event_name LIKE 'share_%'
+     GROUP BY event_name, share_surface, client_platform
+     ORDER BY event_name, share_surface NULLS LAST, client_platform NULLS LAST`,
+  );
+  const rows = result.rows.map((row) => ({
+    event: String(row.event_name),
+    surface: row.share_surface == null ? null : String(row.share_surface),
+    platform: row.client_platform == null ? null : String(row.client_platform),
+    count: num(row.n),
+  }));
+  const total = (event: string) =>
+    rows.filter((row) => row.event === event).reduce((sum, row) => sum + row.count, 0);
+  return {
+    prompts: total("share_prompt_viewed"),
+    started: total("share_started"),
+    copied: total("share_link_copied"),
+    completed: total("share_completed"),
+    landingViews: total("share_landing_viewed"),
+    registrations: total("share_registration"),
+    rows,
+  };
+}
+
 function perActiveStudent(facts: JourneyFact[]): {
   avg: number | null;
   median: number | null;
@@ -1279,6 +1320,7 @@ export async function getAdminProductStats(period: StatsPeriod = "30"): Promise<
     retention,
     supervisors,
     features,
+    share,
   ] = await Promise.all([
     loadUsageWindows(),
     loadJourneyFacts(),
@@ -1292,6 +1334,7 @@ export async function getAdminProductStats(period: StatsPeriod = "30"): Promise<
     retentionCohorts(),
     supervisorAggregates(),
     featureUsage(),
+    shareUsage(),
   ]);
 
   const bucketCounts = new Map<DriveCountBucket, number>(
@@ -1451,6 +1494,7 @@ export async function getAdminProductStats(period: StatsPeriod = "30"): Promise<
       withCheckoff: num(features.drives.with_checkoff),
       events: features.events,
     },
+    share,
     stuck: {
       signals: STUCK_SIGNALS.map((key) => ({ key, count: signals[key] })),
       journeysWithSignal,

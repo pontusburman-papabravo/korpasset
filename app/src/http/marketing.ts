@@ -10,6 +10,8 @@ import {
 } from "./consent.js";
 import { EmailSendError, notifyWaitlistSignup } from "../services/email.js";
 import { saveInterestSignup } from "../services/interest.js";
+import { platformFromUserAgent, recordShareEvent } from "../services/share.js";
+import { readShareSurface } from "./share.js";
 import {
   renderInterestFormError,
   renderInterestThanksPage,
@@ -175,7 +177,17 @@ export async function registerMarketingRoutes(app: FastifyInstance): Promise<voi
       if (!result) {
         return reply.redirect(thanksLocation(request.query));
       }
-      if (result.created) markSavedLead(reply);
+      if (result.created) {
+        markSavedLead(reply);
+        const shareSurface = readShareSurface(request);
+        if (shareSurface) {
+          await recordShareEvent({
+            name: "share_registration",
+            surface: shareSurface,
+            platform: platformFromUserAgent(request.headers["user-agent"]),
+          });
+        }
+      }
       try {
         await notifyWaitlistSignup(result.signup, result.created);
       } catch (error) {

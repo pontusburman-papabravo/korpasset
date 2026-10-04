@@ -19,6 +19,11 @@ export const PUBLIC_INDEX_PAGES = [
     priority: "1.0",
     changefreq: "weekly",
   },
+  {
+    path: "/tips",
+    priority: "0.6",
+    changefreq: "monthly",
+  },
   ...PRACTICE_SITEMAP_PAGES,
   {
     path: "/kontakt",

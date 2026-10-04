@@ -72,7 +72,7 @@ Skriptet frågar efter lösenord (minst 12 tecken), hashar med Argon2id och skri
 
 ### Veckomejl
 
-Söndagar från kl 18:00 Europe/Stockholm skickas en produktsammanfattning till eleven på en aktiv körkortsresa, om veckan haft ett genomfört körpass, en momentträning eller en avbockning. Reglerna, mottagarna och dublettskyddet finns i [weekly-summary-email.md](weekly-summary-email.md). Jobbet startar med appen och tittar var 15:e minut. En missad söndag skickas inte i efterhand.
+Söndagar från kl 18:00 Europe/Stockholm skickas en produktsammanfattning till eleven på en aktiv körkortsresa, om veckan haft ett genomfört körpass, en momentträning eller en avbockning. Reglerna, mottagarna och dublettskyddet finns i [weekly-summary-email.md](weekly-summary-email.md). Jobbet startar med appen och tittar var 15:e minut. En missad söndag skickas inte i efterhand. Mejlet slutar med en länk till `/tips`, inte en butikslänk.
 
 ### Resend webhook
 

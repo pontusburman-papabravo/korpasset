@@ -32,8 +32,11 @@ My Starday har Apple på iOS och Google på Android. Körpasset ska ha **båda p
 | Universal Links | `https://korpasset.se/.well-known/apple-app-site-association` |
 | App Links | `https://korpasset.se/.well-known/assetlinks.json` |
 | Inbjudan | `https://korpasset.se/invite/<token>` |
+| Tipsa en vän | `https://korpasset.se/tips` |
 
-Landningen `/` är waitlist, inte signup.
+Landningen `/` är waitlist, inte signup. Delningslänken är `/tips` med en anonym `ref` (`share_app`, `share_website` eller `share_weekly_email`). Den pekar inte på App Store eller Google Play. Sidan visar båda butikerna och vägen att lämna mejl tills Google Play är öppet för alla.
+
+`@capacitor/share` ligger i `native/package.json`. Nästa iOS- och Android-bygge behöver `npx cap sync` i `native/` så systemets delningsruta finns i binären. Tills dess använder WebView Web Share API och sedan kopiering av länken.
 
 ## Env på VPS
 

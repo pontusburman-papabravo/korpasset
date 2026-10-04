@@ -22,6 +22,8 @@ import {
 } from "./layout.js";
 import { renderSignedInAs } from "./account-identity.js";
 import { clearActiveJourneyCookie } from "./active-journey.js";
+import { shareUrl } from "../services/share.js";
+import { appShareCard } from "./share-widget.js";
 
 function deletedAccountPage(legacyAppleWithoutToken: boolean): string {
   const legacy = legacyAppleWithoutToken
@@ -82,6 +84,7 @@ function accountPage(options: {
          ${providerRow("google", hasGoogle)}
        </ul>
      </section>
+     ${appShareCard(shareUrl("app"))}
      <form method="post" action="/logout">
        <button type="submit" class="btn btn-secondary">Logga ut</button>
      </form>

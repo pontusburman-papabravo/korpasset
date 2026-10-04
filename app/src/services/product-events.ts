@@ -17,6 +17,12 @@ export const PRODUCT_EVENTS = [
   "next_drive_plan_created",
   "next_drive_plan_updated",
   "training_guidance_opened",
+  "share_prompt_viewed",
+  "share_started",
+  "share_link_copied",
+  "share_completed",
+  "share_landing_viewed",
+  "share_registration",
 ] as const;
 
 export type ProductEventName = (typeof PRODUCT_EVENTS)[number];
@@ -45,6 +51,8 @@ export interface ProductEventInput {
   eventSource?: JourneyCreatedSource | null;
   practiceStage?: EventPracticeStage | null;
   daysSinceDriveBucket?: DaysSinceDriveBucket | null;
+  shareSurface?: "app" | "website" | "weekly_email" | null;
+  clientPlatform?: "ios" | "android" | "web" | null;
 }
 
 export function daysSinceDriveBucket(days: number): DaysSinceDriveBucket {
@@ -62,9 +70,9 @@ export async function recordProductEvent(
   await db.query(
     `INSERT INTO product_events (
        event_name, journey_id, user_id, actor_role, supervisor_count, focus_skill_count,
-       event_source, practice_stage, days_since_drive_bucket
+       event_source, practice_stage, days_since_drive_bucket, share_surface, client_platform
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
     [
       input.name,
       input.journeyId ?? null,
@@ -75,6 +83,8 @@ export async function recordProductEvent(
       input.eventSource ?? null,
       input.practiceStage ?? null,
       input.daysSinceDriveBucket ?? null,
+      input.shareSurface ?? null,
+      input.clientPlatform ?? null,
     ],
   );
 }
