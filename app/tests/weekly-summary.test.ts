@@ -13,6 +13,7 @@ import {
   weeklyFeedback,
   weeklySummaryForbiddenPhrases,
 } from "../src/services/weekly-summary-email.js";
+import { weeklyProductUpdateForWeek } from "../src/services/weekly-product-update.js";
 import { sendWeeklySummaryEmails } from "../src/services/weekly-summary-mail.js";
 import {
   getJourneyWeeklySummary,
@@ -269,6 +270,91 @@ describe("weekly summary copy", () => {
     });
     assert.match(worse.text, /2 körpass färre än förra veckan/);
     assert.deepEqual(weeklySummaryForbiddenPhrases(worse.text), []);
+  });
+
+  it("shows this week's product note once and leaves other weeks without it", () => {
+    const shareUrl = "https://korpasset.se/tips?r=LGBBLY2H&source=weekly_email";
+    const busy = buildWeeklySummaryEmail({
+      displayName: "Nora",
+      summary: blankSummary({
+        completedDrives: 3,
+        totalDriveMinutes: 135,
+        uniqueTrainedSkills: 4,
+        newlyCompletedSkills: 2,
+        progressionStart: 10,
+        progressionEnd: 18,
+      }),
+      previous: null,
+      appUrl: "https://korpasset.se/app",
+      shareUrl,
+    });
+    assert.equal(busy.subject, "3 körpass den här veckan");
+    assert.doesNotMatch(busy.subject, /Nytt i Körpasset|Produktuppdatering/);
+    assert.equal(busy.text.split("Nytt i Körpasset").length, 2);
+    assert.match(busy.text, /Veckosammanfattningen är ny/);
+    assert.doesNotMatch(busy.text, /erbjudande|kampanj|rabatt|uppgradera|Avregistrera|List-Unsubscribe/i);
+    const noteAt = busy.text.indexOf("Nytt i Körpasset");
+    const openAt = busy.text.indexOf("Öppna Körpasset:");
+    const tipsAt = busy.text.indexOf(`Tipsa en vän: ${shareUrl}`);
+    assert.ok(noteAt > busy.text.indexOf("🚗 3 körpass"));
+    assert.ok(noteAt < openAt && openAt < tipsAt);
+    assert.match(busy.text, /Din progression gick från 10 % till 18 %/);
+
+    const first = buildWeeklySummaryEmail({
+      displayName: "Eli",
+      summary: blankSummary({
+        completedDrives: 1,
+        totalDriveMinutes: 25,
+        firstDriveThisWeek: true,
+        progressionEnd: 4,
+      }),
+      previous: null,
+      appUrl: "https://korpasset.se/app",
+      shareUrl,
+    });
+    assert.equal(first.subject, "1 körpass den här veckan");
+    assert.match(first.text, /Du genomförde ditt första körpass/);
+    assert.equal(first.text.split("Nytt i Körpasset").length, 2);
+    assert.match(first.text, new RegExp(shareUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+
+    const practiced = buildWeeklySummaryEmail({
+      displayName: "Bo",
+      summary: blankSummary({
+        completedDrives: 1,
+        totalDriveMinutes: 40,
+        trainedSkills: 4,
+        uniqueTrainedSkills: 4,
+        newlyCompletedSkills: 0,
+        checkoffSteps: 2,
+      }),
+      previous: null,
+      appUrl: "https://korpasset.se/app",
+      shareUrl,
+    });
+    assert.match(practiced.text, /Fortsätt repetera i lugn takt/);
+    assert.match(practiced.text, /✅ 2 körsteg avbockade/);
+    assert.equal(practiced.text.split("Nytt i Körpasset").length, 2);
+    assert.doesNotMatch(practiced.subject, /Nytt i Körpasset/);
+
+    const nextWeek = buildWeeklySummaryEmail({
+      displayName: "Nora",
+      summary: blankSummary({
+        weekKey: "2026-W41",
+        completedDrives: 3,
+        totalDriveMinutes: 135,
+        uniqueTrainedSkills: 4,
+        newlyCompletedSkills: 2,
+      }),
+      previous: null,
+      appUrl: "https://korpasset.se/app",
+      shareUrl,
+    });
+    assert.equal(nextWeek.subject, "3 körpass den här veckan");
+    assert.match(nextWeek.text, /🚗 3 körpass/);
+    assert.doesNotMatch(nextWeek.text, /Nytt i Körpasset/);
+    assert.match(nextWeek.text, new RegExp(shareUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.equal(weeklyProductUpdateForWeek("2026-W40")?.title, "Nytt i Körpasset");
+    assert.equal(weeklyProductUpdateForWeek("2026-W41"), null);
   });
 });
 

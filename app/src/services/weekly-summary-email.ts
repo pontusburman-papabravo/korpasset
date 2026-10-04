@@ -1,4 +1,5 @@
 import { shareUrl as canonicalShareUrl } from "./share.js";
+import { weeklyProductUpdateForWeek } from "./weekly-product-update.js";
 import type { JourneyWeeklySummary } from "./weekly-summary.js";
 
 /**
@@ -181,6 +182,14 @@ export function buildWeeklySummaryEmail(input: {
   const feedback = weeklyFeedback(summary);
   if (feedback.length > 0) paragraphs.push("", ...feedback);
 
+  const productUpdate = weeklyProductUpdateForWeek(summary.weekKey);
+  if (productUpdate) {
+    paragraphs.push("", productUpdate.title, "", productUpdate.body);
+    if (productUpdate.link && productUpdate.linkLabel) {
+      paragraphs.push("", `${productUpdate.linkLabel}: ${productUpdate.link}`);
+    }
+  }
+
   paragraphs.push(
     "",
     "Redo för nästa körpass?",
@@ -202,7 +211,7 @@ export function buildWeeklySummaryEmail(input: {
   return {
     subject: weeklySummarySubject(summary),
     text,
-    html: weeklySummaryHtml(text, input.appUrl, tipsUrl),
+    html: weeklySummaryHtml(text, input.appUrl, tipsUrl, productUpdate),
   };
 }
 
@@ -214,9 +223,18 @@ function escapeHtml(value: string): string {
     .replaceAll('"', "&quot;");
 }
 
-function weeklySummaryHtml(text: string, appUrl: string, shareLink: string): string {
+function weeklySummaryHtml(
+  text: string,
+  appUrl: string,
+  shareLink: string,
+  productUpdate: { link?: string; linkLabel?: string } | null,
+): string {
   const link = `Öppna Körpasset: ${appUrl}`;
   const tips = `Tipsa en vän: ${shareLink}`;
+  const productLine =
+    productUpdate?.link && productUpdate.linkLabel
+      ? `${productUpdate.linkLabel}: ${productUpdate.link}`
+      : null;
   const body = text
     .split("\n")
     .map((line) => {
@@ -225,6 +243,9 @@ function weeklySummaryHtml(text: string, appUrl: string, shareLink: string): str
       }
       if (line === tips) {
         return `<p><a href="${escapeHtml(shareLink)}">Tipsa en vän</a></p>`;
+      }
+      if (productLine && line === productLine && productUpdate?.link && productUpdate.linkLabel) {
+        return `<p><a href="${escapeHtml(productUpdate.link)}">${escapeHtml(productUpdate.linkLabel)}</a></p>`;
       }
       if (line === "") return "";
       return `<p>${escapeHtml(line)}</p>`;

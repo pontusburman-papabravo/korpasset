@@ -4,7 +4,7 @@ function nativePrivacyPage(options: PublicConsentOptions): string {
   return renderLegalPage(
     "Integritetspolicy",
     `<h1>Integritetspolicy</h1>
-     <p>Senast uppdaterad: 29 september 2026</p>
+     <p>Senast uppdaterad: 4 oktober 2026</p>
      <p>Papa Bravo AB är personuppgiftsansvarig för Körpasset, en digital tjänst för privat övningskörning mot svenskt B-körkort.</p>
      <p>Vi samlar in så lite personuppgifter som möjligt. Vi säljer inte dina personuppgifter. I Körpasset-appen spårar vi inte användare och visar ingen cookiebanner.</p>
      <p>Du kan kontakta oss på:</p>
@@ -17,6 +17,7 @@ function nativePrivacyPage(options: PublicConsentOptions): string {
      <p>När du använder Körpasset behandlar vi de uppgifter som behövs för konto och körkortsresa, till exempel visningsnamn, e-postadress när den lämnas, användar-id från inloggningsleverantören, session, körpass, observationer och tekniska produkthändelser.</p>
      <p>Den rättsliga grunden för behandling som är nödvändig för att tillhandahålla Körpasset är att fullgöra avtalet om tjänsten.</p>
      <p>Produkthändelser kopplas till interna id:n. De används för att driva och förstå betan, inte för reklam.</p>
+     <p>Produktmejl, till exempel ett hjälpmejl i starten och ett veckomejl om den egna körkortsresan, hör till tjänsten. Nyheter, tips och erbjudanden via e-post är ett frivilligt val under Konto. Det är av som standard och kan stängas av där eller via länken i ett sådant mejl. Det valet styr inte produktmejlen.</p>
 
      <h2>Inloggning med Apple eller Google</h2>
      <p>Inloggning sker med Sign in with Apple eller Sign in with Google.</p>
@@ -68,7 +69,7 @@ export function privacyPage(options: PublicConsentOptions = {}): string {
   return renderLegalPage(
     "Integritetspolicy",
     `<h1>Integritetspolicy</h1>
-     <p>Senast uppdaterad: 29 september 2026</p>
+     <p>Senast uppdaterad: 4 oktober 2026</p>
      <p>Papa Bravo AB är personuppgiftsansvarig för Körpasset, en digital tjänst för privat övningskörning mot svenskt B-körkort.</p>
      <p>Vi samlar in så lite personuppgifter som möjligt. Vi säljer inte dina personuppgifter. På den publika webbplatsen korpasset.se kan annonsmätning via Meta Pixel ske bara om du samtycker till marknadsföringscookies. iOS-appen Körpasset använder inte reklam- eller marknadsföringsspårning, laddar inte Meta Pixel och visar ingen cookiebanner.</p>
      <p>Du kan kontakta oss på:</p>
@@ -132,11 +133,17 @@ export function privacyPage(options: PublicConsentOptions = {}): string {
      <p>Vi använder inte Körpasset för att fatta automatiserade beslut som har rättsliga eller på liknande sätt betydande konsekvenser för dig.</p>
      <p>Rekommendationer i tjänsten är stöd för planering av övningskörningen. De är inte en bedömning av om eleven är redo för uppkörning.</p>
 
+     <h2>E-post</h2>
+     <p>Körpasset skiljer på produktmejl och frivillig marknadsföring.</p>
+     <p>Produktmejl behövs för att tillhandahålla tjänsten. Dit hör ett hjälpmejl när ett konto stått still i starten, och ett veckomejl till eleven om den egna körkortsresan när veckan har övning att sammanfatta. Veckomejlet är produktkommunikation om körkortsresan. Den rättsliga grunden är att fullgöra avtalet om tjänsten.</p>
+     <p>Nyheter, tips och erbjudanden via e-post är frivilligt. Kryssrutan under Konto är av som standard. Du kan slå på eller av valet där. Ett sådant mejl innehåller en länk där du kan avregistrera dig utan att logga in. Avregistreringen gäller bara nyheter, tips och erbjudanden, inte produktmejlen. Den rättsliga grunden är ditt samtycke.</p>
+     <p>Uppgifter från en intresseanmälan används inte för nyheter, tips och erbjudanden.</p>
+
      <h2>Leverantörer och mottagare</h2>
      <p>Vi använder externa leverantörer när det behövs för att driva Körpasset:</p>
      <ul>
        <li>server och databas hos en hostingleverantör inom EU/EES</li>
-       <li>e-post via Resend, för bekräftelse på intresseanmälan, administratörsmejl och ett hjälpmejl när ett konto stått still i starten</li>
+       <li>e-post via Resend, för bekräftelse på intresseanmälan, administratörsmejl, hjälpmejl, veckomejl om körkortsresan och, om du själv har valt det, nyheter, tips och erbjudanden</li>
        <li>inloggning och identitet via Sign in with Apple och Sign in with Google</li>
      </ul>
      <p>Sådana leverantörer får bara behandla personuppgifter i den omfattning som behövs för respektive tjänst och enligt tillämpliga avtal och dataskyddsregler.</p>

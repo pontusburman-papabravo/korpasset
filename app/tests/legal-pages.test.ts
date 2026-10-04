@@ -87,6 +87,12 @@ describe("public legal pages", () => {
     assert.match(privacy.body, /GPS-spår/);
     assert.match(privacy.body, /hälsodata/);
     assert.match(privacy.body, /Resend/);
+    assert.match(privacy.body, /Nyheter, tips och erbjudanden via e-post är frivilligt/);
+    assert.match(privacy.body, /av som standard/);
+    assert.match(privacy.body, /under Konto/);
+    assert.match(privacy.body, /avregistrera dig utan att logga in/);
+    assert.match(privacy.body, /Veckomejlet är produktkommunikation/);
+    assert.match(privacy.body, /inte produktmejlen/);
     assert.match(privacy.body, /utanför EU\/EES/);
     assert.match(privacy.body, /användarraden raderas inte/);
     assert.match(privacy.body, /intresseanmälan till betan raderas inte automatiskt/i);

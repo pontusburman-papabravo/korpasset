@@ -63,6 +63,10 @@ Adressen lagras inte i tabellen. Loggen har vecka, konto-id, resa-id, tid, mall,
 
 Resans tidslinje under Statistik visar senaste veckomejl: vecka, status, tid och mall. Det finns ingen knapp som skickar om.
 
+## Produktnotis
+
+En valfri notis för en ISO-vecka ligger i `app/src/services/weekly-product-update.ts`. Den visas efter den personliga återkopplingen och före “Öppna Körpasset”, bara när `active` är sann och `weekKey` är just den veckan. Nästa vecka visas den inte av sig själv. Notisen ändrar inte ämnesraden, mottagarreglerna eller statistikberäkningen. Den är en del av produktmejlet.
+
 ## Tips
 
 Efter “Öppna Körpasset” och före “Vi hörs nästa söndag” finns en rad som tipsar om Körpasset. Länken går till `/tips?r=<kod>&source=weekly_email`, inte till App Store eller Google Play. Koden är elevens slumpade referral-kod. Mejlet innehåller inte e-post, namn, konto-id eller journey-id i URL:en, och ingen körstatistik i tipstexten.
