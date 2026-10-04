@@ -4,6 +4,8 @@ Körpasset är en native Capacitor-app som laddar `https://korpasset.se/app`. Pr
 
 Koden i [`native/`](../../native/) är skalet. iOS-arkivering görs på en Mac med Xcode. Android kan byggas i Android Studio.
 
+Capacitor 8 (`npx cap sync`) kräver **Node.js 22 LTS**. CI och Xcode Cloud använder redan Node 22. `native/.nvmrc` är `22`. Kör inte `npm audit fix` eller `npm install -g npm@12` som en del av native-bygget — det ändrar inte Capacitor-kravet.
+
 App ID och SKU: `se.korpasset.app`. Apple Team ID: `PQ7M3B7VW5` (Papa Bravo AB). Detaljer: [apple-developer.md](apple-developer.md), [google-play.md](google-play.md).
 
 ## Återanvänd My Starday-kontona
@@ -70,6 +72,8 @@ App ID `se.korpasset.app` är redan registrerad som Explicit + Sign in with Appl
 
 ```bash
 cd native
+node -v   # måste vara v22.x
+# om nvm: nvm install && nvm use
 git pull
 npm install
 npx cap sync ios
@@ -120,6 +124,8 @@ Byt ikon: ersätt `native/assets/icon.png` (1024 RGB, ingen alfa), kör `npm run
 
 ```bash
 cd native
+node -v   # måste vara v22.x — Capacitor CLI 8 vägrar annars
+# om nvm: nvm install && nvm use
 git pull
 npm install
 npx cap sync android
@@ -133,6 +139,8 @@ cd /Users/pontusburman/korpasset
 git pull
 ls native/android
 cd native
+node -v   # måste vara v22.x — Capacitor CLI 8 vägrar annars
+# om nvm: nvm install && nvm use
 npm install
 npx cap sync android
 keytool -list -keystore /Users/pontusburman/korpasset-keys/korpasset-upload.jks
