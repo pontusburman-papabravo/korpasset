@@ -80,7 +80,7 @@ Samma mönster som My Starday: `POST /api/resend/webhook`.
 
 1. Deploya appen med `RESEND_WEBHOOK_SECRET`.
 2. I Resend Dashboard → Webhooks, skapa en webhook mot `https://korpasset.se/api/resend/webhook`.
-3. Events: `email.sent`, `email.delivered`, `email.opened`, `email.bounced`, `email.complained`, `email.delivery_delayed`. Inte `email.clicked`. Klickspårning är av. Öppningsspårning är på för domänen `korpasset.se`, så HTML-mejl kan rapportera `email.opened`.
+3. Events: `email.sent`, `email.delivered`, `email.opened`, `email.bounced`, `email.complained`, `email.delivery_delayed`. Inte `email.clicked`. Klickspårning är av. Öppningsspårning på domänen `korpasset.se` är av tills en tracking-subdomän är verifierad. HTML-mejl rapporterar `email.opened` först då.
 4. Sätt signing secret i `RESEND_WEBHOOK_SECRET` (`whsec_…`).
 
 Endpointen verifierar Svix-signatur mot raw body, sparar `event_type` + `email_id` i `resend_webhook_events`, och loggar bounce/complaint utan mottagaradress. Samma Svix-id skrivs inte om (Resend-retries). `email.delivered`, `email.opened` och `email.bounced` stämplar första tiden på hjälpmejl- eller veckomejlraden med samma leverantörs-id. Admin visar Levererad, Studsade eller Öppnad. Saknas id visas streck. Adressen lagras inte på raden.
