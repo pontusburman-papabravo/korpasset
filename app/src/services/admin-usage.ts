@@ -1,4 +1,12 @@
 import { getPool } from "../db/pool.js";
+import { loadJourneyFacts, loadUsageWindows, snapshotFromFact } from "./admin-product-stats.js";
+import {
+  journeyUsageStatus,
+  stuckSignals,
+  type JourneyUsageStatus,
+  type StuckSignal,
+  type UsageSnapshot,
+} from "./usage-metrics.js";
 
 /** HTML shows the most recently active journeys. CSV uses the same cap. */
 export const USAGE_JOURNEY_LIMIT = 500;
@@ -81,6 +89,16 @@ export interface UsageJourney {
   activeSupervisors: number;
   drivesStarted: number;
   drivesCompleted: number;
+  drivesCompleted30d: number;
+  durationSeconds: number;
+  lastCompletedAt: string | null;
+  trainedObservations: number;
+  uniqueSkillsTrained: number;
+  checkoffSteps: number;
+  progressionPercent: number;
+  pendingInvites: number;
+  status: JourneyUsageStatus;
+  signals: StuckSignal[];
   ratedDrives: number;
   stuck: UsageStuck;
   waitlist: {
@@ -141,7 +159,29 @@ function asTransmission(value: unknown): UsageTransmission {
 }
 
 /** Table filters on Statistik. Applied to journeys already loaded for the page. */
-export const USAGE_LIST_FILTERS = ["all", "active7", "stuck", "two"] as const;
+export const USAGE_LIST_FILTERS = [
+  "all",
+  "active7",
+  "active30",
+  "stuck",
+  "drives0",
+  "drives1",
+  "two",
+  "drives5",
+  "drives10",
+  "no_supervisor",
+  "has_supervisor",
+  "has_checkoffs",
+  "no_checkoffs",
+  "registered7",
+  "registered30",
+  "progress0",
+  "progress1",
+  "progress25",
+  "progress50",
+  "progress75",
+  "progress100",
+] as const;
 export type UsageListFilter = (typeof USAGE_LIST_FILTERS)[number];
 
 export const USAGE_ACTIVE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -154,9 +194,10 @@ export function usageListFilter(value: string | undefined): UsageListFilter {
 
 /**
  * Keeps the existing Senast aktiv order.
- * active7: last activity within 7 days.
- * stuck: not yet “Andra passet gjort”.
- * two: at least two completed drives.
+ * active7 / active30: last activity within a rolling window, same as the
+ * original table filter (not the Stockholm calendar KPI).
+ * stuck: not yet “Andra passet gjort” in the existing funnel.
+ * Drive-count, supervisor and checklist filters use the server-computed fields.
  */
 export function filterUsageJourneys(
   journeys: UsageJourney[],
@@ -164,12 +205,106 @@ export function filterUsageJourneys(
   now = new Date(),
 ): UsageJourney[] {
   if (filter === "all") return journeys;
-  const cutoff = now.getTime() - USAGE_ACTIVE_WINDOW_MS;
+  const week = now.getTime() - USAGE_ACTIVE_WINDOW_MS;
+  const month = now.getTime() - 30 * 24 * 60 * 60 * 1000;
   return journeys.filter((journey) => {
-    if (filter === "active7") return Date.parse(journey.lastActivityAt) >= cutoff;
+    if (filter === "active7") return Date.parse(journey.lastActivityAt) >= week;
+    if (filter === "active30") return Date.parse(journey.lastActivityAt) >= month;
     if (filter === "stuck") return journey.stuck !== "through";
-    return journey.drivesCompleted >= 2;
+    if (filter === "two") return journey.drivesCompleted >= 2;
+    if (filter === "drives0") return journey.drivesCompleted === 0;
+    if (filter === "drives1") return journey.drivesCompleted === 1;
+    if (filter === "drives5") return journey.drivesCompleted >= 5;
+    if (filter === "drives10") return journey.drivesCompleted >= 10;
+    if (filter === "no_supervisor") return journey.journeyId !== "" && journey.activeSupervisors === 0;
+    if (filter === "has_supervisor") return journey.activeSupervisors >= 1;
+    if (filter === "has_checkoffs") return journey.checkoffSteps > 0;
+    if (filter === "no_checkoffs") return journey.checkoffSteps === 0;
+    if (filter === "registered7") return Date.parse(journey.createdAt) >= week;
+    if (filter === "registered30") return Date.parse(journey.createdAt) >= month;
+    return progressionMatches(journey.progressionPercent, filter);
   });
+}
+
+function progressionMatches(percent: number, filter: UsageListFilter): boolean {
+  if (filter === "progress0") return percent <= 0;
+  if (filter === "progress1") return percent >= 1 && percent <= 24;
+  if (filter === "progress25") return percent >= 25 && percent <= 49;
+  if (filter === "progress50") return percent >= 50 && percent <= 74;
+  if (filter === "progress75") return percent >= 75 && percent <= 99;
+  if (filter === "progress100") return percent >= 100;
+  return true;
+}
+
+function emptyUsageMetrics(): Pick<
+  UsageJourney,
+  | "drivesCompleted30d"
+  | "durationSeconds"
+  | "lastCompletedAt"
+  | "trainedObservations"
+  | "uniqueSkillsTrained"
+  | "checkoffSteps"
+  | "progressionPercent"
+  | "pendingInvites"
+  | "status"
+  | "signals"
+> {
+  return {
+    drivesCompleted30d: 0,
+    durationSeconds: 0,
+    lastCompletedAt: null,
+    trainedObservations: 0,
+    uniqueSkillsTrained: 0,
+    checkoffSteps: 0,
+    progressionPercent: 0,
+    pendingInvites: 0,
+    status: "not_started",
+    signals: [],
+  };
+}
+
+function accountSnapshot(createdAt: string): UsageSnapshot {
+  return {
+    hasJourney: false,
+    createdAt: new Date(createdAt),
+    activeSupervisors: 0,
+    completedDrives: 0,
+    lastCompletedAt: null,
+    trainedObservations: 0,
+    checkoffSteps: 0,
+    progressionPercent: 0,
+    progressionIncreased30d: false,
+  };
+}
+
+async function annotateUsageMetrics(journeys: UsageJourney[]): Promise<void> {
+  const ids = journeys.map((journey) => journey.journeyId).filter((id) => id !== "");
+  const [windows, facts] = await Promise.all([
+    loadUsageWindows(),
+    ids.length > 0 ? loadJourneyFacts(ids) : Promise.resolve([]),
+  ]);
+  const byId = new Map(facts.map((fact) => [fact.journeyId, fact]));
+  for (const journey of journeys) {
+    const fact = journey.journeyId ? byId.get(journey.journeyId) : undefined;
+    if (!fact) {
+      const snapshot = accountSnapshot(journey.createdAt);
+      journey.status = journeyUsageStatus(snapshot, windows);
+      journey.signals = stuckSignals(snapshot, windows);
+      continue;
+    }
+    const snapshot = snapshotFromFact(fact);
+    journey.drivesCompleted30d = fact.drivesCompleted30d;
+    journey.durationSeconds = fact.durationSeconds;
+    journey.lastCompletedAt = fact.lastCompletedAt;
+    journey.trainedObservations = fact.trainedObservations;
+    journey.uniqueSkillsTrained = fact.uniqueSkillsTrained;
+    journey.checkoffSteps = fact.checkoffSteps;
+    journey.progressionPercent = fact.progressionPercent;
+    journey.pendingInvites = fact.pendingInvites;
+    journey.activeSupervisors = fact.activeSupervisors;
+    journey.status = journeyUsageStatus(snapshot, windows);
+    journey.signals = stuckSignals(snapshot, windows);
+  }
 }
 
 export function usageStuck(input: {
@@ -582,6 +717,7 @@ export async function getAdminUsage(): Promise<AdminUsage> {
       activeSupervisors,
       drivesStarted,
       drivesCompleted: num(row.drives_completed),
+      ...emptyUsageMetrics(),
       ratedDrives,
       stuck: usageStuck({
         hasJourney: true,
@@ -617,6 +753,7 @@ export async function getAdminUsage(): Promise<AdminUsage> {
       activeSupervisors: 0,
       drivesStarted: 0,
       drivesCompleted: 0,
+      ...emptyUsageMetrics(),
       ratedDrives: 0,
       stuck: "no_journey",
       waitlist: waitlist.get(userId) ?? null,
@@ -629,6 +766,7 @@ export async function getAdminUsage(): Promise<AdminUsage> {
     if (byTime !== 0) return byTime;
     return a.student.userId.localeCompare(b.student.userId);
   });
+  await annotateUsageMetrics(journeys);
 
   const account = accounts.rows[0] ?? {};
   const starter = starters.rows[0] ?? {};

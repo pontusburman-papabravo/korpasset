@@ -579,6 +579,26 @@ label.interest-choice {
   border-color: var(--navy);
 }
 
+.admin-usage-filter a {
+  display: inline-block;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--navy);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-usage-filter a[aria-current="page"] {
+  background: var(--navy);
+  color: var(--white);
+  border-color: var(--navy);
+}
+
+.admin-table th[data-dir="asc"]::after { content: " ↑"; }
+.admin-table th[data-dir="desc"]::after { content: " ↓"; }
+
 .admin-table-wrap { overflow-x: auto; }
 
 .admin-table {

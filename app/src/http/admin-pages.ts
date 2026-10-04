@@ -1,4 +1,10 @@
 import type { AdminBetaStats, DayCount } from "../services/admin-stats.js";
+import type { AdminProductStats } from "../services/admin-product-stats.js";
+import { productStatsSections } from "./admin-product-pages.js";
+import {
+  USAGE_STATUS_LABELS,
+  formatDuration,
+} from "../services/usage-metrics.js";
 import {
   filterUsageJourneys,
   USAGE_ACTIVE_WINDOW_MS,
@@ -585,9 +591,27 @@ function journeyRows(journeys: UsageJourney[]): string {
       const waitlist = journey.waitlist
         ? `<a href="/admin/signups/${escapeHtml(journey.waitlist.id)}">${escapeHtml(STATUS_LABELS[journey.waitlist.status as InterestStatus] ?? journey.waitlist.status)}</a>`
         : "—";
-      return `<tr data-last-active="${escapeHtml(journey.lastActivityAt)}" data-stuck="${escapeHtml(journey.stuck)}" data-completed="${journey.drivesCompleted}">
-        <td><a href="/admin/users/${escapeHtml(journey.student.userId)}">${escapeHtml(journey.student.name)}</a></td>
+      const student = journey.journeyId
+        ? `<a href="/admin/statistik/resa/${escapeHtml(journey.journeyId)}">${escapeHtml(journey.student.name)}</a>`
+        : `<a href="/admin/users/${escapeHtml(journey.student.userId)}">${escapeHtml(journey.student.name)}</a>`;
+      const supervisorCount =
+        journey.pendingInvites > 0
+          ? `${journey.activeSupervisors} <span class="muted">+${journey.pendingInvites} inbjudna</span>`
+          : String(journey.activeSupervisors);
+      return `<tr data-last-active="${escapeHtml(journey.lastActivityAt)}" data-stuck="${escapeHtml(journey.stuck)}" data-completed="${journey.drivesCompleted}" data-created="${escapeHtml(journey.createdAt)}" data-supervisors="${journey.activeSupervisors}" data-checkoffs="${journey.checkoffSteps}" data-progression="${journey.progressionPercent}" data-has-journey="${journey.journeyId ? "1" : "0"}" data-status="${escapeHtml(journey.status)}">
+        <td>${student}</td>
+        <td>${escapeHtml(formatWhen(journey.createdAt))}</td>
         <td>${escapeHtml(formatLastActive(journey.lastActivityAt))}</td>
+        <td>${journey.lastCompletedAt ? escapeHtml(formatWhen(journey.lastCompletedAt)) : "—"}</td>
+        <td>${journey.drivesCompleted}</td>
+        <td>${journey.drivesCompleted30d}</td>
+        <td>${escapeHtml(formatDuration(journey.durationSeconds))}</td>
+        <td>${journey.trainedObservations}</td>
+        <td>${journey.uniqueSkillsTrained}</td>
+        <td>${journey.checkoffSteps}</td>
+        <td>${journey.progressionPercent} %</td>
+        <td>${supervisorCount}</td>
+        <td>${escapeHtml(USAGE_STATUS_LABELS[journey.status])}</td>
         <td>${escapeHtml(usageLabel(USAGE_STUCK_LABELS, journey.stuck))}</td>
         <td>${platformCell(journey)}</td>
         <td>${supervisors}</td>
@@ -617,6 +641,15 @@ export function usageCsv(journeys: UsageJourney[]): string {
     "appbuild",
     "anmalan_status",
     "anmalan_id",
+    "status",
+    "korpass_30d",
+    "kortid_sekunder",
+    "tranade_moment",
+    "unika_moment",
+    "avbockningar",
+    "progression_procent",
+    "handledare_aktiva",
+    "senaste_korpass",
   ].join(",");
   const lines = journeys.map((journey) =>
     [
@@ -650,6 +683,15 @@ export function usageCsv(journeys: UsageJourney[]): string {
           : "",
       ),
       journey.waitlist?.id ?? "",
+      csvCell(USAGE_STATUS_LABELS[journey.status] ?? journey.status),
+      String(journey.drivesCompleted30d),
+      String(Math.round(journey.durationSeconds)),
+      String(journey.trainedObservations),
+      String(journey.uniqueSkillsTrained),
+      String(journey.checkoffSteps),
+      String(journey.progressionPercent),
+      String(journey.activeSupervisors),
+      journey.lastCompletedAt ?? "",
     ].join(","),
   );
   return [header, ...lines].join("\n");
@@ -658,8 +700,25 @@ export function usageCsv(journeys: UsageJourney[]): string {
 const USAGE_FILTERS: Array<[UsageListFilter, string]> = [
   ["all", "Alla"],
   ["active7", "Aktiva senaste 7 dagarna"],
+  ["active30", "Aktiva senaste 30 dagarna"],
   ["stuck", "Fastnat"],
+  ["drives0", "0 körpass"],
+  ["drives1", "1 körpass"],
   ["two", "2+ pass"],
+  ["drives5", "5+ körpass"],
+  ["drives10", "10+ körpass"],
+  ["no_supervisor", "Resa utan handledare"],
+  ["has_supervisor", "Har handledare"],
+  ["has_checkoffs", "Har avbockningar"],
+  ["no_checkoffs", "Saknar avbockningar"],
+  ["registered7", "Registrerade 7 dagar"],
+  ["registered30", "Registrerade 30 dagar"],
+  ["progress0", "Progression 0 %"],
+  ["progress1", "Progression 1–24 %"],
+  ["progress25", "Progression 25–49 %"],
+  ["progress50", "Progression 50–74 %"],
+  ["progress75", "Progression 75–99 %"],
+  ["progress100", "Progression 100 %"],
 ];
 
 function usageFilterBar(journeys: UsageJourney[]): string {
@@ -683,12 +742,36 @@ function usageFilterScript(): string {
       var buttons = document.querySelectorAll("[data-usage-filter]");
       var csv = document.querySelector("[data-usage-csv]");
       var week = ${USAGE_ACTIVE_WINDOW_MS};
+      var month = 30 * 24 * 60 * 60 * 1000;
       function match(row, filter) {
-        if (filter === "active7") {
-          return Date.now() - Date.parse(row.getAttribute("data-last-active")) <= week;
-        }
+        var completed = Number(row.getAttribute("data-completed"));
+        var supervisors = Number(row.getAttribute("data-supervisors"));
+        var checkoffs = Number(row.getAttribute("data-checkoffs"));
+        var progression = Number(row.getAttribute("data-progression"));
+        var created = Date.parse(row.getAttribute("data-created"));
+        var last = Date.parse(row.getAttribute("data-last-active"));
+        if (filter === "active7") return Date.now() - last <= week;
+        if (filter === "active30") return Date.now() - last <= month;
         if (filter === "stuck") return row.getAttribute("data-stuck") !== "through";
-        if (filter === "two") return Number(row.getAttribute("data-completed")) >= 2;
+        if (filter === "two") return completed >= 2;
+        if (filter === "drives0") return completed === 0;
+        if (filter === "drives1") return completed === 1;
+        if (filter === "drives5") return completed >= 5;
+        if (filter === "drives10") return completed >= 10;
+        if (filter === "no_supervisor") {
+          return row.getAttribute("data-has-journey") === "1" && supervisors === 0;
+        }
+        if (filter === "has_supervisor") return supervisors >= 1;
+        if (filter === "has_checkoffs") return checkoffs > 0;
+        if (filter === "no_checkoffs") return checkoffs === 0;
+        if (filter === "registered7") return Date.now() - created <= week;
+        if (filter === "registered30") return Date.now() - created <= month;
+        if (filter === "progress0") return progression <= 0;
+        if (filter === "progress1") return progression >= 1 && progression <= 24;
+        if (filter === "progress25") return progression >= 25 && progression <= 49;
+        if (filter === "progress50") return progression >= 50 && progression <= 74;
+        if (filter === "progress75") return progression >= 75 && progression <= 99;
+        if (filter === "progress100") return progression >= 100;
         return true;
       }
       function apply(filter) {
@@ -715,7 +798,11 @@ function usageFilterScript(): string {
   </script>`;
 }
 
-export function statistikPage(stats: AdminBetaStats, usage: AdminUsage): string {
+export function statistikPage(
+  stats: AdminBetaStats,
+  usage: AdminUsage,
+  product: AdminProductStats,
+): string {
   const funnel = [
     ["journey_created", stats.funnel.journeyCreated],
     ["supervisor_connected", stats.funnel.supervisorConnected],
@@ -728,7 +815,10 @@ export function statistikPage(stats: AdminBetaStats, usage: AdminUsage): string 
     "Statistik",
     `<main class="admin-shell admin-shell--wide">
        <h1>Statistik</h1>
-       <p>Beta-puls från körpass och bedömningar. Tabellen visar vem som fortfarande testar, var de fastnat och vilken app de kör. Europe/Stockholm.</p>
+       <p>Hur Körpasset används, räknat från körpass, moment och konton. Tabellen visar vem som fortfarande testar. Europe/Stockholm.</p>
+       ${productStatsSections(product)}
+       <h2>Beta-puls</h2>
+       <p class="muted">Den tidigare betamätningen ligger kvar under användningsstatistiken.</p>
        <section class="admin-kpis">
          ${kpi("Nya intresseanmälningar 7/30", `${stats.waitlistNew7d} / ${stats.waitlistNew30d}`)}
          ${kpi("Aktiva elevresor", `${stats.activeJourneys} / ${stats.betaGateTarget}`)}
@@ -768,24 +858,24 @@ export function statistikPage(stats: AdminBetaStats, usage: AdminUsage): string 
        <section>
          <h2>Vilka som använder appen</h2>
          <p>${usage.studentAccounts} elevkonton · ${usage.supervisorAccounts} handledarkonton · ${usage.accountsWithoutJourney} konton utan resa.</p>
-         <p class="muted">${usage.journeyTotal} elevresor, senast aktiva först. Senast aktiv är senaste appöppning, handledarkoppling, körpass eller bedömning. Plattform och build kommer från appen. “Anmälan:” är vad de kryssade i på väntelistan.</p>
+         <p class="muted">${usage.journeyTotal} elevresor, senast aktiva först. Klicka elevens namn för tidslinjen. Senast aktiv är senaste appöppning, handledarkoppling, körpass eller bedömning. Filtret Aktiv använder den tiden. Status räknas på servern från avslutade körpass. Plattform och build kommer från appen. “Anmälan:” är vad de kryssade i på väntelistan.</p>
          ${usageFilterBar(usage.journeys)}
          <p><a href="/admin/statistik.csv" data-usage-csv>Ladda ner resorna som CSV</a></p>
          <div class="admin-table-wrap">
            <table class="admin-table" id="usage-journeys">
              <thead>
                <tr>
-                 <th>Elev</th><th>Senast aktiv</th><th>Fastnat</th><th>Plattform</th><th>Handledare</th><th>Anmälan</th>
+                 <th>Elev</th><th>Registrerad</th><th>Senast aktiv</th><th>Senaste körpass</th><th>Antal körpass</th><th>Körpass 30 dagar</th><th>Körtid</th><th>Tränade moment</th><th>Unika moment</th><th>Avbockningar</th><th>Progression</th><th>Antal handledare</th><th>Status</th><th>Fastnat</th><th>Plattform</th><th>Handledare</th><th>Anmälan</th>
                </tr>
              </thead>
              <tbody>
                ${
                  journeyRows(usage.journeys) ||
-                 `<tr><td colspan="6">Ingen användning ännu.</td></tr>`
+                 `<tr><td colspan="17">Ingen användning ännu.</td></tr>`
                }
                ${
                  usage.journeys.length > 0
-                   ? `<tr data-usage-none hidden><td colspan="6">Inga rader i det här urvalet.</td></tr>`
+                   ? `<tr data-usage-none hidden><td colspan="17">Inga rader i det här urvalet.</td></tr>`
                    : ""
                }
              </tbody>

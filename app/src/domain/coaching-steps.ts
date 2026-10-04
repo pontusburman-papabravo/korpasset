@@ -208,6 +208,14 @@ export function coachingStepsForSkillKey(skillKey: string): CoachingStep[] {
   return STEPS[skillKey] ?? [];
 }
 
+/** Step counts for the current checklist. Used by admin stats, not stored in SQL. */
+export function coachingStepCatalog(): Array<{ skillKey: string; stepCount: number }> {
+  return Object.entries(STEPS).map(([skillKey, steps]) => ({
+    skillKey,
+    stepCount: steps.length,
+  }));
+}
+
 export function coachingStepLabel(
   skillKey: string,
   stepKey: string,

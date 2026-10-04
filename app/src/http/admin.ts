@@ -30,6 +30,8 @@ import {
   listRecentInterestSignups,
 } from "../services/admin-stats.js";
 import { filterUsageJourneys, getAdminUsage, usageListFilter } from "../services/admin-usage.js";
+import { getAdminProductStats, getJourneyUsageDetail, statsPeriod } from "../services/admin-product-stats.js";
+import { journeyUsageDetailBody } from "./admin-product-pages.js";
 import {
   getSupportUserView,
   searchSupport,
@@ -404,8 +406,42 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   app.get("/admin/statistik", async (request, reply) => {
     if (!(await requireAdmin(request, reply))) return;
-    const [stats, usage] = await Promise.all([getAdminBetaStats(), getAdminUsage()]);
-    return reply.type("text/html").send(statistikPage(stats, usage));
+    const query = request.query as { period?: string };
+    const period = statsPeriod(query.period);
+    const [stats, usage, product] = await Promise.all([
+      getAdminBetaStats(),
+      getAdminUsage(),
+      getAdminProductStats(period),
+    ]);
+    return reply.type("text/html").send(statistikPage(stats, usage, product));
+  });
+
+  app.get("/admin/statistik/resa/:journeyId", async (request, reply) => {
+    if (!(await requireAdmin(request, reply))) return;
+    const { journeyId } = request.params as { journeyId: string };
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(journeyId)) {
+      return reply.status(404).type("text/html").send(
+        adminPage("Saknas", `<main class="admin-shell"><p>Resan finns inte.</p></main>`, {
+          signedIn: true,
+          nav: "statistik",
+        }),
+      );
+    }
+    const detail = await getJourneyUsageDetail(journeyId);
+    if (!detail) {
+      return reply.status(404).type("text/html").send(
+        adminPage("Saknas", `<main class="admin-shell"><p>Resan finns inte.</p></main>`, {
+          signedIn: true,
+          nav: "statistik",
+        }),
+      );
+    }
+    return reply.type("text/html").send(
+      adminPage(detail.studentName, journeyUsageDetailBody(detail), {
+        signedIn: true,
+        nav: "statistik",
+      }),
+    );
   });
 
   app.get("/admin/statistik.csv", async (request, reply) => {
