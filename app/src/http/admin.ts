@@ -32,6 +32,7 @@ import {
 import { filterUsageJourneys, getAdminUsage, usageListFilter } from "../services/admin-usage.js";
 import { getAdminProductStats, getJourneyUsageDetail, statsPeriod, tipsFilter } from "../services/admin-product-stats.js";
 import { journeyUsageDetailBody } from "./admin-product-pages.js";
+import { listRecentProductMails } from "../services/admin-product-mail.js";
 import { latestJourneyWeeklyEmail } from "../services/weekly-summary-mail.js";
 import {
   getSupportUserView,
@@ -130,11 +131,12 @@ async function requireAdmin(
 export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   app.get("/admin", async (request, reply) => {
     if (!(await requireAdmin(request, reply))) return;
-    const [stats, recent] = await Promise.all([
+    const [stats, recent, mails] = await Promise.all([
       getAdminBetaStats(),
       listRecentInterestSignups(5),
+      listRecentProductMails(),
     ]);
-    return reply.type("text/html").send(overviewPage({ stats, recent }));
+    return reply.type("text/html").send(overviewPage({ stats, recent, mails }));
   });
 
   app.get("/admin/login", async (request, reply) => {

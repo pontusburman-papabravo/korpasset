@@ -61,7 +61,7 @@ Adressen lagras inte i tabellen. Loggen har vecka, konto-id, resa-id, tid, mall,
 
 ## Admin
 
-Resans tidslinje under Statistik visar senaste veckomejl: vecka, status, tid och mall. Det finns ingen knapp som skickar om.
+Översikten listar senaste produktmejl, hjälpmejl och veckomejl, med länk till kontot. Kontot visar alla veckomejl för den eleven. Resans tidslinje under Statistik visar fortfarande senaste veckomejl: vecka, status, tid och mall. Det finns ingen knapp som skickar om.
 
 ## Produktnotis
 

@@ -134,6 +134,21 @@ describe("stuck help emails", () => {
     assert.match(page.body, /Hjälpmejl/);
     assert.match(page.body, /Tidigt stopp: Ingen resa/);
     assert.match(page.body, /Ingen resa skickades/);
+    assert.match(page.body, /Inget veckomejl är skickat/);
+
+    const overview = await app.inject({
+      method: "GET",
+      url: "/admin",
+      cookies: { korpasset_admin: createAdminToken(admin.id) },
+    });
+    assert.equal(overview.statusCode, 200);
+    const mailStart = overview.body.indexOf("<section data-product-mail>");
+    const mailSection = overview.body.slice(mailStart, overview.body.indexOf("</section>", mailStart));
+    assert.match(mailSection, /Hjälpmejl · Ingen resa/);
+    assert.match(mailSection, /Skickat/);
+    assert.match(mailSection, /Nora/);
+    assert.match(mailSection, new RegExp(`/admin/users/${user.id}`));
+    assert.doesNotMatch(mailSection, /nora@example.com|<form|<button/i);
     await app.close();
   });
 

@@ -18,6 +18,7 @@ import {
   DIRECTORY_ACCOUNT_STATES,
   EDITABLE_ACCOUNT_STATES,
 } from "../services/admin-directory.js";
+import type { RecentProductMail } from "../services/admin-product-mail.js";
 import type {
   SupportSearchResult,
   SupportUserView,
@@ -244,6 +245,51 @@ function searchForm(query = ""): string {
   </form>`;
 }
 
+const PRODUCT_MAIL_STATUS: Record<RecentProductMail["status"], string> = {
+  sending: "Pågår",
+  sent: "Skickat",
+  failed: "Misslyckades",
+};
+
+function productMailLabel(mail: RecentProductMail): string {
+  if (mail.kind === "weekly") return `Veckomejl · ${mail.detail}`;
+  if (mail.detail === "no_journey") return "Hjälpmejl · Ingen resa";
+  if (mail.detail === "no_connected_supervisor") return "Hjälpmejl · Ingen ansluten handledare";
+  return "Hjälpmejl";
+}
+
+function productMailPerson(mail: RecentProductMail): string {
+  if (mail.accountState === "deleted") return "Tidigare användare";
+  const name = mail.displayName?.trim();
+  return name || "Namnlös";
+}
+
+function recentProductMailSection(mails: RecentProductMail[]): string {
+  const rows = mails
+    .map((mail) => {
+      const journey = mail.journeyId
+        ? ` <a href="/admin/statistik/resa/${escapeHtml(mail.journeyId)}">Resa</a>`
+        : "";
+      return `<tr>
+        <td>${escapeHtml(formatWhen(mail.at))}</td>
+        <td>${escapeHtml(productMailLabel(mail))}${journey}</td>
+        <td><a href="/admin/users/${escapeHtml(mail.accountId)}">${escapeHtml(productMailPerson(mail))}</a></td>
+        <td>${escapeHtml(PRODUCT_MAIL_STATUS[mail.status])}</td>
+      </tr>`;
+    })
+    .join("");
+  return `<section data-product-mail>
+    <h2>Senaste produktmejl</h2>
+    <p class="muted">Hjälpmejl i starten och veckomejl om elevens egen resa. Listan visar vad som redan har skickats. Inget mejl skickas härifrån.</p>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead><tr><th>När</th><th>Mejl</th><th>Person</th><th>Status</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="4">Inga produktmejl är skickade.</td></tr>`}</tbody>
+      </table>
+    </div>
+  </section>`;
+}
+
 export function overviewPage(options: {
   stats: AdminBetaStats;
   recent: Array<{
@@ -253,6 +299,7 @@ export function overviewPage(options: {
     status: string;
     createdAt: string;
   }>;
+  mails?: RecentProductMail[];
 }): string {
   const { stats, recent } = options;
   const recentRows = recent
@@ -316,6 +363,7 @@ export function overviewPage(options: {
          </table>
          <p><a href="/admin/signups">Alla intresseanmälningar</a></p>
        </section>
+       ${recentProductMailSection(options.mails ?? [])}
        ${searchForm()}
      </main>`,
     { signedIn: true, nav: "overview" },
@@ -1193,6 +1241,36 @@ function helpEmailSection(view: SupportUserView): string {
   </section>`;
 }
 
+function weeklyEmailsSection(view: SupportUserView): string {
+  const rows = view.weeklyEmails
+    .map((email) => {
+      const extra = [
+        email.error ? escapeHtml(email.error) : "",
+        email.providerMessageId ? `<code>${escapeHtml(email.providerMessageId)}</code>` : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      return `<tr>
+        <td>${escapeHtml(email.weekKey)}</td>
+        <td>${escapeHtml(PRODUCT_MAIL_STATUS[email.status])}${extra ? `<div class="muted">${extra}</div>` : ""}</td>
+        <td>${escapeHtml(formatWhen(email.at))}</td>
+        <td><a href="/admin/statistik/resa/${escapeHtml(email.journeyId)}">Resa</a></td>
+      </tr>`;
+    })
+    .join("");
+  const body = rows
+    ? `<div class="admin-table-wrap"><table class="admin-table">
+         <thead><tr><th>Vecka</th><th>Status</th><th>När</th><th></th></tr></thead>
+         <tbody>${rows}</tbody>
+       </table></div>`
+    : "<p>Inget veckomejl är skickat.</p>";
+  return `<section data-account-weekly-email>
+    <h2>Veckomejl</h2>
+    <p class="muted">Produktmejl till eleven om den egna resan. Handledare får inget eget veckomejl. Det skickas inte manuellt härifrån.</p>
+    ${body}
+  </section>`;
+}
+
 function loginSection(view: SupportUserView): string {
   if (view.accountState === "deleted") {
     return `<section>
@@ -1348,6 +1426,7 @@ export function supportUserPage(
          </table>
        </section>
        ${helpEmail}
+       ${weeklyEmailsSection(view)}
        ${waitlistNote}
        ${gdprForm}
      </main>`,

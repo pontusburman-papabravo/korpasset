@@ -1,5 +1,9 @@
 import { getPool } from "../db/pool.js";
 import {
+  listAccountWeeklyEmails,
+  type AccountWeeklyEmail,
+} from "./admin-product-mail.js";
+import {
   getAccountHelpEmailState,
   type AccountHelpEmailState,
 } from "./help-email.js";
@@ -63,6 +67,7 @@ export interface SupportUserView {
   observationCount: number;
   relatedWaitlist: SupportWaitlistHit[];
   helpEmail: AccountHelpEmailState | null;
+  weeklyEmails: AccountWeeklyEmail[];
   marketingOptIn: boolean;
   marketingConsentAt: string | null;
   marketingOptOutAt: string | null;
@@ -328,6 +333,7 @@ export async function getSupportUserView(userId: string): Promise<SupportUserVie
     observationCount: Number(counts.rows[0]?.observations ?? 0),
     relatedWaitlist,
     helpEmail: await getAccountHelpEmailState(user.id),
+    weeklyEmails: await listAccountWeeklyEmails(user.id),
     marketingOptIn: !deleted && user.marketing_email_opt_in === true,
     marketingConsentAt:
       deleted || user.marketing_email_consent_at == null

@@ -879,6 +879,37 @@ describe("weekly summary mail", () => {
     assert.match(section, /skickas inte manuellt/i);
     assert.doesNotMatch(section, /<form|<button/i);
     assert.doesNotMatch(page.body, /nora@example.com/);
+
+    const account = await app.inject({
+      method: "GET",
+      url: `/admin/users/${student.userId}`,
+      cookies: { korpasset_admin: createAdminToken(admin.id) },
+    });
+    assert.equal(account.statusCode, 200);
+    const accountStart = account.body.indexOf("<section data-account-weekly-email>");
+    const accountSection = account.body.slice(
+      accountStart,
+      account.body.indexOf("</section>", accountStart),
+    );
+    assert.match(accountSection, new RegExp(week.weekKey));
+    assert.match(accountSection, /Skickat/);
+    assert.match(accountSection, new RegExp(`/admin/statistik/resa/${student.journey.id}`));
+    assert.doesNotMatch(accountSection, /<form|<button/i);
+
+    const overview = await app.inject({
+      method: "GET",
+      url: "/admin",
+      cookies: { korpasset_admin: createAdminToken(admin.id) },
+    });
+    assert.equal(overview.statusCode, 200);
+    const mailStart = overview.body.indexOf("<section data-product-mail>");
+    const mailSection = overview.body.slice(mailStart, overview.body.indexOf("</section>", mailStart));
+    assert.match(mailSection, /Veckomejl/);
+    assert.match(mailSection, new RegExp(week.weekKey));
+    assert.match(mailSection, /Skickat/);
+    assert.match(mailSection, /Nora/);
+    assert.match(mailSection, new RegExp(`/admin/users/${student.userId}`));
+    assert.doesNotMatch(mailSection, /nora@example.com|<form|<button/i);
     await app.close();
   });
 });
