@@ -70,6 +70,10 @@ Skriptet frågar efter lösenord (minst 12 tecken), hashar med Argon2id och skri
 - Ordning: token skapas i DB, sedan skickas mejl. Misslyckad send loggas utan token/lösenord. Publikt svar är alltid neutralt.
 - Password reset sätter `password_changed_at` så äldre admin-cookies slutar gälla.
 
+### Veckomejl
+
+Söndagar från kl 18:00 Europe/Stockholm skickas en produktsammanfattning till eleven på en aktiv körkortsresa, om veckan haft ett genomfört körpass, en momentträning eller en avbockning. Reglerna, mottagarna och dublettskyddet finns i [weekly-summary-email.md](weekly-summary-email.md). Jobbet startar med appen och tittar var 15:e minut. En missad söndag skickas inte i efterhand.
+
 ### Resend webhook
 
 Samma mönster som My Starday: `POST /api/resend/webhook`.

@@ -17,6 +17,12 @@ import {
   type UsageSnapshot,
   type UsageWindows,
 } from "./usage-metrics.js";
+import {
+  APPLICABLE_SKILL_SQL as APPLICABLE,
+  ASSESSMENT_SCORE_SQL as SCORE,
+  CANONICAL_OBSERVATION_SQL as CANONICAL,
+  latestSkillBeforeSql,
+} from "./usage-stats-sql.js";
 
 /**
  * Admin product usage. Aggregated on the server from domain tables.
@@ -41,6 +47,9 @@ import {
  * - Raderade konton ingår inte i konton, elever, handledare eller aktiva
  *   användare. Admin-inloggningar ligger i admin_users och räknas inte.
  * - En elev med flera handledare är en resa och en elev.
+ *
+ * Körpass, momentträning, avbockning och progression delas med veckomejlet
+ * via usage-stats-sql.ts.
  */
 
 /** Last N Stockholm calendar days, including today. */
@@ -53,25 +62,7 @@ const START_7 = stockholmStart(7);
 const START_14 = stockholmStart(14);
 const START_30 = stockholmStart(30);
 const START_90 = stockholmStart(90);
-
-const CANONICAL = `
-  SELECT DISTINCT ON (o.journey_id, o.drive_id, o.skill_id)
-         o.journey_id,
-         o.drive_id,
-         o.skill_id,
-         o.assessment,
-         o.completed_step_keys,
-         o.observed_at
-  FROM drive_observations o
-  WHERE NOT EXISTS (
-    SELECT 1
-    FROM drive_observations newer
-    WHERE newer.supersedes_observation_id = o.id
-      AND newer.journey_id = o.journey_id
-  )
-  ORDER BY o.journey_id, o.drive_id, o.skill_id,
-           o.observed_at DESC, o.created_at DESC, o.id DESC
-`;
+const LATEST_SKILL_BEFORE_30 = latestSkillBeforeSql(START_30);
 
 const LATEST_SKILL = `
   SELECT DISTINCT ON (o.journey_id, o.skill_id)
@@ -84,41 +75,6 @@ const LATEST_SKILL = `
       AND newer.journey_id = o.journey_id
   )
   ORDER BY o.journey_id, o.skill_id, o.observed_at DESC, o.created_at DESC, o.id DESC
-`;
-
-const LATEST_SKILL_BEFORE_30 = `
-  SELECT DISTINCT ON (o.journey_id, o.skill_id)
-         o.journey_id, o.skill_id, o.assessment
-  FROM drive_observations o
-  WHERE o.observed_at < ${START_30}
-    AND NOT EXISTS (
-      SELECT 1
-      FROM drive_observations newer
-      WHERE newer.supersedes_observation_id = o.id
-        AND newer.journey_id = o.journey_id
-        AND newer.observed_at < ${START_30}
-    )
-  ORDER BY o.journey_id, o.skill_id, o.observed_at DESC, o.created_at DESC, o.id DESC
-`;
-
-const APPLICABLE = `
-  SELECT j.id AS journey_id, s.id AS skill_id
-  FROM driving_journeys j
-  JOIN skills s ON true
-  JOIN skill_definitions sd ON sd.skill_id = s.id AND sd.taxonomy_version = 1
-  WHERE NOT (
-    j.transmission_scope = 'automatic_only'
-    AND s.skill_key = 'car_control_gear_shifting'
-  )
-`;
-
-const SCORE = `
-  CASE assessment
-    WHEN 'needs_help' THEN 1
-    WHEN 'with_support' THEN 2
-    WHEN 'independent' THEN 3
-    ELSE 0
-  END
 `;
 
 export const STATS_PERIODS = ["7", "30", "90", "all"] as const;

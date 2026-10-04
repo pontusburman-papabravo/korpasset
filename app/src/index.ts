@@ -4,6 +4,7 @@ import { applyMigrations } from "./db/migrate.js";
 import { seedTaxonomy } from "./db/seed-taxonomy.js";
 import { startHelpEmailJob } from "./jobs/help-email.js";
 import { startWaitlistRetentionJob } from "./jobs/waitlist-retention.js";
+import { startWeeklySummaryJob } from "./jobs/weekly-summary.js";
 
 function logFatal(error: unknown): void {
   const message = error instanceof Error ? error.stack ?? error.message : String(error);
@@ -45,6 +46,7 @@ async function main(): Promise<void> {
   }
   startWaitlistRetentionJob(app.log);
   startHelpEmailJob(app.log);
+  startWeeklySummaryJob(app.log);
   app.log.info(
     {
       url: config.appBaseUrl,

@@ -249,6 +249,7 @@ describe("production foundation / fresh database migrate", () => {
       "0017_oauth_handoffs.sql",
       "0018_user_client_seen.sql",
       "0019_account_help_emails.sql",
+      "0020_journey_weekly_emails.sql",
     ]);
     assert.deepEqual(first.stamped, []);
 
@@ -331,6 +332,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
       "0017_oauth_handoffs.sql",
       "0018_user_client_seen.sql",
       "0019_account_help_emails.sql",
+      "0020_journey_weekly_emails.sql",
     ]);
     assert.deepEqual(first.skipped, []);
 
@@ -369,7 +371,8 @@ describe("production foundation / existing 0001 without schema_migrations", () =
         "0016_auth_identity_apple_refresh_token.sql",
         "0017_oauth_handoffs.sql",
         "0018_user_client_seen.sql",
-      "0019_account_help_emails.sql",
+        "0019_account_help_emails.sql",
+        "0020_journey_weekly_emails.sql",
       ],
     );
 

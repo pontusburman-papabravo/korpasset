@@ -18,11 +18,16 @@ export interface OutboundEmail {
   to: string;
   subject: string;
   text: string;
+  html?: string;
   replyTo?: string;
 }
 
+export interface MailSendResult {
+  id: string | null;
+}
+
 export interface Mailer {
-  send(email: OutboundEmail): Promise<void>;
+  send(email: OutboundEmail): Promise<MailSendResult | void>;
 }
 
 export class EmailSendError extends Error {
@@ -52,12 +57,21 @@ function resendMailer(): Mailer {
           to: [email.to],
           subject: email.subject,
           text: email.text,
+          ...(email.html ? { html: email.html } : {}),
           ...(email.replyTo ? { reply_to: [email.replyTo] } : {}),
         }),
       });
       if (!response.ok) {
         throw new EmailSendError(`Resend responded ${response.status}`);
       }
+      let id: string | null = null;
+      try {
+        const payload = (await response.json()) as { id?: unknown };
+        if (typeof payload.id === "string" && payload.id.trim()) id = payload.id.trim();
+      } catch {
+        id = null;
+      }
+      return { id };
     },
   };
 }

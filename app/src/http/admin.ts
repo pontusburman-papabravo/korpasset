@@ -32,6 +32,7 @@ import {
 import { filterUsageJourneys, getAdminUsage, usageListFilter } from "../services/admin-usage.js";
 import { getAdminProductStats, getJourneyUsageDetail, statsPeriod } from "../services/admin-product-stats.js";
 import { journeyUsageDetailBody } from "./admin-product-pages.js";
+import { latestJourneyWeeklyEmail } from "../services/weekly-summary-mail.js";
 import {
   getSupportUserView,
   searchSupport,
@@ -427,7 +428,10 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
         }),
       );
     }
-    const detail = await getJourneyUsageDetail(journeyId);
+    const [detail, weeklyEmail] = await Promise.all([
+      getJourneyUsageDetail(journeyId),
+      latestJourneyWeeklyEmail(journeyId),
+    ]);
     if (!detail) {
       return reply.status(404).type("text/html").send(
         adminPage("Saknas", `<main class="admin-shell"><p>Resan finns inte.</p></main>`, {
@@ -437,7 +441,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       );
     }
     return reply.type("text/html").send(
-      adminPage(detail.studentName, journeyUsageDetailBody(detail), {
+      adminPage(detail.studentName, journeyUsageDetailBody(detail, weeklyEmail), {
         signedIn: true,
         nav: "statistik",
       }),

@@ -16,6 +16,7 @@ import {
   formatShare,
   type JourneyUsageStatus,
 } from "../services/usage-metrics.js";
+import type { JourneyWeeklyEmailRecord } from "../services/weekly-summary-mail.js";
 import { escapeHtml } from "./layout.js";
 
 function formatWhen(iso: string): string {
@@ -418,7 +419,29 @@ function areaCells(area: AreaUsageRow): string[] {
   ];
 }
 
-export function journeyUsageDetailBody(detail: JourneyUsageDetail): string {
+const WEEKLY_EMAIL_STATUS: Record<JourneyWeeklyEmailRecord["status"], string> = {
+  sending: "Pågår",
+  sent: "Skickat",
+  failed: "Misslyckades",
+};
+
+function weeklyEmailSection(email: JourneyWeeklyEmailRecord | null): string {
+  const latest = email
+    ? `<p>Vecka ${escapeHtml(email.weekKey)}. ${escapeHtml(WEEKLY_EMAIL_STATUS[email.status])}. ${
+        email.sentAt ? escapeHtml(formatWhen(email.sentAt)) : "—"
+      }. ${escapeHtml(email.template)}.</p>`
+    : `<p>Inget veckomejl är skickat för den här resan.</p>`;
+  return `<section data-weekly-email>
+      <h2>Veckomejl</h2>
+      <p class="muted">Produktmejl till eleven på söndagar från kl 18, svensk tid, när veckan har haft aktivitet. Det skickas inte manuellt härifrån.</p>
+      ${latest}
+    </section>`;
+}
+
+export function journeyUsageDetailBody(
+  detail: JourneyUsageDetail,
+  weeklyEmail: JourneyWeeklyEmailRecord | null = null,
+): string {
   const summary = detail.summary;
   const rows = detail.timeline
     .map(
@@ -444,6 +467,7 @@ export function journeyUsageDetailBody(detail: JourneyUsageDetail): string {
         ${kpi("Progression", `${summary.progressionPercent} %`)}
       </div>
       <p><a href="/admin/users/${escapeHtml(detail.studentUserId)}">Öppna kontot</a></p>
+      ${weeklyEmailSection(weeklyEmail)}
       <div class="admin-table-wrap">
         <table class="admin-table">
           <thead><tr><th>När</th><th>Händelse</th><th>Detalj</th></tr></thead>
