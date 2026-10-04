@@ -1,0 +1,2466 @@
+{
+  "status": "draft",
+  "notRuntime": true,
+  "lastUpdated": "2026-09-15",
+  "taxonomyVersion": 1,
+  "locale": "sv-SE",
+  "licenseClass": "B",
+  "artifact": "skill-context-progression-v1",
+  "description": "Per-skill starting contexts, context ladders, and supervisor assessment guidance.",
+  "contextCombinationRule": {
+    "rule": "Per-skill context ladder — no global environment ranking. Increase at most one ordinal dimension (traffic/light/weather) after independent within the skill's ladder model; needs_help → same or easier step.",
+    "dataType": "PRODUCT HYPOTHESIS"
+  },
+  "skills": [
+    {
+      "skillKey": "car_control_pre_drive_check",
+      "title": "Säkerhetskontroll",
+      "contextSensitivity": "none",
+      "contextNote": "Kontextoberoende — miljö/trafik påverkar inte momentets svårighetsgrad.",
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "none",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "En representativ startkontext",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid säkerhetskontroll. Eleven gör en enkel kontroll av bilen och körställning innan ni kör: ljus, däck, vätskor, speglar, stol, bälte.",
+        "with_support": "Med stöd: eleven klarar säkerhetskontroll när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar säkerhetskontroll själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "car_control_smooth_start_stop",
+      "title": "Start och stannande",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": "Progression via trafik och förhållanden i samma övningsmiljö.",
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Introduktion",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Ökad trafik, samma miljö",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "dusk_dawn",
+          "weather": "dry",
+          "ladderNote": "Sämre sikt, samma miljö",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid start och stannande. Eleven får i gång bilen och stannar den mjukt, utan ryck, rullning eller onödiga motorstopp.",
+        "with_support": "Med stöd: eleven klarar start och stannande när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar start och stannande själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "car_control_braking",
+      "title": "Bromsning",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Grundbroms i lugn miljö",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Mer trafik, samma miljö",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "rain",
+          "ladderNote": "Sämre grepp, samma miljö",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 4,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "dusk_dawn",
+          "weather": "rain",
+          "ladderNote": "Kombinerade förhållanden",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid bromsning. Eleven doserar bromsen så att farten sjunker i tid, mjukt i vanlig körning och bestämt när det behövs.",
+        "with_support": "Med stöd: eleven klarar bromsning när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar bromsning själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "car_control_gear_shifting",
+      "title": "Växling",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Växling i lugn fart",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Växling med mer trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "dusk_dawn",
+          "weather": "dry",
+          "ladderNote": "Växling vid sämre sikt",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid växling. Eleven väljer och byter växel i tid, utan att tappa uppmärksamheten från vägen.",
+        "with_support": "Med stöd: eleven klarar växling när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar växling själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "car_control_speed_adaptation",
+      "title": "Hastighetsanpassning",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Grundfart",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Fartanpassning med mer trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "residential",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Tät trafik, samma miljö",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 4,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "dusk_dawn",
+          "weather": "rain",
+          "ladderNote": "Sämre sikt och grepp",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid hastighetsanpassning. Eleven håller en fart som passar skylt, sikt, väglag och trafik — inte bara den skyltade maxfarten.",
+        "with_support": "Med stöd: eleven klarar hastighetsanpassning när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar hastighetsanpassning själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "observation_mirror_routine",
+      "title": "Spegelrutin",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Etablera rutin",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Rutin under mer trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "dusk_dawn",
+          "weather": "dry",
+          "ladderNote": "Rutin vid sämre sikt",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid spegelrutin. Eleven tittar i speglarna före fartsänkning, sväng, körfältsbyte och när något händer bakom.",
+        "with_support": "Med stöd: eleven klarar spegelrutin när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar spegelrutin själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "observation_blind_spot",
+      "title": "Döda vinkeln",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "urban"
+        ],
+        "traffic": [
+          "moderate"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Typisk stadsmiljö för döda vinkeln",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "urban",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Mer sidotrafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "dusk_dawn",
+          "weather": "dry",
+          "ladderNote": "Sämre sikt",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid döda vinkeln. Eleven tar en kontrollblick över axeln innan körfältsbyte, start från kant och sväng där det behövs.",
+        "with_support": "Med stöd: eleven klarar döda vinkeln när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar döda vinkeln själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "observation_signaling",
+      "title": "Tecken och blinkers",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Blinkers i lugn miljö",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Tecken med mer trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "dusk_dawn",
+          "weather": "dry",
+          "ladderNote": "Tecken vid sämre sikt",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid tecken och blinkers. Eleven visar avsikt i tid — blinkers, och ibland tecken med hand — och släcker när momentet är klart.",
+        "with_support": "Med stöd: eleven klarar tecken och blinkers när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar tecken och blinkers själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "observation_scanning",
+      "title": "Avsökning",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Grundavsökning",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Mer att scanna",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "residential",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Tät trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 4,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "dusk_dawn",
+          "weather": "dry",
+          "ladderNote": "Sämre sikt",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid avsökning. Eleven letar långt fram, åt sidorna och efter det som kan hända — inte bara på bilen framför.",
+        "with_support": "Med stöd: eleven klarar avsökning när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar avsökning själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "positioning_road_position",
+      "title": "Placering på vägen",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Grundplacering",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Placering med mer trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "residential",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Placering i tät trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 4,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "dusk_dawn",
+          "weather": "rain",
+          "ladderNote": "Placering under sämre förhållanden",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid placering på vägen. Eleven ligger rätt i körfältet — inte för nära kant, mittlinje, parkerade bilar eller mötande.",
+        "with_support": "Med stöd: eleven klarar placering på vägen när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar placering på vägen själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "positioning_lane_selection",
+      "title": "Val av körfält",
+      "contextSensitivity": "environment-bound",
+      "contextNote": "Körfältsval kräver fler körfält — typiskt urban eller highway.",
+      "recommendedStartingContexts": {
+        "environment": [
+          "urban"
+        ],
+        "traffic": [
+          "moderate"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "environment-bound",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Körfältsval i stad",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "urban",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Tät stadstrafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "highway",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Körfältsval på motorväg (egen arena)",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid val av körfält. Eleven väljer körfält efter vart hen ska, inte efter att alla andra ligger här.",
+        "with_support": "Med stöd: eleven klarar val av körfält när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar val av körfält själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "positioning_lane_change",
+      "title": "Körfältsbyte",
+      "contextSensitivity": "environment-bound",
+      "contextNote": "Körfältsbyte i miljöer med flera körfält.",
+      "recommendedStartingContexts": {
+        "environment": [
+          "urban"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "environment-bound",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "urban",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Enkelt körfältsbyte",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Mer trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "highway",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Körfältsbyte på motorväg",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 4,
+          "environment": "highway",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Tät motorvägstrafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid körfältsbyte. Eleven planerar bytet, speglar, blinkar, tar döda vinkeln och byter med avstånd till andra.",
+        "with_support": "Med stöd: eleven klarar körfältsbyte när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar körfältsbyte själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "positioning_turning",
+      "title": "Sväng",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Enkel sväng",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Sväng med mer trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Sväng i stad (arena med fler möten, ej strikt svårare)",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid sväng. Eleven närmar sig, placerar sig och spårar genom svängen utan att skära eller svänga för vitt.",
+        "with_support": "Med stöd: eleven klarar sväng när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar sväng själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "intersections_right_hand_rule",
+      "title": "Högerregeln",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Enkel korsning",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Mer korsande trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Stadskorsning (alternativ arena)",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid högerregeln. Eleven känner igen korsningar utan väjningsmärke och lämnar företräde åt höger när det krävs.",
+        "with_support": "Med stöd: eleven klarar högerregeln när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar högerregeln själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "intersections_give_way",
+      "title": "Väjningsplikt och stopp",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Väjning i lugn korsning",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Mer trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Stadskorsning",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 4,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "dusk_dawn",
+          "weather": "rain",
+          "ladderNote": "Sämre sikt och grepp",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid väjningsplikt och stopp. Eleven stannar eller lämnar företräde när märken, linjer eller sikt kräver det, och kör ut först när luckan räcker.",
+        "with_support": "Med stöd: eleven klarar väjningsplikt och stopp när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar väjningsplikt och stopp själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "intersections_traffic_lights",
+      "title": "Trafikljus",
+      "contextSensitivity": "environment-bound",
+      "contextNote": "Signalkorsningar finns främst i urban miljö.",
+      "recommendedStartingContexts": {
+        "environment": [
+          "urban"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "environment-bound",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "urban",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Enkel signal",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Mer trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "urban",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Tät trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 4,
+          "environment": "urban",
+          "traffic": "heavy",
+          "light": "night",
+          "weather": "dry",
+          "ladderNote": "Nattkörning",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid trafikljus. Eleven anpassar farten mot ljuset, är beredd på skifte och hamnar inte i korsningen på rött.",
+        "with_support": "Med stöd: eleven klarar trafikljus när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar trafikljus själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "roundabout_entry",
+      "title": "Infart i rondell",
+      "contextSensitivity": "environment-bound",
+      "contextNote": "Rondeller finns främst i urban miljö.",
+      "recommendedStartingContexts": {
+        "environment": [
+          "urban"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "environment-bound",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "urban",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Enkel rondell",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Mer trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "urban",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Tät rondelltrafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid infart i rondell. Eleven sänker farten, lämnar företräde åt trafiken i cirkulationen och tar en lucka utan att stanna i onödan.",
+        "with_support": "Med stöd: eleven klarar infart i rondell när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar infart i rondell själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "roundabout_positioning",
+      "title": "Placering i rondell",
+      "contextSensitivity": "environment-bound",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "urban"
+        ],
+        "traffic": [
+          "moderate"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "environment-bound",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Placering i rondell",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "urban",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Tät trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "urban",
+          "traffic": "heavy",
+          "light": "dusk_dawn",
+          "weather": "rain",
+          "ladderNote": "Sämre förhållanden",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid placering i rondell. Eleven väljer rätt läge i cirkulationen, särskilt i flerfältsrondell, och håller spåret utan att skära.",
+        "with_support": "Med stöd: eleven klarar placering i rondell när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar placering i rondell själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "roundabout_exit",
+      "title": "Utfart ur rondell",
+      "contextSensitivity": "environment-bound",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "urban"
+        ],
+        "traffic": [
+          "moderate"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "environment-bound",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Utfart",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "urban",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Utfart under tät trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "urban",
+          "traffic": "heavy",
+          "light": "dusk_dawn",
+          "weather": "dry",
+          "ladderNote": "Sämre sikt",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid utfart ur rondell. Eleven visar tecken i tid, byter till ytterläge om det behövs och lämnar rondellen utan att störa andra.",
+        "with_support": "Med stöd: eleven klarar utfart ur rondell när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar utfart ur rondell själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "urban_vulnerable_road_users",
+      "title": "Oskyddade trafikanter",
+      "contextSensitivity": "multi-venue",
+      "contextNote": "Oskyddade trafikanter i bostads- och stadsmiljö — arenor utan global ranking.",
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "multi-venue",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Gående/cyklister i bostadsområde",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Stadsmiljö med fler möten",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "urban",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Tät stadstrafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 4,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "dusk_dawn",
+          "weather": "dry",
+          "ladderNote": "Sämre sikt",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid oskyddade trafikanter. Eleven upptäcker gående, cyklister och barn i tid och anpassar fart, lucka och ögonkontakt.",
+        "with_support": "Med stöd: eleven klarar oskyddade trafikanter när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar oskyddade trafikanter själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "urban_passing_stationary",
+      "title": "Passera stillastående fordon",
+      "contextSensitivity": "environment-bound",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "urban"
+        ],
+        "traffic": [
+          "moderate"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "environment-bound",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Passera stillastående",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "urban",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Tät stadstrafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid passera stillastående fordon. Eleven sänker farten och lämnar lucka när hen passerar parkerade bilar, buss i hållplats eller andra stillastående hinder.",
+        "with_support": "Med stöd: eleven klarar passera stillastående fordon när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar passera stillastående fordon själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "urban_tight_spaces",
+      "title": "Trånga gator",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Trång bostadsgata",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Möte i trång gata med trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Trång stadsgata (alternativ arena)",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid trånga gator. Eleven tar sig fram där det är smalt — bilar på båda sidor, mötande i villagata — utan att skrapa eller frysa.",
+        "with_support": "Med stöd: eleven klarar trånga gator när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar trånga gator själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "rural_joining_and_leaving",
+      "title": "Infart och avfart på landsväg",
+      "contextSensitivity": "environment-bound",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "rural"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "environment-bound",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "rural",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Infart/sväng på landsväg",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "rural",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Mer trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "rural",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Tät landsvägstrafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid infart och avfart på landsväg. Eleven kommer ut på, och svänger av från, en mer högtrafikerad landsväg med rätt fart, placering och tecken.",
+        "with_support": "Med stöd: eleven klarar infart och avfart på landsväg när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar infart och avfart på landsväg själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "rural_curves",
+      "title": "Kurvor på landsväg",
+      "contextSensitivity": "environment-bound",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "rural"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "environment-bound",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "rural",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Kurva i lugn fart",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "rural",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Kurva med mer trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "rural",
+          "traffic": "moderate",
+          "light": "dusk_dawn",
+          "weather": "rain",
+          "ladderNote": "Kurva under sämre förhållanden",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid kurvor på landsväg. Eleven läser kurvan, sänker före, placerar sig och gasar ut utan att skära eller bromsa mitt i.",
+        "with_support": "Med stöd: eleven klarar kurvor på landsväg när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar kurvor på landsväg själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "rural_meeting_traffic",
+      "title": "Möte",
+      "contextSensitivity": "environment-bound",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "rural"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "environment-bound",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "rural",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Möte på landsväg",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "rural",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Möte med mer trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "rural",
+          "traffic": "moderate",
+          "light": "dusk_dawn",
+          "weather": "dry",
+          "ladderNote": "Möte vid sämre sikt",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid möte. Eleven möter andra fordon med rätt lucka, fart och placering, även på smal väg.",
+        "with_support": "Med stöd: eleven klarar möte när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar möte själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "rural_passing",
+      "title": "Omkörning",
+      "contextSensitivity": "environment-bound",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "rural"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "environment-bound",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "rural",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Omkörning på landsväg",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "rural",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Omkörning med mer trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid omkörning. Eleven väljer plats, visar tecken, accelererar och går tillbaka utan att skära in för tidigt.",
+        "with_support": "Med stöd: eleven klarar omkörning när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar omkörning själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "highway_merging",
+      "title": "Påfart",
+      "contextSensitivity": "environment-bound",
+      "contextNote": "Endast motorväg; progression via trafik.",
+      "recommendedStartingContexts": {
+        "environment": [
+          "highway"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "environment-bound",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "highway",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Påfart",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "highway",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Påfart med mer trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "highway",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Tät motorvägstrafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid påfart. Eleven använder accelerationsfältet, speglar, blinkar och smälter in i luckan utan att stanna på rampen.",
+        "with_support": "Med stöd: eleven klarar påfart när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar påfart själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "highway_lane_discipline",
+      "title": "Körfält på motorväg",
+      "contextSensitivity": "environment-bound",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "highway"
+        ],
+        "traffic": [
+          "moderate"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "environment-bound",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "highway",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Körfältsdisciplin",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "highway",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Tät trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "highway",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "rain",
+          "ladderNote": "Regn på motorväg",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid körfält på motorväg. Eleven håller höger när det går, använder vänster till omkörning och håller jämn placering i hög fart.",
+        "with_support": "Med stöd: eleven klarar körfält på motorväg när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar körfält på motorväg själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "highway_exiting",
+      "title": "Avfart",
+      "contextSensitivity": "environment-bound",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "highway"
+        ],
+        "traffic": [
+          "moderate"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "environment-bound",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "highway",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Avfart",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "highway",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Avfart under tät trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid avfart. Eleven planerar avfarten i tid, byter fält, blinkar och sänker farten på decelerationsfältet — inte ute i körfältet.",
+        "with_support": "Med stöd: eleven klarar avfart när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar avfart själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "maneuver_reversing",
+      "title": "Backning",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Backning på tom yta",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Backning med lätt sidotrafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid backning. Eleven backar rakt och i sväng med uppsikt, långsamt och utan att gissa sig fram.",
+        "with_support": "Med stöd: eleven klarar backning när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar backning själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "maneuver_hill_start",
+      "title": "Start i lutning",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Start i lutning, lugn miljö",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Start i lutning med trafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid start i lutning. Eleven startar i motlut och medlut utan att rulla okontrollerat bakåt eller framåt.",
+        "with_support": "Med stöd: eleven klarar start i lutning när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar start i lutning själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "maneuver_parallel_parking",
+      "title": "Parallellparkering",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Parkering i ficka",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Parkering med lätt sidotrafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "urban",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Parkering i stad (alternativ arena)",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid parallellparkering. Eleven parkerar längs gatan, vanligen genom att backa in, med kontroll på hörn och trafik.",
+        "with_support": "Med stöd: eleven klarar parallellparkering när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar parallellparkering själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "maneuver_parking",
+      "title": "Övrig parkering",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Parkering på plats",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Parkering med lätt sidotrafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid övrig parkering. Eleven parkerar på tomt, vinkelplats eller annan ficka som inte är klassisk parallellparkering.",
+        "with_support": "Med stöd: eleven klarar övrig parkering när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar övrig parkering själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "maneuver_turning_around",
+      "title": "Vändning",
+      "contextSensitivity": "traffic_and_conditions",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "traffic_and_conditions",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Vändning på lugn plats",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "rural",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Vändning på landsväg (alternativ arena)",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid vändning. Eleven väljer en säker plats och vänder — trepunkt, slinga eller motsvarande — med uppsikt.",
+        "with_support": "Med stöd: eleven klarar vändning när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar vändning själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "independent_route_planning",
+      "title": "Köra mot mål",
+      "contextSensitivity": "multi-venue",
+      "contextNote": "Självständig körning mot mål i varierande arenor — ingen global miljöranking.",
+      "recommendedStartingContexts": {
+        "environment": [
+          "urban"
+        ],
+        "traffic": [
+          "moderate"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "multi-venue",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Navigering i stad",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "urban",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Navigering i tät stad",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "rural",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Navigering på landsväg (alternativ arena)",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid köra mot mål. Eleven hittar fram mot ett mål själv — känt mål eller skyltat — och rättar till om hen kör fel.",
+        "with_support": "Med stöd: eleven klarar köra mot mål när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar köra mot mål själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "independent_risk_awareness",
+      "title": "Riskmedvetenhet",
+      "contextSensitivity": "multi-venue",
+      "contextNote": "Riskmedvetenhet i flera arenor — miljöbyte är inte samma sak som strikt svårighetssteg.",
+      "recommendedStartingContexts": {
+        "environment": [
+          "residential"
+        ],
+        "traffic": [
+          "light"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "multi-venue",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "residential",
+          "traffic": "light",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Grund i lugn miljö",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "residential",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Mer stimuli",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Stadsmiljö (alternativ arena)",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 4,
+          "environment": "highway",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Motorväg (alternativ arena)",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 5,
+          "environment": "residential",
+          "traffic": "heavy",
+          "light": "night",
+          "weather": "rain",
+          "ladderNote": "Sammansatta förhållanden",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid riskmedvetenhet. Eleven ser risker i tid och agerar tidigt — sänker, väntar, byter plan — utan att handledaren behöver peka.",
+        "with_support": "Med stöd: eleven klarar riskmedvetenhet när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar riskmedvetenhet själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "independent_safety_margins",
+      "title": "Säkerhetsmarginaler",
+      "contextSensitivity": "multi-venue",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "urban"
+        ],
+        "traffic": [
+          "moderate"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "multi-venue",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Marginaler i stad",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "rural",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Marginaler på landsväg",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "highway",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Marginaler på motorväg",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 4,
+          "environment": "highway",
+          "traffic": "heavy",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Tät motorvägstrafik",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid säkerhetsmarginaler. Eleven håller avstånd framåt, åt sidorna och i tid — inte stötvis, inte tätt inpå.",
+        "with_support": "Med stöd: eleven klarar säkerhetsmarginaler när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar säkerhetsmarginaler själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    },
+    {
+      "skillKey": "independent_eco_driving",
+      "title": "Sparsam körning",
+      "contextSensitivity": "multi-venue",
+      "contextNote": null,
+      "recommendedStartingContexts": {
+        "environment": [
+          "urban"
+        ],
+        "traffic": [
+          "moderate"
+        ],
+        "light": [
+          "daylight"
+        ],
+        "weather": [
+          "dry"
+        ],
+        "contextSensitivity": "multi-venue",
+        "dataType": "PEDAGOGICAL PRACTICE"
+      },
+      "contextProgression": [
+        {
+          "step": 1,
+          "environment": "urban",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Eco i stad",
+          "dataType": "PEDAGOGICAL PRACTICE"
+        },
+        {
+          "step": 2,
+          "environment": "rural",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Eco på landsväg",
+          "dataType": "PRODUCT HYPOTHESIS"
+        },
+        {
+          "step": 3,
+          "environment": "highway",
+          "traffic": "moderate",
+          "light": "daylight",
+          "weather": "dry",
+          "ladderNote": "Eco på motorväg",
+          "dataType": "PRODUCT HYPOTHESIS"
+        }
+      ],
+      "progressionGuidance": {
+        "needs_help": "repeat_same_or_easier",
+        "with_support": "repeat_similar",
+        "independent": "increase_context_or_adjacent_skill",
+        "dataType": "PRODUCT HYPOTHESIS"
+      },
+      "assessmentCriteria": {
+        "needs_help": "Behöver hjälp: handledaren måste ofta ingripa, påminna eller korrigera vid sparsam körning. Eleven planerar så att hen kan rulla, undvika onödiga stopp och hålla jämn fart utan att jaga växlar.",
+        "with_support": "Med stöd: eleven klarar sparsam körning när handledaren påminner eller guidar vid behov, men behöver inte ta över.",
+        "independent": "Självständig: eleven hanterar sparsam körning själv i aktuellt context utan att handledaren behöver korrigera.",
+        "dataType": "PRODUCT HYPOTHESIS",
+        "note": "Formulerat för handledares tap-to-rate — inte officiella betygskriterier."
+      }
+    }
+  ]
+}
