@@ -92,6 +92,8 @@ describe("public legal pages", () => {
     assert.match(privacy.body, /under Konto/);
     assert.match(privacy.body, /avregistrera dig utan att logga in/);
     assert.match(privacy.body, /Veckomejlet är produktkommunikation/);
+    assert.match(privacy.body, /noterar vi om ett produktmejl levererades och om det öppnades/);
+    assert.match(privacy.body, /inte för marknadsföring/);
     assert.match(privacy.body, /inte produktmejlen/);
     assert.match(privacy.body, /utanför EU\/EES/);
     assert.match(privacy.body, /användarraden raderas inte/);

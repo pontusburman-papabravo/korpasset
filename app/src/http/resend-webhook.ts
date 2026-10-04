@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { config } from "../config.js";
+import { stampMailReceipt } from "../services/mail-receipt.js";
 import { logResendWebhookEvent } from "../services/resend-webhook-events.js";
 import { verifyResendWebhook } from "./resend-webhook-verify.js";
 
@@ -49,6 +50,11 @@ async function handleResendWebhook(
       eventType,
       emailId,
       svixId,
+    });
+    await stampMailReceipt({
+      emailId,
+      eventType,
+      at: event.created_at,
     });
   } catch (error) {
     request.log.error(

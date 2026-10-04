@@ -178,22 +178,42 @@ export function noConnectedSupervisorHelpEmailText(appUrl: string): string {
   ].join("\n");
 }
 
-export async function sendNoJourneyHelpEmail(to: string): Promise<void> {
-  const appUrl = `${config.appBaseUrl}/app`;
-  await getMailer().send({
-    to,
-    subject: "Behöver du hjälp att komma vidare i Körpasset?",
-    text: noJourneyHelpEmailText(appUrl),
-  });
+function messageId(result: MailSendResult | void): string | null {
+  if (!result || typeof result.id !== "string") return null;
+  const id = result.id.trim();
+  return id || null;
 }
 
-export async function sendNoConnectedSupervisorHelpEmail(to: string): Promise<void> {
+function plainHtml(text: string): string {
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return `<div>${escaped.replaceAll("\n", "<br>")}</div>`;
+}
+
+export async function sendNoJourneyHelpEmail(to: string): Promise<string | null> {
   const appUrl = `${config.appBaseUrl}/app`;
-  await getMailer().send({
+  const text = noJourneyHelpEmailText(appUrl);
+  const result = await getMailer().send({
+    to,
+    subject: "Behöver du hjälp att komma vidare i Körpasset?",
+    text,
+    html: plainHtml(text),
+  });
+  return messageId(result);
+}
+
+export async function sendNoConnectedSupervisorHelpEmail(to: string): Promise<string | null> {
+  const appUrl = `${config.appBaseUrl}/app`;
+  const text = noConnectedSupervisorHelpEmailText(appUrl);
+  const result = await getMailer().send({
     to,
     subject: "Behöver du hjälp att bjuda in din handledare?",
-    text: noConnectedSupervisorHelpEmailText(appUrl),
+    text,
+    html: plainHtml(text),
   });
+  return messageId(result);
 }
 
 export async function notifyWaitlistSignup(

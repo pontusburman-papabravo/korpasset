@@ -19,6 +19,7 @@ import {
   EDITABLE_ACCOUNT_STATES,
 } from "../services/admin-directory.js";
 import type { RecentProductMail } from "../services/admin-product-mail.js";
+import { deliveryWord, openedWord, type MailReceipt } from "../services/mail-receipt.js";
 import type {
   SupportSearchResult,
   SupportUserView,
@@ -264,6 +265,20 @@ function productMailPerson(mail: RecentProductMail): string {
   return name || "Namnlös";
 }
 
+function receiptCells(receipt: MailReceipt): string {
+  const delivery = deliveryWord(receipt);
+  const opened = openedWord(receipt);
+  const deliveryAt = delivery === "Levererad" ? receipt.deliveredAt : delivery === "Studsade" ? receipt.bouncedAt : null;
+  const openedAt = opened === "Öppnad" ? receipt.openedAt : null;
+  return `<td data-mail-delivery="${delivery}">${receiptText(delivery, deliveryAt)}</td>
+        <td data-mail-open="${opened}">${receiptText(opened, openedAt)}</td>`;
+}
+
+function receiptText(word: string, at: string | null): string {
+  if (!at || word === "—" || word === "Nej") return escapeHtml(word);
+  return `${escapeHtml(word)}<div class="muted">${escapeHtml(formatWhen(at))}</div>`;
+}
+
 function recentProductMailSection(mails: RecentProductMail[]): string {
   const rows = mails
     .map((mail) => {
@@ -275,16 +290,17 @@ function recentProductMailSection(mails: RecentProductMail[]): string {
         <td>${escapeHtml(productMailLabel(mail))}${journey}</td>
         <td><a href="/admin/users/${escapeHtml(mail.accountId)}">${escapeHtml(productMailPerson(mail))}</a></td>
         <td>${escapeHtml(PRODUCT_MAIL_STATUS[mail.status])}</td>
+        ${receiptCells(mail)}
       </tr>`;
     })
     .join("");
   return `<section data-product-mail>
     <h2>Senaste produktmejl</h2>
-    <p class="muted">Hjälpmejl i starten och veckomejl om elevens egen resa. Listan visar vad som redan har skickats. Inget mejl skickas härifrån.</p>
+    <p class="muted">Hjälpmejl i starten och veckomejl om elevens egen resa. Listan visar vad som redan har skickats, och om leverantören sedan rapporterat leverans eller öppning. Inget mejl skickas härifrån. Äldre mejl utan leverantörs-id visas med streck.</p>
     <div class="admin-table-wrap">
       <table class="admin-table">
-        <thead><tr><th>När</th><th>Mejl</th><th>Person</th><th>Status</th></tr></thead>
-        <tbody>${rows || `<tr><td colspan="4">Inga produktmejl är skickade.</td></tr>`}</tbody>
+        <thead><tr><th>När</th><th>Mejl</th><th>Person</th><th>Status</th><th>Leverans</th><th>Öppnad</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="6">Inga produktmejl är skickade.</td></tr>`}</tbody>
       </table>
     </div>
   </section>`;
@@ -1228,10 +1244,11 @@ function helpEmailSection(view: SupportUserView): string {
     state.sent.length === 0
       ? "<p>Inget hjälpmejl skickat.</p>"
       : `<ul>${state.sent
-          .map(
-            (item) =>
-              `<li>${escapeHtml(helpEmailStopLabel(item.type))} skickades ${escapeHtml(formatWhen(item.sentAt))}</li>`,
-          )
+          .map((item) => {
+            const delivery = deliveryWord(item);
+            const opened = openedWord(item);
+            return `<li data-mail-delivery="${delivery}" data-mail-open="${opened}">${escapeHtml(helpEmailStopLabel(item.type))} skickades ${escapeHtml(formatWhen(item.sentAt))}. Leverans: ${escapeHtml(delivery)}. Öppnad: ${escapeHtml(opened)}.</li>`;
+          })
           .join("")}</ul>`;
   return `<section>
     <h2>Hjälpmejl</h2>
@@ -1254,13 +1271,14 @@ function weeklyEmailsSection(view: SupportUserView): string {
         <td>${escapeHtml(email.weekKey)}</td>
         <td>${escapeHtml(PRODUCT_MAIL_STATUS[email.status])}${extra ? `<div class="muted">${extra}</div>` : ""}</td>
         <td>${escapeHtml(formatWhen(email.at))}</td>
+        ${receiptCells(email)}
         <td><a href="/admin/statistik/resa/${escapeHtml(email.journeyId)}">Resa</a></td>
       </tr>`;
     })
     .join("");
   const body = rows
     ? `<div class="admin-table-wrap"><table class="admin-table">
-         <thead><tr><th>Vecka</th><th>Status</th><th>När</th><th></th></tr></thead>
+         <thead><tr><th>Vecka</th><th>Status</th><th>När</th><th>Leverans</th><th>Öppnad</th><th></th></tr></thead>
          <tbody>${rows}</tbody>
        </table></div>`
     : "<p>Inget veckomejl är skickat.</p>";

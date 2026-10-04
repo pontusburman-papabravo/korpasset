@@ -3,6 +3,7 @@ import { createHmac } from "node:crypto";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { getPool } from "../src/db/pool.js";
 import { verifyResendWebhook } from "../src/http/resend-webhook-verify.js";
+import { createJourneyForStudent } from "../src/services/journeys.js";
 import { createTestApp } from "./helpers.js";
 import { resetDatabaseData } from "./setup.js";
 
@@ -170,4 +171,90 @@ describe("POST /api/resend/webhook", () => {
     assert.equal(rows.rows[0].event_type, "email.bounced");
     await app.close();
   });
+
+  it("stamps the first delivery and open on the product mail row", async () => {
+    const student = await createJourneyForStudent("Nora");
+    await getPool().query(
+      `INSERT INTO account_help_emails (account_id, type, provider_message_id)
+       VALUES ($1, 'no_journey', 'help-id')`,
+      [student.userId],
+    );
+    await getPool().query(
+      `INSERT INTO journey_weekly_emails (
+         journey_id, account_id, week_key, template, status, provider_message_id, sent_at
+       ) VALUES ($1, $2, '2026-W40', 'weekly_summary', 'sent', 'weekly-id', now())`,
+      [student.journey.id, student.userId],
+    );
+    const app = await createTestApp();
+    const firstAt = new Date(Date.now() - 60_000).toISOString();
+    const delivered = await postEvent(app, {
+      type: "email.delivered",
+      created_at: firstAt,
+      data: { email_id: "weekly-id", to: ["nora@example.com"] },
+    }, "msg_delivered");
+    assert.equal(delivered.statusCode, 200);
+    assert.doesNotMatch(delivered.body, /nora@example.com/);
+
+    const later = new Date().toISOString();
+    const replayed = await postEvent(app, {
+      type: "email.delivered",
+      created_at: later,
+      data: { email_id: "weekly-id" },
+    }, "msg_delivered_again");
+    assert.equal(replayed.statusCode, 200);
+
+    const opened = await postEvent(app, {
+      type: "email.opened",
+      created_at: later,
+      data: { email_id: "help-id", to: ["nora@example.com"] },
+    }, "msg_opened");
+    assert.equal(opened.statusCode, 200);
+    assert.doesNotMatch(opened.body, /nora@example.com/);
+
+    const bounced = await postEvent(app, {
+      type: "email.bounced",
+      created_at: later,
+      data: { email_id: "help-id" },
+    }, "msg_help_bounce");
+    assert.equal(bounced.statusCode, 200);
+
+    const weekly = await getPool().query<{ delivered_at: Date; opened_at: Date | null }>(
+      `SELECT delivered_at, opened_at FROM journey_weekly_emails WHERE provider_message_id = 'weekly-id'`,
+    );
+    assert.equal(weekly.rows[0].delivered_at.toISOString(), new Date(firstAt).toISOString());
+    assert.equal(weekly.rows[0].opened_at, null);
+
+    const help = await getPool().query<{
+      delivered_at: Date | null;
+      opened_at: Date;
+      bounced_at: Date;
+    }>(
+      `SELECT delivered_at, opened_at, bounced_at FROM account_help_emails WHERE provider_message_id = 'help-id'`,
+    );
+    assert.equal(help.rows[0].delivered_at, null);
+    assert.equal(help.rows[0].opened_at.toISOString(), new Date(later).toISOString());
+    assert.ok(help.rows[0].bounced_at);
+    await app.close();
+  });
 });
+
+async function postEvent(
+  app: Awaited<ReturnType<typeof createTestApp>>,
+  event: { type: string; created_at: string; data: { email_id: string; to?: string[] } },
+  svixId: string,
+) {
+  const payload = JSON.stringify(event);
+  const ts = String(Math.floor(Date.now() / 1000));
+  const signed = signPayload(TEST_SECRET, payload, svixId, ts);
+  return app.inject({
+    method: "POST",
+    url: "/api/resend/webhook",
+    headers: {
+      "content-type": "application/json",
+      "svix-id": signed.id,
+      "svix-timestamp": signed.timestamp,
+      "svix-signature": signed.signature,
+    },
+    payload,
+  });
+}

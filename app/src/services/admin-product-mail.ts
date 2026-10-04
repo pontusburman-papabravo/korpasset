@@ -8,6 +8,9 @@ export interface AccountWeeklyEmail {
   at: string;
   error: string | null;
   providerMessageId: string | null;
+  deliveredAt: string | null;
+  openedAt: string | null;
+  bouncedAt: string | null;
 }
 
 export interface RecentProductMail {
@@ -19,10 +22,15 @@ export interface RecentProductMail {
   status: "sending" | "sent" | "failed";
   at: string;
   journeyId: string | null;
+  providerMessageId: string | null;
+  deliveredAt: string | null;
+  openedAt: string | null;
+  bouncedAt: string | null;
 }
 
 const WEEKLY_FOR_ACCOUNT_SQL = `
-  SELECT journey_id, week_key, template, status, sent_at, updated_at, error, provider_message_id
+  SELECT journey_id, week_key, template, status, sent_at, updated_at, error,
+         provider_message_id, delivered_at, opened_at, bounced_at
   FROM journey_weekly_emails
   WHERE account_id = $1
   ORDER BY created_at DESC
@@ -38,6 +46,9 @@ export async function listAccountWeeklyEmails(accountId: string): Promise<Accoun
     updated_at: Date;
     error: string | null;
     provider_message_id: string | null;
+    delivered_at: Date | null;
+    opened_at: Date | null;
+    bounced_at: Date | null;
   }>(WEEKLY_FOR_ACCOUNT_SQL, [accountId]);
   return result.rows.map((row) => ({
     journeyId: String(row.journey_id),
@@ -47,7 +58,14 @@ export async function listAccountWeeklyEmails(accountId: string): Promise<Accoun
     at: new Date(row.sent_at ?? row.updated_at).toISOString(),
     error: row.error,
     providerMessageId: row.provider_message_id,
+    deliveredAt: isoOrNull(row.delivered_at),
+    openedAt: isoOrNull(row.opened_at),
+    bouncedAt: isoOrNull(row.bounced_at),
   }));
+}
+
+function isoOrNull(value: Date | null): string | null {
+  return value ? new Date(value).toISOString() : null;
 }
 
 export async function listRecentProductMails(limit = 40): Promise<RecentProductMail[]> {
@@ -60,8 +78,13 @@ export async function listRecentProductMails(limit = 40): Promise<RecentProductM
     status: "sending" | "sent" | "failed";
     at: Date;
     journey_id: string | null;
+    provider_message_id: string | null;
+    delivered_at: Date | null;
+    opened_at: Date | null;
+    bounced_at: Date | null;
   }>(
-    `SELECT kind, account_id, display_name, account_state, detail, status, at, journey_id
+    `SELECT kind, account_id, display_name, account_state, detail, status, at, journey_id,
+            provider_message_id, delivered_at, opened_at, bounced_at
      FROM (
        SELECT
          'help'::text AS kind,
@@ -71,7 +94,11 @@ export async function listRecentProductMails(limit = 40): Promise<RecentProductM
          h.type AS detail,
          'sent'::text AS status,
          h.sent_at AS at,
-         NULL::uuid AS journey_id
+         NULL::uuid AS journey_id,
+         h.provider_message_id,
+         h.delivered_at,
+         h.opened_at,
+         h.bounced_at
        FROM account_help_emails h
        JOIN users u ON u.id = h.account_id
        UNION ALL
@@ -83,7 +110,11 @@ export async function listRecentProductMails(limit = 40): Promise<RecentProductM
          w.week_key,
          w.status,
          COALESCE(w.sent_at, w.updated_at),
-         w.journey_id
+         w.journey_id,
+         w.provider_message_id,
+         w.delivered_at,
+         w.opened_at,
+         w.bounced_at
        FROM journey_weekly_emails w
        JOIN users u ON u.id = w.account_id
      ) mails
@@ -100,5 +131,9 @@ export async function listRecentProductMails(limit = 40): Promise<RecentProductM
     status: row.status,
     at: new Date(row.at).toISOString(),
     journeyId: row.journey_id ? String(row.journey_id) : null,
+    providerMessageId: row.provider_message_id,
+    deliveredAt: isoOrNull(row.delivered_at),
+    openedAt: isoOrNull(row.opened_at),
+    bouncedAt: isoOrNull(row.bounced_at),
   }));
 }

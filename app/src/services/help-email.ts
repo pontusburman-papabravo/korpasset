@@ -30,6 +30,10 @@ export interface HelpEmailLogger {
 export interface HelpEmailSentRecord {
   type: HelpEmailType;
   sentAt: string;
+  providerMessageId: string | null;
+  deliveredAt: string | null;
+  openedAt: string | null;
+  bouncedAt: string | null;
 }
 
 export interface AccountHelpEmailState {
@@ -113,7 +117,14 @@ const ACCOUNT_SQL = `
     (
       SELECT COALESCE(
         jsonb_agg(
-          jsonb_build_object('type', h.type, 'sentAt', h.sent_at)
+          jsonb_build_object(
+            'type', h.type,
+            'sentAt', h.sent_at,
+            'providerMessageId', h.provider_message_id,
+            'deliveredAt', h.delivered_at,
+            'openedAt', h.opened_at,
+            'bouncedAt', h.bounced_at
+          )
           ORDER BY h.sent_at
         ),
         '[]'::jsonb
@@ -140,12 +151,27 @@ function sentRecords(value: unknown): HelpEmailSentRecord[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item) => {
     if (!item || typeof item !== "object") return [];
-    const type = (item as { type?: unknown }).type;
-    const sentAt = (item as { sentAt?: unknown }).sentAt;
+    const record = item as {
+      type?: unknown;
+      sentAt?: unknown;
+      providerMessageId?: unknown;
+      deliveredAt?: unknown;
+      openedAt?: unknown;
+      bouncedAt?: unknown;
+    };
+    const type = record.type;
+    const sentAt = record.sentAt;
     if (!isHelpEmailType(type) || (typeof sentAt !== "string" && !(sentAt instanceof Date))) {
       return [];
     }
-    return [{ type, sentAt: new Date(sentAt).toISOString() }];
+    return [{
+      type,
+      sentAt: new Date(sentAt).toISOString(),
+      providerMessageId: typeof record.providerMessageId === "string" ? record.providerMessageId : null,
+      deliveredAt: isoOrNull(record.deliveredAt),
+      openedAt: isoOrNull(record.openedAt),
+      bouncedAt: isoOrNull(record.bouncedAt),
+    }];
   });
 }
 
@@ -260,19 +286,27 @@ function logDecision(log: HelpEmailLogger, decision: HelpEmailDecision): void {
   );
 }
 
+function isoOrNull(value: unknown): string | null {
+  if (typeof value !== "string" && !(value instanceof Date)) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
 async function deliver(
   accountId: string,
   type: HelpEmailType,
   email: string,
 ): Promise<string> {
-  if (type === "no_journey") await sendNoJourneyHelpEmail(email);
-  else await sendNoConnectedSupervisorHelpEmail(email);
+  const providerMessageId =
+    type === "no_journey"
+      ? await sendNoJourneyHelpEmail(email)
+      : await sendNoConnectedSupervisorHelpEmail(email);
   const inserted = await getPool().query<{ sent_at: Date }>(
-    `INSERT INTO account_help_emails (account_id, type)
-     VALUES ($1, $2)
+    `INSERT INTO account_help_emails (account_id, type, provider_message_id)
+     VALUES ($1, $2, $3)
      ON CONFLICT (account_id, type) DO NOTHING
      RETURNING sent_at`,
-    [accountId, type],
+    [accountId, type, providerMessageId],
   );
   const sentAt = inserted.rows[0]?.sent_at;
   if (!sentAt) {

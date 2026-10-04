@@ -876,6 +876,8 @@ describe("weekly summary mail", () => {
     assert.match(section, new RegExp(week.weekKey));
     assert.match(section, /Skickat/);
     assert.match(section, /weekly_summary/);
+    assert.match(section, /data-mail-delivery="Nej"/);
+    assert.match(section, /data-mail-open="Nej"/);
     assert.match(section, /skickas inte manuellt/i);
     assert.doesNotMatch(section, /<form|<button/i);
     assert.doesNotMatch(page.body, /nora@example.com/);
@@ -894,6 +896,8 @@ describe("weekly summary mail", () => {
     assert.match(accountSection, new RegExp(week.weekKey));
     assert.match(accountSection, /Skickat/);
     assert.match(accountSection, new RegExp(`/admin/statistik/resa/${student.journey.id}`));
+    assert.match(accountSection, /data-mail-delivery="Nej"/);
+    assert.match(accountSection, /data-mail-open="Nej"/);
     assert.doesNotMatch(accountSection, /<form|<button/i);
 
     const overview = await app.inject({
@@ -908,8 +912,30 @@ describe("weekly summary mail", () => {
     assert.match(mailSection, new RegExp(week.weekKey));
     assert.match(mailSection, /Skickat/);
     assert.match(mailSection, /Nora/);
+    assert.match(mailSection, /data-mail-delivery="Nej"/);
+    assert.match(mailSection, /data-mail-open="Nej"/);
     assert.match(mailSection, new RegExp(`/admin/users/${student.userId}`));
     assert.doesNotMatch(mailSection, /nora@example.com|<form|<button/i);
+
+    await getPool().query(
+      `UPDATE journey_weekly_emails
+       SET delivered_at = $2, opened_at = $3
+       WHERE journey_id = $1`,
+      [student.journey.id, sunday.toISOString(), new Date(sunday.getTime() + 60_000).toISOString()],
+    );
+    const opened = await app.inject({
+      method: "GET",
+      url: "/admin",
+      cookies: { korpasset_admin: createAdminToken(admin.id) },
+    });
+    const openedStart = opened.body.indexOf("<section data-product-mail>");
+    const openedSection = opened.body.slice(
+      openedStart,
+      opened.body.indexOf("</section>", openedStart),
+    );
+    assert.match(openedSection, /data-mail-delivery="Levererad"/);
+    assert.match(openedSection, /data-mail-open="Öppnad"/);
+    assert.doesNotMatch(openedSection, /nora@example.com/);
     await app.close();
   });
 });

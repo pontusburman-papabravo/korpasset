@@ -253,6 +253,7 @@ describe("production foundation / fresh database migrate", () => {
       "0021_share_events.sql",
       "0022_referral_codes.sql",
       "0023_marketing_email.sql",
+      "0024_mail_receipt.sql",
     ]);
     assert.deepEqual(first.stamped, []);
 
@@ -339,6 +340,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
       "0021_share_events.sql",
       "0022_referral_codes.sql",
       "0023_marketing_email.sql",
+      "0024_mail_receipt.sql",
     ]);
     assert.deepEqual(first.skipped, []);
 
@@ -382,6 +384,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
         "0021_share_events.sql",
         "0022_referral_codes.sql",
         "0023_marketing_email.sql",
+        "0024_mail_receipt.sql",
       ],
     );
 

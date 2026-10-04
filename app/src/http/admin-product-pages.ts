@@ -19,6 +19,7 @@ import {
   formatShare,
   type JourneyUsageStatus,
 } from "../services/usage-metrics.js";
+import { deliveryWord, openedWord } from "../services/mail-receipt.js";
 import type { JourneyWeeklyEmailRecord } from "../services/weekly-summary-mail.js";
 import { escapeHtml } from "./layout.js";
 
@@ -535,11 +536,17 @@ function weeklyEmailSection(email: JourneyWeeklyEmailRecord | null): string {
   const latest = email
     ? `<p>Vecka ${escapeHtml(email.weekKey)}. ${escapeHtml(WEEKLY_EMAIL_STATUS[email.status])}. ${
         email.sentAt ? escapeHtml(formatWhen(email.sentAt)) : "—"
-      }. ${escapeHtml(email.template)}.</p>`
+      }. ${escapeHtml(email.template)}.</p>
+      <p data-mail-delivery="${deliveryWord(email)}">Leverans: ${escapeHtml(deliveryWord(email))}${
+        email.deliveredAt ? `. ${escapeHtml(formatWhen(email.deliveredAt))}` : ""
+      }.</p>
+      <p data-mail-open="${openedWord(email)}">Öppnad: ${escapeHtml(openedWord(email))}${
+        email.openedAt ? `. ${escapeHtml(formatWhen(email.openedAt))}` : ""
+      }.</p>`
     : `<p>Inget veckomejl är skickat för den här resan.</p>`;
   return `<section data-weekly-email>
       <h2>Veckomejl</h2>
-      <p class="muted">Produktmejl till eleven på söndagar från kl 18, svensk tid, när veckan har haft aktivitet. Det skickas inte manuellt härifrån.</p>
+      <p class="muted">Produktmejl till eleven på söndagar från kl 18, svensk tid, när veckan har haft aktivitet. Leverans och öppning kommer från e-postleverantören. Det skickas inte manuellt härifrån.</p>
       ${latest}
     </section>`;
 }

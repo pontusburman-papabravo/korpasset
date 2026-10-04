@@ -17,7 +17,7 @@ function nativePrivacyPage(options: PublicConsentOptions): string {
      <p>När du använder Körpasset behandlar vi de uppgifter som behövs för konto och körkortsresa, till exempel visningsnamn, e-postadress när den lämnas, användar-id från inloggningsleverantören, session, körpass, observationer och tekniska produkthändelser.</p>
      <p>Den rättsliga grunden för behandling som är nödvändig för att tillhandahålla Körpasset är att fullgöra avtalet om tjänsten.</p>
      <p>Produkthändelser kopplas till interna id:n. De används för att driva och förstå betan, inte för reklam.</p>
-     <p>Produktmejl, till exempel ett hjälpmejl i starten och ett veckomejl om den egna körkortsresan, hör till tjänsten. Nyheter, tips och erbjudanden via e-post är ett frivilligt val under Konto. Det är av som standard och kan stängas av där eller via länken i ett sådant mejl. Det valet styr inte produktmejlen.</p>
+     <p>Produktmejl, till exempel ett hjälpmejl i starten och ett veckomejl om den egna körkortsresan, hör till tjänsten. När e-postleverantören rapporterar det noterar vi om ett produktmejl levererades och om det öppnades. Det används för att se att mejlet kom fram, inte för marknadsföring. Nyheter, tips och erbjudanden via e-post är ett frivilligt val under Konto. Det är av som standard och kan stängas av där eller via länken i ett sådant mejl. Det valet styr inte produktmejlen.</p>
 
      <h2>Inloggning med Apple eller Google</h2>
      <p>Inloggning sker med Sign in with Apple eller Sign in with Google.</p>
@@ -135,7 +135,7 @@ export function privacyPage(options: PublicConsentOptions = {}): string {
 
      <h2>E-post</h2>
      <p>Körpasset skiljer på produktmejl och frivillig marknadsföring.</p>
-     <p>Produktmejl behövs för att tillhandahålla tjänsten. Dit hör ett hjälpmejl när ett konto stått still i starten, och ett veckomejl till eleven om den egna körkortsresan när veckan har övning att sammanfatta. Veckomejlet är produktkommunikation om körkortsresan. Den rättsliga grunden är att fullgöra avtalet om tjänsten.</p>
+     <p>Produktmejl behövs för att tillhandahålla tjänsten. Dit hör ett hjälpmejl när ett konto stått still i starten, och ett veckomejl till eleven om den egna körkortsresan när veckan har övning att sammanfatta. Veckomejlet är produktkommunikation om körkortsresan. Den rättsliga grunden är att fullgöra avtalet om tjänsten. När e-postleverantören rapporterar det noterar vi om ett produktmejl levererades och om det öppnades. Det används för att se att mejlet kom fram, inte för marknadsföring.</p>
      <p>Nyheter, tips och erbjudanden via e-post är frivilligt. Kryssrutan under Konto är av som standard. Du kan slå på eller av valet där. Ett sådant mejl innehåller en länk där du kan avregistrera dig utan att logga in. Avregistreringen gäller bara nyheter, tips och erbjudanden, inte produktmejlen. Den rättsliga grunden är ditt samtycke.</p>
      <p>Uppgifter från en intresseanmälan används inte för nyheter, tips och erbjudanden.</p>
 

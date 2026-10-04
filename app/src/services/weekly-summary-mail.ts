@@ -89,6 +89,9 @@ export interface JourneyWeeklyEmailRecord {
   status: "sending" | "sent" | "failed";
   sentAt: string | null;
   providerMessageId: string | null;
+  deliveredAt: string | null;
+  openedAt: string | null;
+  bouncedAt: string | null;
 }
 
 interface CandidateRow {
@@ -414,8 +417,12 @@ export async function latestJourneyWeeklyEmail(
     status: "sending" | "sent" | "failed";
     sent_at: Date | null;
     provider_message_id: string | null;
+    delivered_at: Date | null;
+    opened_at: Date | null;
+    bounced_at: Date | null;
   }>(
-    `SELECT week_key, template, status, sent_at, provider_message_id
+    `SELECT week_key, template, status, sent_at, provider_message_id,
+            delivered_at, opened_at, bounced_at
      FROM journey_weekly_emails
      WHERE journey_id = $1
      ORDER BY created_at DESC
@@ -430,5 +437,8 @@ export async function latestJourneyWeeklyEmail(
     status: row.status,
     sentAt: row.sent_at ? new Date(row.sent_at).toISOString() : null,
     providerMessageId: row.provider_message_id,
+    deliveredAt: row.delivered_at ? new Date(row.delivered_at).toISOString() : null,
+    openedAt: row.opened_at ? new Date(row.opened_at).toISOString() : null,
+    bouncedAt: row.bounced_at ? new Date(row.bounced_at).toISOString() : null,
   };
 }

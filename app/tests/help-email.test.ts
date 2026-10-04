@@ -90,6 +90,7 @@ describe("stuck help emails", () => {
     setMailerForTests({
       async send(email) {
         sent.push(email);
+        return { id: `help-${sent.length}` };
       },
     });
   });
@@ -122,6 +123,12 @@ describe("stuck help emails", () => {
       1,
     );
     assert.deepEqual(await sentRows(), [{ account_id: user.id, type: "no_journey" }]);
+    const stored = await getPool().query<{ provider_message_id: string }>(
+      `SELECT provider_message_id FROM account_help_emails WHERE account_id = $1`,
+      [user.id],
+    );
+    assert.equal(stored.rows[0]?.provider_message_id, "help-1");
+    assert.match(sent[0].html ?? "", /körkortsresa/);
 
     const admin = await createAdminUser("ops@korpasset.se", "korrekt-losen-12");
     const app = await createTestApp();
@@ -134,6 +141,8 @@ describe("stuck help emails", () => {
     assert.match(page.body, /Hjälpmejl/);
     assert.match(page.body, /Tidigt stopp: Ingen resa/);
     assert.match(page.body, /Ingen resa skickades/);
+    assert.match(page.body, /data-mail-delivery="Nej"/);
+    assert.match(page.body, /data-mail-open="Nej"/);
     assert.match(page.body, /Inget veckomejl är skickat/);
 
     const overview = await app.inject({
@@ -147,6 +156,8 @@ describe("stuck help emails", () => {
     assert.match(mailSection, /Hjälpmejl · Ingen resa/);
     assert.match(mailSection, /Skickat/);
     assert.match(mailSection, /Nora/);
+    assert.match(mailSection, /data-mail-delivery="Nej"/);
+    assert.match(mailSection, /data-mail-open="Nej"/);
     assert.match(mailSection, new RegExp(`/admin/users/${user.id}`));
     assert.doesNotMatch(mailSection, /nora@example.com|<form|<button/i);
     await app.close();
