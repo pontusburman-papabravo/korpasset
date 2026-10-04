@@ -102,6 +102,7 @@ export async function resetDatabaseData(): Promise<void> {
       oauth_handoffs,
       account_help_emails,
       journey_weekly_emails,
+      marketing_unsubscribe_tokens,
       users
     RESTART IDENTITY CASCADE
   `);

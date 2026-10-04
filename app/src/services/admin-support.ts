@@ -63,6 +63,9 @@ export interface SupportUserView {
   observationCount: number;
   relatedWaitlist: SupportWaitlistHit[];
   helpEmail: AccountHelpEmailState | null;
+  marketingOptIn: boolean;
+  marketingConsentAt: string | null;
+  marketingOptOutAt: string | null;
 }
 
 function mapWaitlist(row: Record<string, unknown>): SupportWaitlistHit {
@@ -194,7 +197,9 @@ function actorLabel(accountState: string, role: "student" | "supervisor", displa
 
 export async function getSupportUserView(userId: string): Promise<SupportUserView | null> {
   const userResult = await getPool().query(
-    `SELECT id, display_name, contact_email, account_state, created_at FROM users WHERE id = $1`,
+    `SELECT id, display_name, contact_email, account_state, created_at,
+            marketing_email_opt_in, marketing_email_consent_at, marketing_email_opt_out_at
+     FROM users WHERE id = $1`,
     [userId],
   );
   const user = userResult.rows[0] as
@@ -204,6 +209,9 @@ export async function getSupportUserView(userId: string): Promise<SupportUserVie
         contact_email: string | null;
         account_state: string;
         created_at: Date | string;
+        marketing_email_opt_in: boolean;
+        marketing_email_consent_at: Date | string | null;
+        marketing_email_opt_out_at: Date | string | null;
       }
     | undefined;
   if (!user) return null;
@@ -320,6 +328,15 @@ export async function getSupportUserView(userId: string): Promise<SupportUserVie
     observationCount: Number(counts.rows[0]?.observations ?? 0),
     relatedWaitlist,
     helpEmail: await getAccountHelpEmailState(user.id),
+    marketingOptIn: !deleted && user.marketing_email_opt_in === true,
+    marketingConsentAt:
+      deleted || user.marketing_email_consent_at == null
+        ? null
+        : new Date(String(user.marketing_email_consent_at)).toISOString(),
+    marketingOptOutAt:
+      deleted || user.marketing_email_opt_out_at == null
+        ? null
+        : new Date(String(user.marketing_email_opt_out_at)).toISOString(),
   };
 }
 

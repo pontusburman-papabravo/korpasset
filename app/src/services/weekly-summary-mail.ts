@@ -20,12 +20,14 @@ import {
  * class as the early help emails in account_help_emails. It is not a
  * waitlist mail and not a newsletter.
  *
- * Preferences: product accounts have no unsubscribe, newsletter or email
- * consent model. Cookie consent only covers website analytics. Help email
- * goes to the contact address, otherwise the sign-in address, and never to
- * a deleted account. This mail follows that address rule. It also skips
- * suspended accounts, because a weekly summary should not go to an
- * inactivated account. No parallel preference is stored.
+ * Preferences: this mail is product communication about the student's own
+ * journey, the same class as the early help emails. It does not read
+ * marketing_email_opt_in and it does not add List-Unsubscribe. Marketing
+ * mail is a separate, default-off choice on the account. Cookie consent
+ * only covers website analytics. Help email goes to the contact address,
+ * otherwise the sign-in address, and never to a deleted account. This mail
+ * follows that address rule. It also skips suspended accounts, because a
+ * weekly summary should not go to an inactivated account.
  *
  * When: Sundays from 18:00 Europe/Stockholm until Monday 00:00. If Sunday
  * is missed, the week is not sent later. The summary covers Monday 00:00

@@ -41,7 +41,11 @@ Inte:
 
 ## Preferenser
 
-Produktkonton har ingen unsubscribe-, nyhetsbrevs- eller e-postsamtyckesmodell. Cookie-samtycke gäller webbanalys. Veckomejlet följer hjälpmejlens adressregel och hoppar dessutom över avstängda konton. Ingen ny preferensmodell.
+Veckomejlet är produktkommunikation om elevens egen körkortsresa, samma klass som hjälpmejlen. Det läser inte `marketing_email_opt_in` och har ingen `List-Unsubscribe`.
+
+Nyheter, tips och erbjudanden är ett separat val på Konto. Det är av som standard. Avregistrering gäller bara det valet.
+
+Cookie-samtycke gäller webbanalys. Veckomejlet följer hjälpmejlens adressregel och hoppar dessutom över avstängda konton.
 
 ## Dublettskydd
 

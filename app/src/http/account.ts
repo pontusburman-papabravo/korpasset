@@ -23,6 +23,10 @@ import {
 import { renderSignedInAs } from "./account-identity.js";
 import { clearActiveJourneyCookie } from "./active-journey.js";
 import { personalShareUrl } from "../services/share.js";
+import {
+  getMarketingEmailPreference,
+  setMarketingEmailOptIn,
+} from "../services/marketing-preferences.js";
 import { appShareCard } from "./share-widget.js";
 
 function deletedAccountPage(legacyAppleWithoutToken: boolean): string {
@@ -55,6 +59,7 @@ function accountPage(options: {
   linked: OAuthProvider[];
   identities: LinkedIdentity[];
   shareLink: string;
+  marketingOptIn: boolean;
   errorMessage?: string;
   nav?: AppLayoutOptions;
 }): string {
@@ -86,6 +91,17 @@ function accountPage(options: {
        </ul>
      </section>
      ${appShareCard(options.shareLink)}
+     <section class="card" data-marketing-email>
+       <h2>Nyheter</h2>
+       <p>Veckomejl om din egen körkortsresa är produktinformation och styrs inte av det här valet.</p>
+       <form method="post" action="/konto/nyheter" class="stack">
+         <label class="interest-choice">
+           <input type="checkbox" name="marketing_email_opt_in" value="yes"${options.marketingOptIn ? " checked" : ""}>
+           <span>Jag vill få nyheter, tips och erbjudanden från Körpasset via e-post.</span>
+         </label>
+         ${primaryButton("Spara nyheter")}
+       </form>
+     </section>
      <form method="post" action="/logout">
        <button type="submit" class="btn btn-secondary">Logga ut</button>
      </form>
@@ -115,6 +131,7 @@ async function renderAccountPage(
     linked: identities.map((identity) => identity.provider),
     identities,
     shareLink: await personalShareUrl(userId, "app"),
+    marketingOptIn: (await getMarketingEmailPreference(userId))?.optIn === true,
     errorMessage: extras.errorMessage,
   });
 }
@@ -146,6 +163,18 @@ export async function registerAccountRoutes(app: FastifyInstance): Promise<void>
       );
     }
     await updateDisplayName(reusable, name);
+    return reply.redirect("/konto");
+  });
+
+  app.post("/konto/nyheter", async (request, reply) => {
+    const userId = requireSessionUserId(request);
+    const reusable = await getReusableSessionUserId(userId);
+    if (!reusable) {
+      clearSessionCookie(reply);
+      return reply.redirect("/app");
+    }
+    const body = (request.body ?? {}) as { marketing_email_opt_in?: string };
+    await setMarketingEmailOptIn(reusable, body.marketing_email_opt_in === "yes");
     return reply.redirect("/konto");
   });
 

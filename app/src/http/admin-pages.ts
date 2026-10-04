@@ -1162,6 +1162,17 @@ function helpEmailStopLabel(stop: "no_journey" | "no_connected_supervisor" | nul
   return "Inget av de två första stoppen";
 }
 
+function marketingSection(view: SupportUserView): string {
+  const choice = view.marketingOptIn ? "Ja" : "Nej";
+  return `<section data-marketing-email>
+    <h2>Nyheter</h2>
+    <p>Nyheter: ${choice}</p>
+    <p>Samtycke: ${view.marketingConsentAt ? escapeHtml(formatWhen(view.marketingConsentAt)) : "—"}</p>
+    <p>Avslut: ${view.marketingOptOutAt ? escapeHtml(formatWhen(view.marketingOptOutAt)) : "—"}</p>
+    <p class="muted">Gäller bara marknadsföring. Veckomejl och hjälpmejl är produktkommunikation och styrs inte av valet.</p>
+  </section>`;
+}
+
 function helpEmailSection(view: SupportUserView): string {
   const state = view.helpEmail;
   if (!state) return "";
@@ -1321,6 +1332,7 @@ export function supportUserPage(
            : `<p>Visningsnamn: ${escapeHtml(view.displayName ?? "—")}</p>`
        }
        ${loginSection(view)}
+       ${marketingSection(view)}
        ${options.editable ? userEditForm(view) : `<p><a href="/admin/users/${escapeHtml(view.id)}">Ändra användare</a></p>`}
        <section class="admin-kpis">
          ${kpi("Journeys", String(view.journeyCount))}

@@ -162,12 +162,16 @@ export async function deleteProductAccount(
       [userId],
     );
 
+    await client.query(`DELETE FROM marketing_unsubscribe_tokens WHERE user_id = $1`, [userId]);
     await client.query(
       `UPDATE users
        SET account_state = 'deleted',
            display_name = NULL,
            contact_email = NULL,
            contact_email_normalized = NULL,
+           marketing_email_opt_in = false,
+           marketing_email_consent_at = NULL,
+           marketing_email_opt_out_at = NULL,
            last_seen_at = NULL,
            client_platform = NULL,
            client_app_version = NULL,
