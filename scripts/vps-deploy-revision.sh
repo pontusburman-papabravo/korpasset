@@ -29,6 +29,7 @@ require_tree_path() {
 
 require_tree_path deploy/docker-compose.yml
 require_tree_path deploy/Dockerfile
+require_tree_path deploy/Caddyfile
 require_tree_path scripts/vps-deploy-revision.sh
 require_tree_path scripts/vps-backup.sh
 require_tree_path scripts/vps-install-backup-timer.sh
@@ -69,6 +70,14 @@ require_env_nonempty RESEND_WEBHOOK_SECRET
 PREVIOUS_SHA="$(git rev-parse HEAD)"
 COMPOSE=(docker compose --project-directory "$APP_PATH/deploy" -f "$APP_PATH/deploy/docker-compose.yml")
 
+# git checkout --force replaces deploy/Caddyfile with a new inode. Caddy
+# bind-mounts that file, so a container left running keeps the previous
+# inode, serves the old config, and never requests certificates for new
+# names. Recreate it after every checkout.
+refresh_caddy() {
+  "${COMPOSE[@]}" up -d --force-recreate --no-deps caddy
+}
+
 git checkout --force "$DEPLOY_SHA"
 
 if [[ ! -f deploy/docker-compose.yml ]]; then
@@ -95,7 +104,7 @@ restore_previous() {
   echo "Restoring previous revision $PREVIOUS_SHA" >&2
   git checkout --force "$PREVIOUS_SHA"
   "${COMPOSE[@]}" up -d --build --no-deps app
-  "${COMPOSE[@]}" up -d --no-deps caddy
+  refresh_caddy
   if wait_for_health; then
     echo "Restored $PREVIOUS_SHA after failed deploy of $DEPLOY_SHA" >&2
     return 0
@@ -106,6 +115,12 @@ restore_previous() {
 
 if ! "${COMPOSE[@]}" up -d --build; then
   echo "Compose up failed for $DEPLOY_SHA" >&2
+  restore_previous || true
+  exit 1
+fi
+
+if ! refresh_caddy; then
+  echo "Caddy recreate failed for $DEPLOY_SHA" >&2
   restore_previous || true
   exit 1
 fi
