@@ -4,8 +4,9 @@
 AI/stock images are often mirrored or generated for left-hand traffic. This script
 applies the corrections we expect for korpasset.se:
 
-- country-road.jpg, roundabout.jpg: horizontal flip (exterior, no readable text)
-- residential-street.jpg: exterior bostadsgata (LHD car in the right lane)
+- country-road.jpg: horizontal flip (exterior, no readable text)
+- roundabout.jpg: use _source as-is (do not flip — a flip points the entry arrow the wrong way)
+- residential-street.jpg: exterior bostadsgata (car in the right lane)
 
 Re-run after replacing any file under app/public/images/landing/.
 Requires: pip install pillow
@@ -39,9 +40,7 @@ def main() -> None:
     copy_source("country-road.jpg")
     flip_horizontal(LANDING / "country-road.jpg")
 
-    # Driver POV roundabout: store the raw export, then flip once for högertrafik.
     copy_source("roundabout.jpg")
-    flip_horizontal(LANDING / "roundabout.jpg")
 
     copy_source("residential-street.jpg")
     print("Landing traffic photos updated.")
