@@ -100,12 +100,12 @@ describe("landing and interest waitlist", () => {
     assert.ok(header);
     assert.doesNotMatch(header, /\/images\/landing\//);
     assert.match(response.body, /aria-label="Svensk övningskörning"/);
-    assert.match(response.body, /src="\/images\/landing\/roundabout\.jpg"/);
+    assert.match(response.body, /src="\/images\/landing\/suburban-road\.jpg"/);
     assert.match(response.body, /src="\/images\/landing\/residential-street\.jpg"/);
     assert.match(response.body, /src="\/images\/landing\/country-road\.jpg"/);
 
     for (const path of [
-      "/images/landing/roundabout.jpg",
+      "/images/landing/suburban-road.jpg",
       "/images/landing/residential-street.jpg",
       "/images/landing/country-road.jpg",
     ]) {

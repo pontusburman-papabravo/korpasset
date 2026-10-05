@@ -5,10 +5,9 @@ AI/stock images are often mirrored or generated for left-hand traffic. This scri
 applies the corrections we expect for korpasset.se:
 
 - country-road.jpg: horizontal flip (exterior, no readable text)
-- roundabout.jpg: use _source as-is (do not flip — a flip points the entry arrow the wrong way)
-- residential-street.jpg: exterior bostadsgata (car in the right lane)
+- suburban-road.jpg, residential-street.jpg: copy from _source as-is
 
-Re-run after replacing any file under app/public/images/landing/.
+Re-run after replacing any file under app/public/images/landing/_source/.
 Requires: pip install pillow
 """
 
@@ -36,13 +35,12 @@ def copy_source(name: str) -> None:
 
 
 def main() -> None:
-    # Warm AI exports often show left-hand traffic; flip exterior shots without text.
     copy_source("country-road.jpg")
     flip_horizontal(LANDING / "country-road.jpg")
 
-    copy_source("roundabout.jpg")
+    for name in ("suburban-road.jpg", "residential-street.jpg"):
+        copy_source(name)
 
-    copy_source("residential-street.jpg")
     print("Landing traffic photos updated.")
 
 

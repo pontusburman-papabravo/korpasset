@@ -358,7 +358,7 @@ function trafficPhotos(): string {
       <img src="/images/landing/residential-street.jpg" width="1152" height="864" alt="Övningskörning i svensk bostadsgata" decoding="async" loading="lazy">
     </figure>
     <figure>
-      <img src="/images/landing/roundabout.jpg" width="1280" height="720" alt="Rondell i svenskt villaområde, sett från bilen" decoding="async" loading="lazy">
+      <img src="/images/landing/suburban-road.jpg" width="1280" height="720" alt="Övningskörning på landsväg i sommarljus" decoding="async" loading="lazy">
     </figure>
     <figure>
       <img src="/images/landing/country-road.jpg" width="1280" height="720" alt="Träna inför körkort på öppen landsväg i kvällssol" decoding="async" loading="lazy">
