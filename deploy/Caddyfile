@@ -2,7 +2,11 @@
 	email pontus.burman@papabravo.se
 }
 
-korpasset.se, www.korpasset.se {
+www.korpasset.se {
+	redir https://korpasset.se{uri} permanent
+}
+
+korpasset.se {
 	@compressible not path /.well-known/apple-app-site-association /.well-known/assetlinks.json
 	encode @compressible gzip zstd
 	header {

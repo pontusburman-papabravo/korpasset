@@ -2,7 +2,7 @@ import { type InterestRole } from "../services/interest.js";
 import { shareUrl } from "../services/share.js";
 import { websiteShareSection } from "./share-widget.js";
 import { BRAND_ASSETS, escapeHtml, errorBanner, primaryButton, siteLayout } from "./layout.js";
-import { HOME_GUIDE_CARDS, HUB_PATH, SUPERVISOR_PATH } from "./guide-content.js";
+import { HOME_GUIDE_CARDS, HUB_PATH, PARENT_PATH, SUPERVISOR_PATH } from "./guide-content.js";
 import {
   publicPageJsonLd,
   SITE_DESCRIPTION,
@@ -452,7 +452,7 @@ function practiceGuides(): string {
       <div class="card-grid">
         ${cards}
       </div>
-      <p><a class="btn-link" href="${HUB_PATH}">Alla guider om övningskörning</a> · <a class="btn-link" href="${SUPERVISOR_PATH}">För handledare</a></p>
+      <p><a class="btn-link" href="${HUB_PATH}">Alla guider om övningskörning</a> · <a class="btn-link" href="${SUPERVISOR_PATH}">För handledare</a> · <a class="btn-link" href="${PARENT_PATH}">Övningsköra med förälder</a></p>
     </div>
   </section>`;
 }
@@ -498,6 +498,7 @@ function officialRules(): string {
         <p>Sedan den 1 augusti 2026 behöver elev och handledare inte längre ha genomfört introduktionsutbildningen för privat övningskörning med personbil/lätt lastbil.</p>
         <p>Det krävs fortfarande bland annat körkortstillstånd för eleven och en godkänd handledare.</p>
         <p>${tsLink(TRANSPORTSTYRELSEN_LINKS.ovningskora, "Läs vad som gäller hos Transportstyrelsen")}</p>
+        <p>En genomgång av hur ni kommer igång finns i <a href="${HUB_PATH}">guiden om övningskörning</a>.</p>
       </aside>
       <h3>Läs mer hos Transportstyrelsen</h3>
       <ul class="official-links">
