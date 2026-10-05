@@ -1,13 +1,18 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { wantsPublicCookieConsent } from "../auth/session.js";
 import {
+  CLUSTER_GUIDES,
   HUB_PATH,
+  LEGACY_GUIDE_REDIRECTS,
   MOMENT_GUIDES,
   MOMENT_ORDER,
+  PLAN_PATH,
   PRACTICE_HUB,
   SUPERVISOR_GUIDE,
   SUPERVISOR_PATH,
   momentByPath,
+  type GuideItem,
+  type GuideLink,
   type MomentGuide,
   type StandaloneGuide,
 } from "./guide-content.js";
@@ -20,12 +25,33 @@ import {
 import { escapeHtml, siteLayout } from "./layout.js";
 import { articlePageJsonLd, type BreadcrumbItem } from "./seo.js";
 
-function bullets(items: string[]): string {
-  return `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+function externalAttrs(href: string): string {
+  if (href.startsWith("https://") || href.startsWith("http://")) {
+    return ` rel="noopener noreferrer" target="_blank"`;
+  }
+  return "";
 }
 
-function numbered(items: string[]): string {
-  return `<ol>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>`;
+function richItem(item: GuideItem): string {
+  if (typeof item === "string") return `<li>${escapeHtml(item)}</li>`;
+  return `<li>${escapeHtml(item.text)} <a href="${escapeHtml(item.href)}"${externalAttrs(item.href)}>${escapeHtml(item.linkLabel)}</a></li>`;
+}
+
+function bullets(items: readonly GuideItem[]): string {
+  return `<ul>${items.map((item) => (typeof item === "string" ? `<li>${escapeHtml(item)}</li>` : richItem(item))).join("")}</ul>`;
+}
+
+function numbered(items: readonly GuideItem[]): string {
+  return `<ol>${items.map((item) => richItem(item)).join("")}</ol>`;
+}
+
+function linkList(links: GuideLink[]): string {
+  return `<ul class="official-links">${links
+    .map((link) => {
+      const note = link.note ? ` <span class="muted">— ${escapeHtml(link.note)}</span>` : "";
+      return `<li><a href="${escapeHtml(link.href)}"${externalAttrs(link.href)}>${escapeHtml(link.label)}</a>${note}</li>`;
+    })
+    .join("")}</ul>`;
 }
 
 function paragraphs(items: string[]): string {
@@ -64,10 +90,15 @@ function nearbyLinks(guide: MomentGuide): string {
   if (guide.path !== SUPERVISOR_GUIDE.path) {
     links.push({
       href: SUPERVISOR_GUIDE.path,
-      label: "För handledaren",
-      note: "Planering, återkoppling och att vara flera",
+      label: "Handledare vid övningskörning",
+      note: "Krav, ansvar och att vara flera",
     });
   }
+  links.push({
+    href: PLAN_PATH,
+    label: "Planera övningskörning",
+    note: "En möjlig ordning mellan momenten",
+  });
   return `<ul class="official-links">${links
     .map(
       (link) =>
@@ -126,10 +157,34 @@ function authorityLinks(): string {
 function renderSections(guide: StandaloneGuide): string {
   return guide.sections
     .map((section) => {
+      const id = section.id ? ` id="${escapeHtml(section.id)}"` : "";
       const list = section.bullets ? bullets(section.bullets) : "";
-      return `<h2>${escapeHtml(section.heading)}</h2>${paragraphs(section.paragraphs)}${list}`;
+      const steps = section.numbered ? numbered(section.numbered) : "";
+      const links = section.links ? linkList(section.links) : "";
+      return `<h2${id}>${escapeHtml(section.heading)}</h2>${paragraphs(section.paragraphs)}${list}${steps}${links}`;
     })
     .join("");
+}
+
+function renderFaqs(guide: StandaloneGuide): string {
+  if (!guide.faqs?.length) return "";
+  const items = guide.faqs
+    .map(
+      (item) =>
+        `<h3>${escapeHtml(item.question)}</h3><p>${escapeHtml(item.answer)}</p>`,
+    )
+    .join("");
+  return `<h2>Vanliga frågor</h2>${items}`;
+}
+
+function renderRelated(guide: StandaloneGuide): string {
+  if (!guide.related?.length) return "";
+  return `<h2>Läs vidare</h2>${linkList(guide.related)}`;
+}
+
+function answerBox(answer: string | undefined): string {
+  if (!answer) return "";
+  return `<div class="info-box"><p>${escapeHtml(answer)}</p></div>`;
 }
 
 export function renderPracticeHub(consent = true): string {
@@ -146,12 +201,15 @@ export function renderPracticeHub(consent = true): string {
     <h1>${escapeHtml(PRACTICE_HUB.h1)}</h1>
     <p class="lede">${escapeHtml(PRACTICE_HUB.lede)}</p>
     ${renderSections(PRACTICE_HUB)}
+    <h2>Läs vidare</h2>
+    <p>Varje länk tar en egen fråga: handledare, passagerare, förälder eller hur ni lägger upp passen.</p>
+    ${linkList(PRACTICE_HUB.related ?? [])}
     <h2>Moment att öva</h2>
     <p>Varje guide är ett körpass: vad eleven bör kunna, vad du tittar efter, och när ni kan lämna momentet.</p>
     <ul class="official-links">${momentLinks}</ul>
-    <p>Ska du sitta bredvid finns också <a href="${SUPERVISOR_PATH}">sidan för handledare</a>.</p>
-    <h2>Vad myndigheten kräver</h2>
-    <p>Tipsen ovan är Körpassets sätt att lägga upp träningen. De är inte villkor för att få övningsköra. Det som gäller formellt läser ni hos Transportstyrelsen:</p>
+    ${renderFaqs(PRACTICE_HUB)}
+    <h2>Källor</h2>
+    <p>Kraven på den här sidan kommer från Transportstyrelsen. Körpassets upplägg av passen är träningstips. Körpasset är inte Transportstyrelsens tjänst.</p>
     ${authorityLinks()}
     <h2>När ni vill hålla ihop passen</h2>
     <p>Eleven skapar en resa i Körpasset och bjuder in den som handleder. Då ligger planen och anteckningarna på samma ställe, även om ni turas om.</p>
@@ -162,6 +220,7 @@ export function renderPracticeHub(consent = true): string {
 export function renderSupervisorPage(consent = true): string {
   const breadcrumbs: BreadcrumbItem[] = [
     { name: "Start", path: "/" },
+    { name: PRACTICE_HUB.label, path: HUB_PATH },
     { name: SUPERVISOR_GUIDE.label, path: SUPERVISOR_GUIDE.path },
   ];
   const inner = `${crumb(breadcrumbs)}
@@ -169,18 +228,13 @@ export function renderSupervisorPage(consent = true): string {
     <h1>${escapeHtml(SUPERVISOR_GUIDE.h1)}</h1>
     <p class="lede">${escapeHtml(SUPERVISOR_GUIDE.lede)}</p>
     ${renderSections(SUPERVISOR_GUIDE)}
-    <h2>Myndighetskrav, inte Körpassets råd</h2>
-    <p>Vem som får vara handledare, vad eleven behöver och hur privat övningskörning får gå till bestäms inte här. Läs det hos Transportstyrelsen och håll det isär från träningstipsen ovan.</p>
+    ${renderFaqs(SUPERVISOR_GUIDE)}
+    ${renderRelated(SUPERVISOR_GUIDE)}
+    <h2>Källor</h2>
+    <p>Ålder, körkortstid, giltighet och ansvar är Transportstyrelsens regler. Avsnitten om hur ni lägger upp passet är träningstips. Körpasset är inte Transportstyrelsens tjänst.</p>
     ${authorityLinks()}
-    <h2>Pass att ta med ut</h2>
-    <p>När rollen är tydlig är nästa steg ett konkret moment. Börja i <a href="${HUB_PATH}">guiden om privat övningskörning</a>, eller gå direkt till ett pass:</p>
-    <ul class="official-links">
-      <li><a href="/ovningskora/forsta-gangen">Första gången ni övningskör</a></li>
-      <li><a href="/ovningskora/hogerregeln">Högerregeln</a></li>
-      <li><a href="/ovningskora/rondell">Rondell</a></li>
-    </ul>
-    <h2>Efter passet</h2>
-    <p>Skriv vad ni övade och vad nästa handledare ska ta. Det är det Körpasset är till för.</p>
+    <h2>När anteckningen ska finnas kvar</h2>
+    <p>Skriv vad ni övade och vad nästa handledare ska ta. Eleven kan samla det i Körpasset.</p>
     ${downloadCta()}`;
   return guideDocument(SUPERVISOR_GUIDE, breadcrumbs, pageShell(inner, consent), consent);
 }
@@ -218,18 +272,57 @@ function consentFrom(request: FastifyRequest): boolean {
   return wantsPublicCookieConsent(request);
 }
 
+function renderClusterGuide(guide: StandaloneGuide, consent = true): string {
+  const breadcrumbs: BreadcrumbItem[] = [
+    { name: "Start", path: "/" },
+    { name: PRACTICE_HUB.label, path: HUB_PATH },
+    { name: guide.label, path: guide.path },
+  ];
+  const inner = `${crumb(breadcrumbs)}
+    <p class="eyebrow">${escapeHtml(guide.eyebrow)}</p>
+    <h1>${escapeHtml(guide.h1)}</h1>
+    ${answerBox(guide.answer)}
+    <p class="lede">${escapeHtml(guide.lede)}</p>
+    ${renderSections(guide)}
+    ${renderFaqs(guide)}
+    ${renderRelated(guide)}
+    <h2>Källor</h2>
+    <p>Reglerna på sidan kommer från Transportstyrelsen. Upplägget av passen är Körpassets träningstips. Körpasset är inte Transportstyrelsens tjänst.</p>
+    ${authorityLinks()}
+    <p>Vill ni samla vad ni övade mellan passen kan eleven bjuda in handledaren i Körpasset.</p>
+    ${downloadCta()}`;
+  return guideDocument(guide, breadcrumbs, pageShell(inner, consent), consent);
+}
+
+function registerHtmlRoute(
+  app: FastifyInstance,
+  path: string,
+  render: (consent: boolean) => string,
+): void {
+  app.get(path, async (request, reply) => {
+    return reply.type("text/html").send(render(consentFrom(request)));
+  });
+  app.get(`${path}/`, async (_request, reply) => {
+    return reply.redirect(path, 301);
+  });
+}
+
 export async function registerGuideRoutes(app: FastifyInstance): Promise<void> {
-  app.get(HUB_PATH, async (request, reply) => {
-    return reply.type("text/html").send(renderPracticeHub(consentFrom(request)));
-  });
-
-  app.get(SUPERVISOR_PATH, async (request, reply) => {
-    return reply.type("text/html").send(renderSupervisorPage(consentFrom(request)));
-  });
-
-  for (const guide of MOMENT_GUIDES) {
-    app.get(guide.path, async (request, reply) => {
-      return reply.type("text/html").send(renderMomentGuide(guide, consentFrom(request)));
+  for (const redirect of LEGACY_GUIDE_REDIRECTS) {
+    app.get(redirect.from, async (_request, reply) => {
+      return reply.redirect(redirect.to, 301);
     });
+    app.get(`${redirect.from}/`, async (_request, reply) => {
+      return reply.redirect(redirect.to, 301);
+    });
+  }
+
+  registerHtmlRoute(app, HUB_PATH, renderPracticeHub);
+  registerHtmlRoute(app, SUPERVISOR_PATH, renderSupervisorPage);
+  for (const guide of CLUSTER_GUIDES) {
+    registerHtmlRoute(app, guide.path, (consent) => renderClusterGuide(guide, consent));
+  }
+  for (const guide of MOMENT_GUIDES) {
+    registerHtmlRoute(app, guide.path, (consent) => renderMomentGuide(guide, consent));
   }
 }

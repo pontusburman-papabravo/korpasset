@@ -3,7 +3,7 @@ import { beforeEach, describe, it } from "node:test";
 import { createTestApp } from "./helpers.js";
 import { resetDatabaseData } from "./setup.js";
 import { publicGuideMeta } from "../src/http/guide-content.js";
-import { PUBLIC_INDEX_PAGES, SITE_DESCRIPTION } from "../src/http/seo.js";
+import { PUBLIC_INDEX_PAGES, SITE_DESCRIPTION, robotsTxt, sitemapXml } from "../src/http/seo.js";
 
 function jsonLd(html: string): { "@graph"?: Record<string, unknown>[] } {
   const match = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
@@ -49,7 +49,11 @@ describe("public SEO files and metadata", () => {
     assert.doesNotMatch(response.body, /Disallow: \/integritet/);
     assert.doesNotMatch(response.body, /Disallow: \/radera-konto/);
     assert.doesNotMatch(response.body, /Disallow: \/ovningskora/);
+    assert.doesNotMatch(response.body, /Disallow: \/ovningskorning/);
+    assert.doesNotMatch(response.body, /Disallow: \/planera-ovningskorning/);
     assert.doesNotMatch(response.body, /Disallow: \/handledare/);
+    assert.doesNotMatch(response.body, /Disallow: \/\*\.css/);
+    assert.doesNotMatch(response.body, /Disallow: \/\*\.js/);
     await app.close();
   });
 
@@ -73,8 +77,15 @@ describe("public SEO files and metadata", () => {
     assert.doesNotMatch(response.body, /<loc>[^<]*\/onboarding<\/loc>/);
     assert.doesNotMatch(response.body, /<loc>[^<]*\/konto<\/loc>/);
     assert.doesNotMatch(response.body, /<loc>[^<]*\/hjalp<\/loc>/);
-    assert.match(response.body, /<loc>http:\/\/localhost:3000\/ovningskora<\/loc>/);
+    assert.match(response.body, /<loc>http:\/\/localhost:3000\/ovningskorning<\/loc>/);
+    assert.match(response.body, /<loc>http:\/\/localhost:3000\/ovningskora-med-passagerare<\/loc>/);
+    assert.match(response.body, /<loc>http:\/\/localhost:3000\/ovningskora-med-foralder<\/loc>/);
+    assert.match(response.body, /<loc>http:\/\/localhost:3000\/planera-ovningskorning<\/loc>/);
     assert.match(response.body, /<loc>http:\/\/localhost:3000\/handledare<\/loc>/);
+    assert.match(response.body, /<loc>http:\/\/localhost:3000\/ovningskora\/rondell<\/loc>/);
+    assert.doesNotMatch(response.body, /<loc>http:\/\/localhost:3000\/ovningskora<\/loc>/);
+    assert.doesNotMatch(response.body, /<loc>[^<]*\?/);
+    assert.doesNotMatch(response.body, /<lastmod>/);
     for (const guide of publicGuideMeta()) {
       assert.match(response.body, new RegExp(`<loc>http:\\/\\/localhost:3000${guide.path.replaceAll("/", "\\/")}<\\/loc>`));
     }
@@ -189,8 +200,9 @@ describe("public SEO files and metadata", () => {
     assert.equal(home.statusCode, 200);
     titles.add(home.body.match(/<title>([^<]*)<\/title>/)?.[1] ?? "");
     descriptions.add(metaContent(home.body, "name", "description"));
-    assert.match(home.body, /href="\/ovningskora"/);
+    assert.match(home.body, /href="\/ovningskorning"/);
     assert.match(home.body, /href="\/handledare"/);
+    assert.match(home.body, /href="\/ovningskora-med-foralder"/);
     assert.match(home.body, /Guider för övningskörning/);
     assert.equal(home.body.match(/<h1[\s>]/g)?.length, 1);
 
@@ -229,7 +241,9 @@ describe("public SEO files and metadata", () => {
 
       const h1s = response.body.match(/<h1[\s>]/g) ?? [];
       assert.equal(h1s.length, 1, page.path);
-      assert.match(response.body, new RegExp(`<h1>${page.h1}</h1>`));
+      assert.ok(response.body.includes(`<h1>${page.h1}</h1>`), page.path);
+      assert.equal(response.body.match(/rel="canonical"/g)?.length, 1, page.path);
+      assert.equal(response.body.match(/application\/ld\+json/g)?.length, 1, page.path);
 
       const data = jsonLd(response.body);
       const nodes = graphNodes(data);
@@ -246,25 +260,104 @@ describe("public SEO files and metadata", () => {
       assert.match(response.body, /href="\/#intresse"/);
     }
 
-    const hub = await app.inject({ method: "GET", url: "/ovningskora" });
+    const hub = await app.inject({ method: "GET", url: "/ovningskorning" });
     for (const page of pages) {
-      if (page.path === "/ovningskora") continue;
-      assert.match(hub.body, new RegExp(`href="${page.path}"`));
+      if (page.path === "/ovningskorning") continue;
+      assert.match(hub.body, new RegExp(`href="${page.path}"`), page.path);
     }
     assert.match(hub.body, /transportstyrelsen\.se/);
     assert.match(hub.body, /inte Transportstyrelsens tjänst/);
+    assert.match(hub.body, /1 augusti 2026/);
+    assert.match(hub.body, /fyllt 24/);
 
     const supervisor = await app.inject({ method: "GET", url: "/handledare" });
-    assert.match(supervisor.body, /href="\/ovningskora"/);
+    assert.match(supervisor.body, /href="\/ovningskorning"/);
     assert.match(supervisor.body, /transportstyrelsen\.se/);
-    assert.match(supervisor.body, /Myndighetskrav, inte Körpassets råd/);
+    assert.match(supervisor.body, /fyllt 24 år/);
+    assert.match(supervisor.body, /fem av de senaste tio åren/);
+    assert.match(supervisor.body, /fem år/);
 
     const roundabout = await app.inject({ method: "GET", url: "/ovningskora/rondell" });
-    assert.match(roundabout.body, /href="\/ovningskora"/);
+    assert.match(roundabout.body, /href="\/ovningskorning"/);
     assert.match(roundabout.body, /href="\/ovningskora\/hogerregeln"/);
     assert.match(roundabout.body, /href="\/ovningskora\/landsvag"/);
+    assert.match(roundabout.body, /href="\/planera-ovningskorning"/);
     assert.doesNotMatch(roundabout.body, /<script src="\/app-oauth\.js"/);
+
+    const passenger = await app.inject({ method: "GET", url: "/ovningskora-med-passagerare" });
+    const answerAt = passenger.body.indexOf("Ja. Transportstyrelsen skriver");
+    const rulesAt = passenger.body.indexOf("Vad reglerna säger");
+    assert.ok(answerAt > 0 && answerAt < rulesAt);
+    assert.match(passenger.body, /href="\/ovningskorning"/);
+    assert.match(passenger.body, /href="\/handledare"/);
+    assert.match(passenger.body, /href="\/ovningskora-med-foralder"/);
+
+    const parent = await app.inject({ method: "GET", url: "/ovningskora-med-foralder" });
+    assert.match(parent.body, /href="\/ovningskorning"/);
+    assert.match(parent.body, /href="\/handledare"/);
+    assert.match(parent.body, /href="\/planera-ovningskorning"/);
+    assert.match(parent.body, /href="\/ovningskora\/forsta-gangen"/);
+    assert.match(parent.body, /Försäkring/);
+    assert.match(parent.body, /Fråga bolaget/);
+
+    const legacy = await app.inject({ method: "GET", url: "/ovningskora" });
+    assert.equal(legacy.statusCode, 301);
+    assert.equal(legacy.headers.location, "/ovningskorning");
+    const legacySlash = await app.inject({ method: "GET", url: "/ovningskora/" });
+    assert.equal(legacySlash.statusCode, 301);
+    assert.equal(legacySlash.headers.location, "/ovningskorning");
+    const alias = await app.inject({ method: "GET", url: "/handledare-ovningskorning" });
+    assert.equal(alias.statusCode, 301);
+    assert.equal(alias.headers.location, "/handledare");
+    const hubSlash = await app.inject({ method: "GET", url: "/ovningskorning/" });
+    assert.equal(hubSlash.statusCode, 301);
+    assert.equal(hubSlash.headers.location, "/ovningskorning");
+
+    await assertLocalLinks(app, hub.body, "/ovningskorning");
+    await assertLocalLinks(app, passenger.body, "/ovningskora-med-passagerare");
+    await assertLocalLinks(app, parent.body, "/ovningskora-med-foralder");
+    await assertLocalLinks(app, supervisor.body, "/handledare");
 
     await app.close();
   });
+
+  it("uses the production https origin in sitemap and robots when configured", () => {
+    const previous = process.env.APP_BASE_URL;
+    process.env.APP_BASE_URL = "https://korpasset.se";
+    try {
+      const xml = sitemapXml();
+      assert.match(xml, /<loc>https:\/\/korpasset\.se\/ovningskorning<\/loc>/);
+      assert.match(xml, /<loc>https:\/\/korpasset\.se\/ovningskora\/forsta-gangen<\/loc>/);
+      assert.doesNotMatch(xml, /<loc>http:\/\//);
+      assert.doesNotMatch(xml, /<loc>[^<]*\?/);
+      assert.doesNotMatch(xml, /<loc>[^<]*\/admin/);
+      assert.doesNotMatch(xml, /<loc>[^<]*\/app</);
+      assert.doesNotMatch(xml, /www\.korpasset\.se/);
+      const robots = robotsTxt();
+      assert.match(robots, /Sitemap: https:\/\/korpasset\.se\/sitemap\.xml/);
+      assert.match(robots, /Allow: \//);
+    } finally {
+      if (previous === undefined) delete process.env.APP_BASE_URL;
+      else process.env.APP_BASE_URL = previous;
+    }
+  });
 });
+
+async function assertLocalLinks(
+  app: { inject: (opts: { method: string; url: string }) => Promise<{ statusCode: number }> },
+  html: string,
+  from: string,
+): Promise<void> {
+  const hrefs = [...html.matchAll(/href="([^"]+)"/g)].map((match) => match[1]);
+  const seen = new Set<string>();
+  for (const href of hrefs) {
+    if (href.startsWith("http://") || href.startsWith("https://") || href.startsWith("mailto:")) {
+      continue;
+    }
+    const path = href.split("#")[0] || "/";
+    if (path === "" || seen.has(path)) continue;
+    seen.add(path);
+    const response = await app.inject({ method: "GET", url: path });
+    assert.equal(response.statusCode, 200, `${from} -> ${path} (${response.statusCode})`);
+  }
+}
