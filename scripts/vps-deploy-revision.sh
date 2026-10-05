@@ -29,6 +29,7 @@ require_tree_path() {
 
 require_tree_path deploy/docker-compose.yml
 require_tree_path deploy/Dockerfile
+require_tree_path deploy/Caddyfile
 require_tree_path scripts/vps-deploy-revision.sh
 require_tree_path scripts/vps-backup.sh
 require_tree_path scripts/vps-install-backup-timer.sh
@@ -69,10 +70,71 @@ require_env_nonempty RESEND_WEBHOOK_SECRET
 PREVIOUS_SHA="$(git rev-parse HEAD)"
 COMPOSE=(docker compose --project-directory "$APP_PATH/deploy" -f "$APP_PATH/deploy/docker-compose.yml")
 
+# git checkout --force replaces deploy/Caddyfile with a new inode. Caddy
+# bind-mounts that file, so a container left running keeps the previous
+# inode. Recreate only Caddy, and only when the mount is stale. Validate
+# first so a broken file never replaces the running proxy.
+validate_caddyfile() {
+  local config="$APP_PATH/deploy/Caddyfile"
+  if [[ ! -f "$config" ]]; then
+    echo "Missing $config — refusing deploy" >&2
+    return 1
+  fi
+  echo "Validating Caddyfile"
+  docker run --rm --pull never \
+    -v "$config:/etc/caddy/Caddyfile:ro" \
+    caddy:2-alpine \
+    caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+}
+
+caddy_mount_is_current() {
+  local host_sum running_sum
+  host_sum="$(md5sum "$APP_PATH/deploy/Caddyfile" | awk '{print $1}')"
+  if ! running_sum="$("${COMPOSE[@]}" exec -T caddy md5sum /etc/caddy/Caddyfile 2>/dev/null | awk '{print $1}')"; then
+    return 1
+  fi
+  [[ -n "$running_sum" && "$host_sum" == "$running_sum" ]]
+}
+
+wait_for_caddy() {
+  local _i cid status
+  for _i in $(seq 1 20); do
+    cid="$("${COMPOSE[@]}" ps -q caddy 2>/dev/null || true)"
+    if [[ -n "$cid" ]]; then
+      status="$(docker inspect -f '{{.State.Status}}' "$cid" 2>/dev/null || true)"
+      if [[ "$status" == "running" ]]; then
+        return 0
+      fi
+    fi
+    sleep 1
+  done
+  echo "Caddy did not stay running" >&2
+  "${COMPOSE[@]}" logs --tail=40 caddy >&2 || true
+  return 1
+}
+
+refresh_caddy() {
+  if caddy_mount_is_current; then
+    echo "Caddy is already serving the checked-out Caddyfile"
+    return 0
+  fi
+  echo "Recreating Caddy to load the checked-out Caddyfile"
+  "${COMPOSE[@]}" up -d --force-recreate --no-deps caddy
+  wait_for_caddy
+}
+
 git checkout --force "$DEPLOY_SHA"
 
 if [[ ! -f deploy/docker-compose.yml ]]; then
   echo "SHA $DEPLOY_SHA has no deploy/docker-compose.yml after checkout" >&2
+  exit 1
+fi
+
+if ! validate_caddyfile; then
+  echo "Caddyfile validation failed for $DEPLOY_SHA — leaving running containers unchanged" >&2
+  if [[ -n "$PREVIOUS_SHA" && "$PREVIOUS_SHA" != "$DEPLOY_SHA" ]]; then
+    git checkout --force "$PREVIOUS_SHA"
+  fi
   exit 1
 fi
 
@@ -95,7 +157,7 @@ restore_previous() {
   echo "Restoring previous revision $PREVIOUS_SHA" >&2
   git checkout --force "$PREVIOUS_SHA"
   "${COMPOSE[@]}" up -d --build --no-deps app
-  "${COMPOSE[@]}" up -d --no-deps caddy
+  refresh_caddy
   if wait_for_health; then
     echo "Restored $PREVIOUS_SHA after failed deploy of $DEPLOY_SHA" >&2
     return 0
@@ -106,6 +168,12 @@ restore_previous() {
 
 if ! "${COMPOSE[@]}" up -d --build; then
   echo "Compose up failed for $DEPLOY_SHA" >&2
+  restore_previous || true
+  exit 1
+fi
+
+if ! refresh_caddy; then
+  echo "Caddy recreate failed for $DEPLOY_SHA" >&2
   restore_previous || true
   exit 1
 fi
