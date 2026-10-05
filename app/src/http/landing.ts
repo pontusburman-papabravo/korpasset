@@ -355,10 +355,10 @@ function hero(): string {
 function trafficPhotos(): string {
   return `<section class="photo-strip" aria-label="Svensk övningskörning">
     <figure>
-      <img src="/images/landing/residential-street.jpg" width="1280" height="720" alt="Körkortselev och handledare övningskör i sommarkväll" decoding="async" loading="lazy">
+      <img src="/images/landing/residential-street.jpg" width="1152" height="864" alt="Övningskörning i svensk bostadsgata" decoding="async" loading="lazy">
     </figure>
     <figure>
-      <img src="/images/landing/roundabout.jpg" width="1280" height="720" alt="Övningskörning i en solig rondell i svenskt villaområde" decoding="async" loading="lazy">
+      <img src="/images/landing/roundabout.jpg" width="1280" height="720" alt="Rondell i svenskt villaområde, sett från bilen" decoding="async" loading="lazy">
     </figure>
     <figure>
       <img src="/images/landing/country-road.jpg" width="1280" height="720" alt="Träna inför körkort på öppen landsväg i kvällssol" decoding="async" loading="lazy">
