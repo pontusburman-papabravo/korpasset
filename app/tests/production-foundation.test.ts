@@ -127,6 +127,10 @@ describe("production foundation", () => {
       redactRequestPath("/app?oauth_handoff=abc.def_token"),
       "/app?oauth_handoff=[redacted]",
     );
+    assert.equal(
+      redactRequestPath("/kom-igang?fbclid=IwAR123&utm_source=meta"),
+      "/kom-igang?fbclid=[redacted]&utm_source=meta",
+    );
   });
 
   it("rejects production boot with missing or default secrets", () => {
@@ -254,6 +258,7 @@ describe("production foundation / fresh database migrate", () => {
       "0022_referral_codes.sql",
       "0023_marketing_email.sql",
       "0024_mail_receipt.sql",
+      "0025_campaign_events.sql",
     ]);
     assert.deepEqual(first.stamped, []);
 
@@ -341,6 +346,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
       "0022_referral_codes.sql",
       "0023_marketing_email.sql",
       "0024_mail_receipt.sql",
+      "0025_campaign_events.sql",
     ]);
     assert.deepEqual(first.skipped, []);
 
@@ -385,6 +391,7 @@ describe("production foundation / existing 0001 without schema_migrations", () =
         "0022_referral_codes.sql",
         "0023_marketing_email.sql",
         "0024_mail_receipt.sql",
+        "0025_campaign_events.sql",
       ],
     );
 

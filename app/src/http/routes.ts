@@ -129,7 +129,7 @@ import {
 } from "../services/share.js";
 import { readReferralCookie } from "./share.js";
 import { driveDoneSharePrompt } from "./share-widget.js";
-import { campaignSearch } from "./marketing.js";
+import { campaignSearch } from "./campaign-query.js";
 import {
   coachingStepsForSkillKey,
   parseFormStringList,

@@ -251,6 +251,46 @@ export async function updateInterestSignup(
   return mapRow(result.rows[0] as Record<string, unknown>);
 }
 
+const ANDROID_NOTIFY_NAME = "Android-avisering";
+const ANDROID_NOTIFY_MESSAGE = "Google Play-avisering från /kom-igang";
+
+/** Email-only “tell me when Android is on Google Play”. Does not replace an existing name. */
+export async function saveAndroidNotify(input: {
+  email: string;
+  honeypot?: string;
+}): Promise<{ signup: InterestSignup; created: boolean } | null> {
+  if (input.honeypot?.trim()) return null;
+
+  const email = input.email.trim();
+  const emailNormalized = normalizeEmail(email);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalized) || email.length > 120) {
+    throw new AppError("Ange en giltig e-postadress", 400, "invalid_email");
+  }
+
+  const result = await getPool().query(
+    `INSERT INTO interest_signups (
+       name, email, email_normalized, role, city, message, platform_ios, platform_android
+     )
+     VALUES ($1, $2, $3, 'other', NULL, $4, false, true)
+     ON CONFLICT (email_normalized) DO UPDATE SET
+       platform_android = true,
+       message = CASE
+         WHEN interest_signups.message ILIKE '%Google Play-avisering%' THEN interest_signups.message
+         WHEN interest_signups.message IS NULL OR btrim(interest_signups.message) = '' THEN EXCLUDED.message
+         ELSE left(interest_signups.message || E'\\n' || EXCLUDED.message, 1000)
+       END,
+       updated_at = now()
+     RETURNING *, (xmax = 0) AS inserted`,
+    [ANDROID_NOTIFY_NAME, email, emailNormalized, ANDROID_NOTIFY_MESSAGE],
+  );
+
+  const row = result.rows[0] as Record<string, unknown>;
+  return {
+    signup: mapRow(row),
+    created: Boolean(row.inserted),
+  };
+}
+
 export async function deleteInterestSignup(id: string): Promise<void> {
   const result = await getPool().query(
     `DELETE FROM interest_signups WHERE id = $1`,

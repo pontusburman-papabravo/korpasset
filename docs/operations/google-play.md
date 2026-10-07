@@ -126,3 +126,7 @@ Samma sidor som på webben:
 | Användarvillkor | `https://korpasset.se/villkor` |
 
 iOS App ID och App Store Connect: [apple-developer.md](apple-developer.md).
+
+## Landningssidan `/kom-igang`
+
+Innan Play är godkänd säger Android-knappen på `https://korpasset.se/kom-igang` att vi mejlar när appen finns. Sätt `ANDROID_PLAY_LIVE=1` i VPS-env när listningen är öppen för alla och starta om appen. Då pekar Android-knappen direkt på Google Play, utan mejlformulär.

@@ -133,6 +133,13 @@ export const config = {
     const value = (process.env.META_PIXEL_ID ?? "").trim();
     return /^\d{8,20}$/.test(value) ? value : "";
   },
+  /**
+   * Google Play is open for everyone. Off until Play approves the app.
+   * When "1", /kom-igang sends Android straight to the store listing.
+   */
+  get androidPlayLive() {
+    return process.env.ANDROID_PLAY_LIVE === "1";
+  },
   /** Guest-elev via /onboarding. Off in production unless explicitly enabled. */
   get allowGuestStudentOnboarding() {
     if (process.env.ALLOW_GUEST_STUDENT_ONBOARDING === "true") return true;

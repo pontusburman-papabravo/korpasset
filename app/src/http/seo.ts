@@ -64,6 +64,7 @@ const ROBOTS_DISALLOW = [
   "/hjalp",
   "/hjalp/",
   "/interest/tack",
+  "/kom-igang",
   "/invite/",
   "/journey/",
   "/konto",

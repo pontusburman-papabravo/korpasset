@@ -24,35 +24,12 @@ import {
   termsPage,
 } from "./legal.js";
 import { registerGuideRoutes } from "./guides.js";
+import { campaignSearch } from "./campaign-query.js";
+import { registerKomIgangRoutes } from "./kom-igang.js";
 import { robotsTxt, sitemapXml } from "./seo.js";
 import { INTEREST_RATE_LIMIT, allowRequest } from "./rate-limit.js";
 
-const CAMPAIGN_KEYS = [
-  "utm_source",
-  "utm_medium",
-  "utm_campaign",
-  "utm_content",
-  "utm_term",
-  "utm_id",
-] as const;
-
-const CAMPAIGN_VALUE = /^[\p{L}\p{N}._~+:@-]{1,80}$/u;
-
-/** Allowlisted campaign params only. Dropped values never reach the redirect or the form. */
-export function campaignSearch(query: unknown): string {
-  if (!query || typeof query !== "object") return "";
-  const source = query as Record<string, unknown>;
-  const params = new URLSearchParams();
-  for (const key of CAMPAIGN_KEYS) {
-    const raw = source[key];
-    if (typeof raw !== "string") continue;
-    const value = raw.trim();
-    if (!CAMPAIGN_VALUE.test(value)) continue;
-    params.append(key, value);
-  }
-  const serialized = params.toString();
-  return serialized ? `?${serialized}` : "";
-}
+export { campaignSearch } from "./campaign-query.js";
 
 function thanksLocation(query: unknown): string {
   return `/interest/tack${campaignSearch(query)}`;
@@ -103,6 +80,7 @@ async function interestPageOptions(request: FastifyRequest) {
 
 export async function registerMarketingRoutes(app: FastifyInstance): Promise<void> {
   await registerGuideRoutes(app);
+  await registerKomIgangRoutes(app);
 
   app.get("/robots.txt", async (_request, reply) => {
     return reply
