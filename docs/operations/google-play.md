@@ -129,4 +129,4 @@ iOS App ID och App Store Connect: [apple-developer.md](apple-developer.md).
 
 ## Landningssidan `/kom-igang`
 
-Innan Play är godkänd säger Android-knappen på `https://korpasset.se/kom-igang` att vi mejlar när appen finns. Sätt `ANDROID_PLAY_LIVE=1` i VPS-env när listningen är öppen för alla och starta om appen. Då pekar Android-knappen direkt på Google Play, utan mejlformulär.
+Innan Play är öppet för alla säger Android-knappen på `https://korpasset.se/kom-igang` att besökaren kan lämna mejl så att vi lägger upp hen som testare. Aviseringen hamnar i waitlist-admin. Lägg upp adressen i Play Console (stängd test) och mejla när det går att installera. Sätt `ANDROID_PLAY_LIVE=1` i VPS-env när listningen är öppen för alla och starta om appen. Då pekar Android-knappen direkt på Google Play, utan mejlformulär.
