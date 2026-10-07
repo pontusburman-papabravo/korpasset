@@ -298,9 +298,27 @@ export function siteLayout(
 </html>`;
 }
 
+function reviewLoginForm(returnTo: string): string {
+  if (!config.playReviewEmail || !config.playReviewPassword) return "";
+  return `<form method="post" action="/api/auth/review-login" class="stack">
+           <p>Logga in med e-post</p>
+           <div>
+             <label for="review-email">E-post</label>
+             <input id="review-email" name="email" type="email" autocomplete="username" required maxlength="200" value="${escapeHtml(config.playReviewEmail)}">
+           </div>
+           <div>
+             <label for="review-password">Lösenord</label>
+             <input id="review-password" name="password" type="password" autocomplete="current-password" required maxlength="200">
+           </div>
+           <input type="hidden" name="returnTo" value="${escapeHtml(returnTo)}">
+           ${primaryButton("Logga in")}
+         </form>`;
+}
+
 export function oauthContinuePanel(intro?: string, returnTo = "/app"): string {
   return `${intro ? `<p>${intro}</p>` : ""}
          <div class="stack oauth-continue" data-return-to="${escapeHtml(returnTo)}">
+           ${reviewLoginForm(returnTo)}
            <p>Fortsätt med Apple eller Google</p>
            <p class="muted">Första gången skapas ditt konto automatiskt. Nästa gång använder du samma val för att logga in.</p>
            <p id="oauth-error" class="banner banner-error" hidden></p>

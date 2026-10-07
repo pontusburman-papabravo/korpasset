@@ -52,7 +52,7 @@ Klistra in i **Annan information som krävs för åtkomst till appen**
 (max 500 tecken, engelska):
 
 ```
-Sign in with "Fortsätt med Google" using korpasset@gmail.com (fields above). If the Google sheet is blank, a browser opens: sign in there with the same account, then tap Open Körpasset. No 2FA, biometrics, membership, location, or QR. Skip invitation QR. First login creates test data. No payment. Apple is iOS-only. Do not use /admin.
+On the first screen use the email and password fields, not Google. Email is korpasset@gmail.com and the password is in the field above. No 2FA, biometrics, membership, location, or QR. Skip invitation QR. First login creates test data. No payment. Apple is iOS-only. Do not use /admin.
 ```
 
 ## Innehållsklassificering (IARC, klart 2026-09-20)
