@@ -333,6 +333,7 @@ function appLoginPage(errorMessage?: string, returnTo = "/app"): string {
     `${errorMessage ? errorBanner(errorMessage) : ""}
      <h1>Fortsätt in i Körpasset</h1>
      ${oauthContinuePanel(undefined, returnTo)}`,
+    { navigation: false },
   );
 }
 

@@ -430,6 +430,66 @@ describe("app oauth HTTP (FR-11)", () => {
     await app.close();
   });
 
+  it("sends an external Android browser back into the app without spending the handoff", async () => {
+    setIdentityTokenVerifierForTests(async () => ({
+      provider: "google",
+      subject: "google.sub.android-browser",
+      email: "android.browser@example.com",
+      name: "Android Browser",
+    }));
+    const app = await createTestApp();
+    const chrome = await app.inject({
+      method: "POST",
+      url: "/app",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        "user-agent":
+          "Mozilla/5.0 (Linux; Android 14; Pixel 7a) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      },
+      payload: new URLSearchParams({
+        id_token: "android-browser-id-token",
+        state: "androidbrowsernonce",
+      }).toString(),
+    });
+    assert.equal(chrome.statusCode, 200);
+    assert.match(String(chrome.headers["content-type"]), /text\/html/);
+    assert.match(chrome.body, /Öppna Körpasset/);
+    assert.match(
+      chrome.body,
+      /intent:\/\/korpasset\.se\/app\?oauth_handoff=[A-Za-z0-9_-]{20,128}#Intent;scheme=https;package=se\.korpasset\.app;/,
+    );
+    assert.equal(chrome.body.includes("android-browser-id-token"), false);
+    assert.equal(
+      chrome.cookies.find((item) => item.name === "bilklar_session"),
+      undefined,
+    );
+    const code = chrome.body.match(/oauth_handoff=([A-Za-z0-9_-]{20,128})/)?.[1] ?? "";
+    const opened = await app.inject({
+      method: "GET",
+      url: `/app?oauth_handoff=${code}`,
+    });
+    assert.equal(opened.statusCode, 302);
+    assert.equal(opened.headers.location, "/onboarding");
+    assert.ok(opened.cookies.find((item) => item.name === "bilklar_session")?.value);
+
+    const webview = await app.inject({
+      method: "POST",
+      url: "/app",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        "user-agent":
+          "Mozilla/5.0 (Linux; Android 14; Pixel 7a; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.0.0 Mobile Safari/537.36",
+      },
+      payload: new URLSearchParams({
+        id_token: "webview-id-token",
+        state: "webviewnonce",
+      }).toString(),
+    });
+    assert.equal(webview.statusCode, 302);
+    assert.match(String(webview.headers.location), /^\/app\?oauth_handoff=[A-Za-z0-9_-]{20,128}$/);
+    await app.close();
+  });
+
   it("maps Google form_post cancel and failure to an explicit login retry", async () => {
     const app = await createTestApp();
     const cancelled = await app.inject({

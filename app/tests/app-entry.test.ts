@@ -64,6 +64,7 @@ describe("app entry (GET /app) and production onboarding", () => {
     assert.match(response.body, /id="oauth-google-hint"/);
     assert.match(response.body, /Det är Google som gör det/);
     assert.match(response.body, /Loggar in…/);
+    assert.doesNotMatch(response.body, /app-tabbar/);
     await app.close();
   });
 
