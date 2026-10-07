@@ -251,10 +251,10 @@ export async function updateInterestSignup(
   return mapRow(result.rows[0] as Record<string, unknown>);
 }
 
-const ANDROID_NOTIFY_NAME = "Android-avisering";
-const ANDROID_NOTIFY_MESSAGE = "Google Play-avisering från /kom-igang";
+const ANDROID_NOTIFY_NAME = "Android-test";
+const ANDROID_NOTIFY_MESSAGE = "Android-test från /kom-igang";
 
-/** Email-only “tell me when Android is on Google Play”. Does not replace an existing name. */
+/** Email-only request to be added as an Android tester. Does not replace an existing name. */
 export async function saveAndroidNotify(input: {
   email: string;
   honeypot?: string;
@@ -275,7 +275,8 @@ export async function saveAndroidNotify(input: {
      ON CONFLICT (email_normalized) DO UPDATE SET
        platform_android = true,
        message = CASE
-         WHEN interest_signups.message ILIKE '%Google Play-avisering%' THEN interest_signups.message
+         WHEN interest_signups.message ILIKE '%Google Play-avisering%'
+           OR interest_signups.message ILIKE '%Android-test från /kom-igang%' THEN interest_signups.message
          WHEN interest_signups.message IS NULL OR btrim(interest_signups.message) = '' THEN EXCLUDED.message
          ELSE left(interest_signups.message || E'\\n' || EXCLUDED.message, 1000)
        END,

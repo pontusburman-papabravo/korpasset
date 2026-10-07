@@ -220,7 +220,7 @@ export function androidNotifyEmailText(): string {
   return [
     "Hej,",
     "",
-    "Klart. Vi mejlar när Körpasset finns på Google Play.",
+    "Tack. Vi lägger upp dig så du kan testa Körpasset på Android och mejlar när det går att installera.",
     "",
     "Hälsningar",
     "Körpasset",
@@ -229,7 +229,7 @@ export function androidNotifyEmailText(): string {
 
 export function androidNotifyAdminText(signup: InterestSignup): string {
   return [
-    "Ny avisering från /kom-igang. Personen vill bli mejlad när appen finns på Google Play.",
+    "Ny Android-testare från /kom-igang. Personen vill bli upplagd så hen kan testa.",
     "",
     `E-post: ${signup.email}`,
     "",
@@ -245,12 +245,12 @@ export async function notifyAndroidPlaySignup(
   const mailer = getMailer();
   await mailer.send({
     to: signup.email,
-    subject: "Vi mejlar när Körpasset finns på Google Play",
+    subject: "Vi lägger upp dig så du kan testa Körpasset",
     text: androidNotifyEmailText(),
   });
   await mailer.send({
     to: WAITLIST_ADMIN_INBOX,
-    subject: "Android-avisering från kom-igang",
+    subject: "Android-testare från kom-igang",
     text: androidNotifyAdminText(signup),
   });
 }
