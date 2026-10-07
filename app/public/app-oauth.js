@@ -156,6 +156,10 @@
     const options = { nonce: nonce };
     if (provider === "google" && platform() === "android") return options;
     options.scopes = provider === "google" ? ["email", "profile"] : ["email", "name"];
+    // iOS GIDSignIn restores the last Google account with no sheet while
+    // hasPreviousSignIn() is true. Logout clears that store. forcePrompt
+    // still asks for the account chooser if the store survived logout.
+    if (provider === "google" && platform() === "ios") options.forcePrompt = true;
     return options;
   }
 
@@ -1776,9 +1780,53 @@
     openInviteFromBrowser: openInviteFromBrowser,
   };
 
+  function nativeLogoutForm(target) {
+    if (platform() !== "ios" && platform() !== "android") return null;
+    const form = target.closest("form");
+    if (!form) return null;
+    const action = String(form.getAttribute("action") || "");
+    if (action !== "/logout") return null;
+    return form;
+  }
+
+  async function disconnectNativeGoogle() {
+    const SocialLogin = plugin("SocialLogin");
+    if (!SocialLogin || typeof SocialLogin.logout !== "function") return;
+    try {
+      if (googleReady() && typeof SocialLogin.initialize === "function") {
+        await initializeOnce(SocialLogin, "google");
+      }
+      await SocialLogin.logout({ provider: "google" });
+      oauthTrace("google_native_signed_out", { provider: "google" });
+    } catch (error) {
+      oauthTrace("google_native_signout_failed", {
+        provider: "google",
+        pluginMessage: sanitizePluginMessage(error),
+      });
+    }
+  }
+
+  function finishNativeLogout(form) {
+    const done = disconnectNativeGoogle();
+    const timeout = new Promise(function (resolve) {
+      setTimeout(resolve, 2500);
+    });
+    Promise.race([done, timeout]).finally(function () {
+      if (typeof form.submit === "function") form.submit();
+    });
+  }
+
   document.addEventListener("click", function (event) {
     const target = event.target && event.target.closest ? event.target : null;
     if (!target) return;
+    const logoutForm = nativeLogoutForm(target);
+    if (logoutForm) {
+      if (logoutForm.getAttribute("data-google-signed-out") === "1") return;
+      event.preventDefault();
+      logoutForm.setAttribute("data-google-signed-out", "1");
+      finishNativeLogout(logoutForm);
+      return;
+    }
     const button = target.closest("[data-oauth-provider]");
     if (!button) return;
     event.preventDefault();
