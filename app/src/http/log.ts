@@ -3,5 +3,6 @@ export function redactRequestPath(url: string | undefined): string {
   return url
     .replace(/\/invite\/[^/?#]+/gi, "/invite/[redacted]")
     .replace(/([?&]token=)[^&]*/gi, "$1[redacted]")
-    .replace(/([?&]oauth_handoff=)[^&#]*/gi, "$1[redacted]");
+    .replace(/([?&]oauth_handoff=)[^&#]*/gi, "$1[redacted]")
+    .replace(/([?&]fbclid=)[^&#]*/gi, "$1[redacted]");
 }

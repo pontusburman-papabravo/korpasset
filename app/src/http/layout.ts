@@ -299,7 +299,8 @@ export function siteLayout(
 export function oauthContinuePanel(intro?: string, returnTo = "/app"): string {
   return `${intro ? `<p>${intro}</p>` : ""}
          <div class="stack oauth-continue" data-return-to="${escapeHtml(returnTo)}">
-           <p>Fortsätt med Apple eller Google. Samma knapp är både första gången och när du kommer tillbaka.</p>
+           <p>Fortsätt med Apple eller Google</p>
+           <p class="muted">Första gången skapas ditt konto automatiskt. Nästa gång använder du samma val för att logga in.</p>
            <p id="oauth-error" class="banner banner-error" hidden></p>
            <div id="oauth-google-reauth" class="stack" hidden>
              <p id="oauth-google-reauth-how" class="muted">Google avbröt efter kontoväljaren utan mejl och utan en ruta att godkänna. Tryck Fortsätt med Google igen. Samma sak en gång till betyder att Google nekar Körpasset på den här telefonen just nu — inte att du missat en knapp.</p>

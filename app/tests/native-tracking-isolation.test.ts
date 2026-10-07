@@ -71,6 +71,7 @@ describe("native WebView tracking isolation", () => {
       "/radera-konto",
       "/",
       "/interest/tack",
+      "/kom-igang",
     ]) {
       const page = await app.inject({ method: "GET", url, cookies: native });
       assert.equal(page.statusCode, 200, url);

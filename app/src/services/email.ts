@@ -216,6 +216,45 @@ export async function sendNoConnectedSupervisorHelpEmail(to: string): Promise<st
   return messageId(result);
 }
 
+export function androidNotifyEmailText(): string {
+  return [
+    "Hej,",
+    "",
+    "Klart. Vi mejlar när Körpasset finns på Google Play.",
+    "",
+    "Hälsningar",
+    "Körpasset",
+  ].join("\n");
+}
+
+export function androidNotifyAdminText(signup: InterestSignup): string {
+  return [
+    "Ny avisering från /kom-igang. Personen vill bli mejlad när appen finns på Google Play.",
+    "",
+    `E-post: ${signup.email}`,
+    "",
+    `Admin: ${config.appBaseUrl}/admin/signups/${signup.id}`,
+  ].join("\n");
+}
+
+export async function notifyAndroidPlaySignup(
+  signup: InterestSignup,
+  created: boolean,
+): Promise<void> {
+  if (!created || !config.resendApiKey) return;
+  const mailer = getMailer();
+  await mailer.send({
+    to: signup.email,
+    subject: "Vi mejlar när Körpasset finns på Google Play",
+    text: androidNotifyEmailText(),
+  });
+  await mailer.send({
+    to: WAITLIST_ADMIN_INBOX,
+    subject: "Android-avisering från kom-igang",
+    text: androidNotifyAdminText(signup),
+  });
+}
+
 export async function notifyWaitlistSignup(
   signup: InterestSignup,
   created: boolean,

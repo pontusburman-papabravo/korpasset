@@ -69,7 +69,7 @@ export function privacyPage(options: PublicConsentOptions = {}): string {
   return renderLegalPage(
     "Integritetspolicy",
     `<h1>Integritetspolicy</h1>
-     <p>Senast uppdaterad: 4 oktober 2026</p>
+     <p>Senast uppdaterad: 7 oktober 2026</p>
      <p>Papa Bravo AB är personuppgiftsansvarig för Körpasset, en digital tjänst för privat övningskörning mot svenskt B-körkort.</p>
      <p>Vi samlar in så lite personuppgifter som möjligt. Vi säljer inte dina personuppgifter. På den publika webbplatsen korpasset.se kan annonsmätning via Meta Pixel ske bara om du samtycker till marknadsföringscookies. iOS-appen Körpasset använder inte reklam- eller marknadsföringsspårning, laddar inte Meta Pixel och visar ingen cookiebanner.</p>
      <p>Du kan kontakta oss på:</p>
@@ -91,6 +91,10 @@ export function privacyPage(options: PublicConsentOptions = {}): string {
      <p>Syftet är att administrera betakön, kontakta dig om Körpassets beta och skicka en bekräftelse på din anmälan.</p>
      <p>Den rättsliga grunden är ditt samtycke. Du lämnar samtycket genom att kryssa i rutan att du vill bli kontaktad om betan. Du kan när som helst återkalla samtycket genom att kontakta oss.</p>
      <p>Vi använder inte uppgifterna från intresseanmälan för nyhetsbrev, generell säljmarknadsföring eller profilering.</p>
+
+     <h2>Avisering när Android-appen finns</h2>
+     <p>På sidan Kom igång kan du lämna din e-postadress för att bli mejlad när Körpasset finns på Google Play. Vi sparar e-postadressen och att aviseringen gäller Android. Vi ber inte om namn. Raden märks som en Android-avisering så att den går att skilja från en vanlig intresseanmälan.</p>
+     <p>Syftet är bara att skicka det mejlet. Den rättsliga grunden är ditt samtycke, som du lämnar genom att skicka formuläret. Vi använder inte adressen för nyhetsbrev eller annan marknadsföring. Samma lagringstid gäller som för en intresseanmälan: senast 18 månader, tidigare om du ber oss radera den.</p>
 
      <h2>När du använder Körpasset</h2>
      <p>När du får tillgång till Körpasset behandlar vi de uppgifter som behövs för att skapa konto och använda en körkortsresa. Det kan bland annat vara:</p>
@@ -201,13 +205,15 @@ export function privacyPage(options: PublicConsentOptions = {}): string {
      <p>Valfria kategorier är avstängda tills du själv godkänner dem. Du kan godkänna alla, avvisa alla valfria eller anpassa valet. Samma val kan ändras eller återkallas via Cookieinställningar, lika enkelt som det gavs. Att återkalla samtycket påverkar inte behandling som redan har skett.</p>
      <p>Själva valet sparas i en nödvändig förstapartscookie i upp till sex månader. Den innehåller kategorierna du valt, en versionsmarkering och en tidpunkt. Den innehåller inte namn eller e-postadress.</p>
      <p>Analys, om du samtycker i en vanlig webbläsare, är Google Analytics 4 från Google. Mätningen startar bara när ett mät-id är konfigurerat och du har godkänt analys. Google kan behandla uppgifter utanför EU/EES. Vi använder inte uppgifterna för riktad annonsmarknadsföring från vår sida. iOS-appen använder inte Google Analytics.</p>
-     <p>Marknadsföring, om du samtycker i en vanlig webbläsare, är Meta Pixel från Meta Platforms. Det mäter annonsresultat, till exempel att en intresseanmälan har sparats. Skriptet laddas bara efter samtycke till marknadsföring. Meta kan behandla uppgifter utanför EU/EES. Utan det samtycket skickas ingen händelse. iOS-appen laddar inte Meta Pixel och skickar ingen PageView eller Lead.</p>
+     <p>Marknadsföring, om du samtycker i en vanlig webbläsare, är Meta Pixel från Meta Platforms. Det mäter annonsresultat, till exempel att en intresseanmälan har sparats eller att någon på Kom igång gått vidare mot App Store. Skriptet laddas bara efter samtycke till marknadsföring. Meta kan behandla uppgifter utanför EU/EES. Utan det samtycket skickas ingen händelse. iOS-appen laddar inte Meta Pixel och skickar ingen PageView eller Lead.</p>
      <p>Publika sidor gör inga anrop till typsnitt, analys eller reklam innan du har gjort ett val. En fullständig förteckning finns i <a href="/cookies">cookiepolicyn</a>.</p>
      <p>När du loggar in i produkten sätts en nödvändig HttpOnly-cookie som håller dig inloggad i upp till ett år. Cookien innehåller en signerad hänvisning till ditt användar-id, inte namn eller e-postadress.</p>
      <p>När en elev öppnar handledarens startlänk kan en HttpOnly-cookie sättas i upp till sju dagar. Den används för att hålla reda på den tekniska händelsen att länken öppnats. Värdet är en teknisk flagga, inte namn eller e-postadress. Cookien sätts inte av en vanlig inbjudningslänk.</p>
      <p>När du öppnar produkten eller en inbjudan kan en cookie användas för att känna igen att du kommit in via appen eller den ytan. Den är inte HttpOnly och innehåller bara värdet 1, inte namn eller e-postadress.</p>
      <p>Administrationsdelen använder en separat nödvändig HttpOnly-cookie för autentisering, i upp till 12 timmar.</p>
      <p>I appen kan webbläsarens sessionStorage användas tillfälligt för inbjudningslänkar. Det skickas inte som en cookie.</p>
+     <p>På sidan Kom igång kan kampanjparametrar (utm) sparas tillfälligt i sessionStorage i samma flik, så att de finns kvar om du öppnar integritet, villkor eller kontakt. Det är inte en cookie. Metas klick-id sparas inte där.</p>
+     <p>Samma sida räknar sidvisning och knapptryck, tillsammans med kampanjlänken, utan cookie och utan klick-id. Det görs för att se om sidan leder vidare till App Store eller en Android-avisering. Rättslig grund är berättigat intresse av att mäta vår egen kampanjsida. Räkningen körs inte i appen.</p>
      <p>De nödvändiga cookies som listas här används för att tjänsten ska fungera. De används inte för reklam eller spårning mellan webbplatser.</p>
 
      <h2>Ändringar i policyn</h2>
@@ -388,7 +394,7 @@ export function cookiesPage(options: PublicConsentOptions = {}): string {
 
      <h2>Marknadsföring och andra tredjepartsverktyg</h2>
      <p>Används bara på den publika webbplatsen om du godkänner den kategorin. Rättslig grund är ditt samtycke. Gäller inte iOS-appen.</p>
-     <p>Verktyget är Meta Pixel (Meta Platforms Ireland Limited och Meta Platforms, Inc.). Det används för att mäta annonsresultat, till exempel att en intresseanmälan har sparats. Meta kan behandla uppgifter utanför EU/EES enligt Metas egna villkor.</p>
+     <p>Verktyget är Meta Pixel (Meta Platforms Ireland Limited och Meta Platforms, Inc.). Det används för att mäta annonsresultat, till exempel att en intresseanmälan har sparats eller att någon på Kom igång-sidan gått vidare mot App Store. Meta kan behandla uppgifter utanför EU/EES enligt Metas egna villkor.</p>
      <p>Skriptet laddas inte, och ingen PageView eller Lead skickas, förrän du har samtyckt till marknadsföring och ett pixel-id är konfigurerat hos oss. En sparad anmälan fungerar även utan det samtycket. Om du senare återkallar samtycket laddas inte skriptet vid nästa sidvisning, och cookies som <strong>_fbp</strong> och <strong>_fbc</strong> som vi kan radera från webbläsaren tas bort. De används för att skilja webbläsare åt och gäller vanligtvis upp till 90 dagar, enligt Metas inställning.</p>
 
      <h2>Kontakt</h2>

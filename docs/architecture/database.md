@@ -34,6 +34,7 @@ Motivering: kolumnspecifik `ON DELETE SET NULL` på composite foreign keys, som 
 | [`db/migrations/0022_referral_codes.sql`](../../db/migrations/0022_referral_codes.sql) | Personlig referral-kod på `users` och `referrer_user_id` på `product_events` |
 | [`db/migrations/0023_marketing_email.sql`](../../db/migrations/0023_marketing_email.sql) | Frivilligt nyhetsbrev på `users` (`marketing_email_opt_in`, default av) och `marketing_unsubscribe_tokens` |
 | [`db/migrations/0024_mail_receipt.sql`](../../db/migrations/0024_mail_receipt.sql) | Leverans, öppning och studs på hjälpmejl och veckomejl, via leverantörens meddelande-id |
+| [`db/migrations/0025_campaign_events.sql`](../../db/migrations/0025_campaign_events.sql) | Cookielösa knapp- och sidräkningar för `/kom-igang` (`campaign_events`), utan klick-id |
 
 Runtime-applikationen tillämpar samma filer via [`app/src/db/migrate.ts`](../../app/src/db/migrate.ts) och tabellen `schema_migrations`. Redan migrerade databaser stämplas, SQL körs inte om. Deploy: [Production](../operations/production.md).
 

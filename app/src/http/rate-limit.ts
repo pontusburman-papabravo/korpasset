@@ -21,6 +21,8 @@ export function resetRateLimitsForTests(): void {
 }
 
 export const INTEREST_RATE_LIMIT = { limit: 8, windowMs: 10 * 60 * 1000 };
+export const ANDROID_NOTIFY_RATE_LIMIT = { limit: 8, windowMs: 10 * 60 * 1000 };
+export const CAMPAIGN_EVENT_RATE_LIMIT = { limit: 40, windowMs: 60 * 1000 };
 export const ADMIN_LOGIN_RATE_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 };
 export const ADMIN_RESET_RATE_LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 };
 export const OAUTH_RATE_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 };
