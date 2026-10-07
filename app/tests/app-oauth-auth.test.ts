@@ -594,20 +594,17 @@ describe("Android Google auth lifecycle", () => {
     await flush();
     await client.tapGoogle();
     assert.equal(client.logins.length, 1);
-    assert.equal(client.assignments.length, 0);
+    assert.match(client.assignments[0] ?? "", /prompt=login/);
     assert.equal(client.google.disabled, false);
-    assert.equal(client.win.KORPASSET_AUTH.isInProgress(), false);
-    assert.equal(findTrace(client.traces, "google_browser_fallback"), undefined);
-    assert.deepEqual(client.errors, [
-      "Google stoppade inloggningen. Det visades inget att godkänna. Tryck Fortsätt med Google igen.",
-    ]);
+    assert.equal(findTrace(client.traces, "google_browser_fallback")?.reason, "browser-after-picker");
+    assert.deepEqual(client.errors, []);
     assert.equal(client.hint.hidden, true);
-    assert.equal(client.reauth.hidden, false);
+    assert.equal(client.reauth.hidden, true);
     failNative = false;
     await client.tapGoogle();
     assert.equal(client.logins.length, 2);
     assert.equal(client.posts.length, 1);
-    assert.equal(client.assignments[0], "/onboarding");
+    assert.equal(client.assignments.at(-1), "/onboarding");
   });
 
   it("does not overwrite a Credential Manager 16 failure with incomplete-return on resume", async () => {
@@ -624,21 +621,22 @@ describe("Android Google auth lifecycle", () => {
     await flush();
     client.resume();
     await flush();
-    release?.(new Error("Google Sign-In failed: [16] Account reauth failed"));
-    await started;
-    await client.win.KORPASSET_AUTH.recover("resume");
-    await flush();
     assert.equal(
       client.errors.includes("Kunde inte slutföra inloggningen. Försök igen."),
       false,
     );
+    release?.(new Error("Google Sign-In failed: [16] Account reauth failed"));
+    await started;
+    await flush();
+    assert.match(client.assignments[0] ?? "", /accounts\.google\.com\/o\/oauth2\/v2\/auth/);
+    assert.match(client.assignments[0] ?? "", /prompt=login/);
     assert.equal(
       client.errors.includes(
         "Google stoppade inloggningen. Det visades inget att godkänna. Tryck Fortsätt med Google igen.",
       ),
-      true,
+      false,
     );
-    assert.equal(findTrace(client.traces, "auth_session_failed")?.reason, "credential-manager-rejected");
+    assert.equal(findTrace(client.traces, "google_browser_fallback")?.reason, "browser-after-picker");
     assert.equal(
       client.traces.some((item) => item.step === "auth_session_failed" && item.reason === "incomplete-return"),
       false,
@@ -852,14 +850,13 @@ describe("Android Google auth lifecycle", () => {
     assert.equal(client.hint.hidden, false);
     await client.tapGoogle();
     assert.equal(client.hint.hidden, true);
-    assert.equal(client.reauth.hidden, false);
+    assert.equal(client.reauth.hidden, true);
     assert.equal(
       client.traces.filter((item) => item.step === "google_device_hint_shown").length,
       1,
     );
-    assert.match(client.errors.at(-1) || "", /Det visades inget att godkänna/);
-    assert.match(client.reauthHow.textContent, /utan en ruta att godkänna/);
-    assert.match(client.reauthHow.textContent, /Fortsätt med Google igen/);
+    assert.deepEqual(client.errors, []);
+    assert.match(client.assignments[0] ?? "", /prompt=login/);
     assert.equal(client.openedUrls.length, 0);
     assert.equal(findTrace(client.traces, "google_reauth_gmail_opened"), undefined);
     assert.equal(client.logins.length, 1);

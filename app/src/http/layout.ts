@@ -46,6 +46,8 @@ export interface AppLayoutOptions {
   journeyId?: string;
   role?: "student" | "supervisor";
   activeTab?: AppTab | null;
+  /** Logged-out login has no product tabs. Reviewers were tapping them instead of Google. */
+  navigation?: boolean;
   /** Set false on the help form itself, where the bubble would cover the fields. */
   supportBubble?: boolean;
 }
@@ -140,7 +142,7 @@ export function layout(title: string, body: string, options: AppLayoutOptions = 
   <main class="container">
     ${body}
   </main>
-  ${appNav(options)}
+  ${options.navigation === false ? "" : appNav(options)}
   ${options.supportBubble === false ? "" : supportBubble()}
   <script>
     window.addEventListener("error", function (event) {

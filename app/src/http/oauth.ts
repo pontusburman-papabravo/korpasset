@@ -133,6 +133,44 @@ async function establishFromToken(
   });
 }
 
+export function isExternalAndroidBrowser(userAgent: string | string[] | undefined): boolean {
+  const ua = Array.isArray(userAgent) ? userAgent.join(" ") : userAgent || "";
+  if (!/Android/i.test(ua)) return false;
+  // Capacitor's WebView includes "wv". Chrome, which Credential Manager
+  // fallback opens, does not. That Chrome session cannot set the app cookie.
+  return !/\bwv\b/.test(ua);
+}
+
+export function androidHandoffIntentUrl(code: string): string {
+  const open = `https://korpasset.se/app?oauth_handoff=${code}`;
+  return (
+    `intent://korpasset.se/app?oauth_handoff=${code}` +
+    `#Intent;scheme=https;package=${config.androidPackageName};S.browser_fallback_url=` +
+    `${encodeURIComponent(open)};end`
+  );
+}
+
+function androidHandoffPage(code: string): string {
+  const intent = androidHandoffIntentUrl(code);
+  const href = intent
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;");
+  return `<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Öppna Körpasset</title>
+</head>
+<body>
+  <p>Inloggningen är klar.</p>
+  <p><a id="open-korpasset" href="${href}">Öppna Körpasset</a></p>
+  <script>location.replace(${JSON.stringify(intent)});</script>
+</body>
+</html>`;
+}
+
 function parseGoogleOAuthState(state: string): { nonce: string; returnTo: string } {
   const raw = state.trim();
   const nonce = raw.split(".")[0] || "";
@@ -308,6 +346,9 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
         { oauth: "google", created: established.created },
         "google form_post handoff created",
       );
+      if (isExternalAndroidBrowser(request.headers["user-agent"])) {
+        return reply.type("text/html; charset=utf-8").send(androidHandoffPage(handoff));
+      }
       return reply.redirect(`/app?oauth_handoff=${encodeURIComponent(handoff)}`);
     } catch (error) {
       request.log.warn(

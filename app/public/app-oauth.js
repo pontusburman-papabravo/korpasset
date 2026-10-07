@@ -167,15 +167,15 @@
   // Credential Manager has already shown (or retried) the account picker.
   // 28444 = this APK's signing cert is not registered on the Google Cloud
   // OAuth client. Also observed after login() has started, i.e. after UI.
-  // Neither code can be known before native UI, so a same-attempt browser
-  // fallback would be a second picker. Treat both as a failed attempt.
-  // Browser fallback is only allowed when login() was never called.
+  // Play review devices hit this as a black sheet and then a dead end.
+  // The web client does not depend on the APK signing cert, so Android
+  // continues in the browser with prompt=login (email and password).
   function googleCredentialManagerRejected(error) {
     const code = pluginFailureCode(error);
     return code === "16" || code === "28444";
   }
 
-  function googleBrowserAuthorizeUrl(nonce, returnTo) {
+  function googleBrowserAuthorizeUrl(nonce, returnTo, prompt) {
     let state = nonce;
     const invite =
       typeof returnTo === "string" ? returnTo.match(/^\/invite\/([A-Za-z0-9_-]+)$/) : null;
@@ -191,7 +191,7 @@
       scope: "openid email profile",
       nonce: nonce,
       state: state,
-      prompt: "select_account",
+      prompt: prompt === "login" ? "login" : "select_account",
     });
     return "https://accounts.google.com/o/oauth2/v2/auth?" + params.toString();
   }
@@ -479,6 +479,15 @@
             hasIdentityToken: false,
           });
         }
+        if (
+          provider === "google" &&
+          platform() === "android" &&
+          googleCredentialManagerRejected(error) &&
+          oauth.googleWebClientId
+        ) {
+          startGoogleBrowserFallback(returnTo, nonce, pluginFailureCode(error), "login");
+          return;
+        }
         showError(
           provider === "google" ? googleNativeErrorMessage(error) : appleNativeErrorMessage(error),
           {
@@ -547,13 +556,19 @@
     });
   }
 
-  function startGoogleBrowserFallback(returnTo, nonce, pluginCode) {
+  function startGoogleBrowserFallback(returnTo, nonce, pluginCode, prompt) {
     oauthTrace("google_browser_fallback", {
       pluginCode: pluginCode,
       hasIdentityToken: false,
+      reason: prompt === "login" ? "browser-after-picker" : "browser-before-picker",
     });
     updateAuthPhase("browser");
-    window.location.assign(googleBrowserAuthorizeUrl(nonce, returnTo));
+    hideGoogleDeviceHint();
+    window.location.assign(googleBrowserAuthorizeUrl(nonce, returnTo, prompt));
+    // Capacitor opens accounts.google.com outside the WebView, so this page
+    // stays put. Leave the buttons usable if the reviewer comes back.
+    authRuntime.inProgress = false;
+    setLoginBusy(false);
   }
 
   async function postProvider(provider, payload) {
