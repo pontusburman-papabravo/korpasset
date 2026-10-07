@@ -107,7 +107,7 @@ Ordning efter App Store Connect-appen:
 1. **Google OAuth-klienter** för Körpasset — se [google-play.md](google-play.md). Blockerar Sign in with Google.
 2. **Sign in with Apple-nyckel** — krävs innan revoke kan köras i produktion. Steg nedan. `.p8` lämnar inte git.
 3. **Services ID** `se.korpasset.app.android` — bara för Apple-inloggning på Android, Return URL `https://korpasset.se/app`. Inte `se.mystarday.*`.
-4. **Associated Domains** — `applinks:korpasset.se` och `webcredentials:korpasset.se` i [`native/ios/App/App/App.entitlements`](../../native/ios/App/App/App.entitlements). Bekräfta capability i Xcode mot teamet.
+4. **Associated Domains och Sign in with Apple** — `applinks:korpasset.se`, `webcredentials:korpasset.se` och `com.apple.developer.applesignin` i [`native/ios/App/App/App.entitlements`](../../native/ios/App/App/App.entitlements). Bekräfta capability i Xcode mot teamet. Ett bygge utan entitlement får `ASAuthorizationError` 1000 direkt, utan Apple-ruta.
 5. **`APPLE_CLIENT_ID` / `APPLE_TEAM_ID` i `deploy/.env`** så live AASA och token-verify stämmer.
 6. **TestFlight** när första iOS-bygget finns.
 7. **Apple-webhook** — fyll i URL:en på App ID:n efter deploy. Steg nedan.

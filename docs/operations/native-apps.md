@@ -80,7 +80,17 @@ npx cap sync ios
 npx cap open ios
 ```
 
-I Xcode: team och Sign in with Apple capability. Associated Domains (`applinks:korpasset.se` och `webcredentials:korpasset.se`) ligger i [`native/ios/App/App/App.entitlements`](../../native/ios/App/App/App.entitlements). Archive → TestFlight.
+I Xcode: teamet Papa Bravo. Sign in with Apple (`com.apple.developer.applesignin` = `Default`) och Associated Domains (`applinks:korpasset.se` och `webcredentials:korpasset.se`) ligger i [`native/ios/App/App/App.entitlements`](../../native/ios/App/App/App.entitlements). Både Debug och Release på app-targeten pekar på den filen. `debug.xcconfig` byter inte ut den. Utan entitlement avvisar iOS Apple-rutan direkt med `ASAuthorizationError` 1000, innan någon dialog visas.
+
+`npm install` i `native/` lägger på `patches/capacitor-social-login-apple-presentation.patch`. Apple-rutan tas från ett synligt key window i scenen som är `.foregroundActive`. Saknas ett sådant fönster startar inte dialogen.
+
+Archive → TestFlight. Efter arkivet, kontrollera den signerade appen:
+
+```bash
+codesign -d --entitlements :- "Körpasset.app" | grep -A2 applesignin
+```
+
+Förväntat: `com.apple.developer.applesignin` med `Default`.
 
 ## Appikon (iOS och Android)
 

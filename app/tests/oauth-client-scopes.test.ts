@@ -374,6 +374,113 @@ describe("native OAuth login scopes", () => {
     assert.equal(findTrace(rejected.traces, "google_login_cancelled"), undefined);
   });
 
+  it("records an immediate Apple authorization failure and treats error 1001 as cancel", async () => {
+    const rejected = installClient({ name: "Ada" }, {}, "ios", async () => {
+      throw new Error(
+        "The operation couldn’t be completed. (com.apple.AuthenticationServices.AuthorizationError error 1000.)",
+      );
+    });
+    await clickProvider(rejected.click, "apple");
+    assert.deepEqual(rejected.errors, ["Kunde inte öppna Apple-inloggningen. Försök igen."]);
+    assert.equal(rejected.posts.length, 0);
+    const failure = findTrace(rejected.traces, "apple_sheet_unavailable");
+    assert.equal(failure?.pluginCode, "1000");
+    assert.match(failure?.pluginMessage ?? "", /AuthorizationError error 1000/);
+    assert.equal(findTrace(rejected.traces, "auth_session_failed")?.reason, "apple-sheet-unavailable");
+
+    const cancelled = installClient({ name: "Ada" }, {}, "ios", async () => {
+      throw new Error(
+        "The operation couldn’t be completed. (com.apple.AuthenticationServices.AuthorizationError error 1001.)",
+      );
+    });
+    await clickProvider(cancelled.click, "apple");
+    assert.deepEqual(cancelled.errors, ["Inloggningen avbröts. Försök igen."]);
+    assert.equal(findTrace(cancelled.traces, "apple_login_cancelled")?.pluginCode, "1001");
+    assert.equal(findTrace(cancelled.traces, "apple_sheet_unavailable"), undefined);
+    assert.equal(findTrace(cancelled.traces, "auth_session_failed"), undefined);
+  });
+
+  it("keeps a missing Apple presentation anchor distinct from a later authorization failure", async () => {
+    const missing = installClient({ name: "Ada" }, {}, "ios", async () => {
+      throw new Error("Apple presentation anchor missing");
+    });
+    await clickProvider(missing.click, "apple");
+    assert.deepEqual(missing.errors, ["Kunde inte öppna Apple-inloggningen. Försök igen."]);
+    assert.equal(findTrace(missing.traces, "apple_presentation_anchor_missing")?.step, "apple_presentation_anchor_missing");
+    assert.equal(findTrace(missing.traces, "auth_session_failed")?.reason, "presentation-anchor");
+
+    const failed = installClient({ name: "Ada" }, {}, "ios", async () => {
+      throw new Error(
+        "The operation couldn’t be completed. (com.apple.AuthenticationServices.AuthorizationError error 1004.)",
+      );
+    });
+    await clickProvider(failed.click, "apple");
+    assert.deepEqual(failed.errors, ["Kunde inte logga in. Försök igen."]);
+    assert.equal(findTrace(failed.traces, "apple_authorization_failed")?.pluginCode, "1004");
+    assert.equal(findTrace(failed.traces, "auth_session_failed")?.reason, "apple-authorization-failed");
+  });
+
+  it("posts a successful Apple login without putting the token in the trace", async () => {
+    const client = installClient(
+      { givenName: "Ada", familyName: "Lovelace" },
+      { authorizationCode: "apple-auth-code" },
+    );
+    await clickProvider(client.click, "apple");
+    assert.equal(client.errors.length, 0);
+    assert.equal(client.posts.length, 1);
+    assert.equal(client.posts[0].identityToken, "identity-token");
+    assert.equal(client.posts[0].authorizationCode, "apple-auth-code");
+    assert.equal(client.postUrls[0], "/api/auth/apple");
+    assert.equal(findTrace(client.traces, "apple_login_success")?.created, true);
+    assert.equal(findTrace(client.traces, "auth_session_verified")?.hasIdentityToken, true);
+    assert.equal(findTrace(client.traces, "apple_sheet_unavailable"), undefined);
+    const beacon = client.beacons.join("\n");
+    assert.equal(beacon.includes("identity-token"), false);
+    assert.equal(beacon.includes("apple-auth-code"), false);
+  });
+
+  it("keeps an Apple backend failure distinct from a native Apple failure", async () => {
+    const rejected = installClient(
+      { givenName: "Ada", familyName: "Lovelace" },
+      { authorizationCode: "apple-auth-code" },
+      "ios",
+      undefined,
+      async () => ({
+        ok: false,
+        status: 401,
+        json: async () => ({
+          error: "Ogiltig Apple-inloggning",
+          code: "invalid_identity",
+          stage: "verify",
+        }),
+      }),
+    );
+    await clickProvider(rejected.click, "apple");
+    assert.deepEqual(rejected.errors, ["Ogiltig Apple-inloggning"]);
+    assert.equal(rejected.posts[0]?.identityToken, "identity-token");
+    assert.equal(findTrace(rejected.traces, "apple_backend_rejected")?.backendCode, "invalid_identity");
+    assert.equal(findTrace(rejected.traces, "auth_session_failed")?.reason, "backend-rejected");
+    assert.equal(findTrace(rejected.traces, "apple_sheet_unavailable"), undefined);
+    assert.equal(findTrace(rejected.traces, "apple_login_cancelled"), undefined);
+    assert.equal(rejected.beacons.join("").includes("identity-token"), false);
+    assert.equal(rejected.beacons.join("").includes("apple-auth-code"), false);
+
+    const transport = installClient(
+      { givenName: "Ada", familyName: "Lovelace" },
+      {},
+      "ios",
+      undefined,
+      async () => {
+        throw new Error("network down");
+      },
+    );
+    await clickProvider(transport.click, "apple");
+    assert.deepEqual(transport.errors, ["Kunde inte logga in. Försök igen."]);
+    assert.equal(findTrace(transport.traces, "apple_backend_request_failed")?.hasIdentityToken, true);
+    assert.equal(findTrace(transport.traces, "auth_session_failed")?.reason, "backend-transport");
+    assert.equal(findTrace(transport.traces, "apple_authorization_failed"), undefined);
+  });
+
   it("posts the id token from the Android 8.5.10 result shape", async () => {
     const client = installClient({ name: "Ada" }, {}, "android", async () => ({
       provider: "google",

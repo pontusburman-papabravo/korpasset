@@ -220,8 +220,40 @@
   function loginWasCancelled(error) {
     const code = error && typeof error.code === "string" ? error.code : "";
     if (code === "USER_CANCELLED") return true;
+    // ASAuthorizationError.canceled. The message is "error 1001", not "cancel".
+    if (pluginFailureCode(error) === "1001") return true;
     const message = error && typeof error.message === "string" ? error.message : "";
     return /cancel/i.test(message);
+  }
+
+  function appleFailureKind(error) {
+    if (loginWasCancelled(error)) return "cancelled";
+    const message = error && typeof error.message === "string" ? error.message : "";
+    if (/presentation anchor missing/i.test(message)) return "presentation-anchor";
+    const code = pluginFailureCode(error);
+    // ASAuthorizationError.unknown. Missing entitlement and a sheet that
+    // never appears both surface as 1000. A real window was required first.
+    if (code === "1000") return "apple-sheet-unavailable";
+    if (code === "1002" || code === "1003" || code === "1004") return "apple-authorization-failed";
+    return "native-failed";
+  }
+
+  function appleTraceStep(error) {
+    const kind = appleFailureKind(error);
+    if (kind === "cancelled") return "apple_login_cancelled";
+    if (kind === "presentation-anchor") return "apple_presentation_anchor_missing";
+    if (kind === "apple-sheet-unavailable") return "apple_sheet_unavailable";
+    if (kind === "apple-authorization-failed") return "apple_authorization_failed";
+    return "apple_native_login_failed";
+  }
+
+  function appleNativeErrorMessage(error) {
+    const kind = appleFailureKind(error);
+    if (kind === "cancelled") return "Inloggningen avbröts. Försök igen.";
+    if (kind === "presentation-anchor" || kind === "apple-sheet-unavailable") {
+      return "Kunde inte öppna Apple-inloggningen. Försök igen.";
+    }
+    return "Kunde inte logga in. Försök igen.";
   }
 
   function googleNativeErrorMessage(error) {
@@ -244,6 +276,8 @@
     const message = error && typeof error.message === "string" ? error.message : "";
     const bracket = message.match(/\[(\d{1,6})\]/);
     if (bracket) return bracket[1];
+    const authorization = message.match(/AuthorizationError error (\d{1,6})/i);
+    if (authorization) return authorization[1];
     if (/\b28444\b/.test(message)) return "28444";
     if (/\b10:/.test(message)) return "10";
     return "";
@@ -434,15 +468,27 @@
             error,
           );
         }
-        showError(googleNativeErrorMessage(error), {
-          googleReauth: pluginFailureCode(error) === "16",
-        });
+        if (provider === "apple") {
+          oauthTrace(appleTraceStep(error), {
+            pluginCode: pluginFailureCode(error),
+            pluginMessage: sanitizePluginMessage(error),
+            hasIdentityToken: false,
+          });
+        }
+        showError(
+          provider === "google" ? googleNativeErrorMessage(error) : appleNativeErrorMessage(error),
+          {
+            googleReauth: provider === "google" && pluginFailureCode(error) === "16",
+          },
+        );
         failAuth(
           cancelled
             ? "cancelled"
-            : googleCredentialManagerRejected(error)
-              ? "credential-manager-rejected"
-              : "native-failed",
+            : provider === "apple"
+              ? appleFailureKind(error)
+              : googleCredentialManagerRejected(error)
+                ? "credential-manager-rejected"
+                : "native-failed",
         );
         return;
       }
@@ -519,6 +565,9 @@
       if (provider === "google") {
         oauthTrace("google_backend_request_failed", { hasIdentityToken: true });
       }
+      if (provider === "apple") {
+        oauthTrace("apple_backend_request_failed", { hasIdentityToken: true });
+      }
       showError("Kunde inte logga in. Försök igen.");
       failAuth("backend-transport");
       return;
@@ -528,9 +577,16 @@
       return {};
     });
     if (!response.ok) {
+      const backendCode = sanitizeTraceCode(body.code);
       if (provider === "google") {
-        const backendCode = sanitizeTraceCode(body.code);
         oauthTrace(googleBackendStep(backendCode), {
+          hasIdentityToken: true,
+          httpStatus: response.status,
+          backendCode: backendCode,
+        });
+      }
+      if (provider === "apple") {
+        oauthTrace("apple_backend_rejected", {
           hasIdentityToken: true,
           httpStatus: response.status,
           backendCode: backendCode,
@@ -540,12 +596,21 @@
       failAuth("backend-rejected");
       return;
     }
-    if (provider === "google") {
-      oauthTrace("google_login_success", {
-        hasIdentityToken: true,
-        httpStatus: response.status,
-        created: body.created === true,
-      });
+    if (provider === "google" || provider === "apple") {
+      if (provider === "google") {
+        oauthTrace("google_login_success", {
+          hasIdentityToken: true,
+          httpStatus: response.status,
+          created: body.created === true,
+        });
+      }
+      if (provider === "apple") {
+        oauthTrace("apple_login_success", {
+          hasIdentityToken: true,
+          httpStatus: response.status,
+          created: body.created === true,
+        });
+      }
       oauthTrace("auth_session_verified", {
         hasIdentityToken: true,
         httpStatus: response.status,
