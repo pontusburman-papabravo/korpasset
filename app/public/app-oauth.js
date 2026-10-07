@@ -220,6 +220,8 @@
   function loginWasCancelled(error) {
     const code = error && typeof error.code === "string" ? error.code : "";
     if (code === "USER_CANCELLED") return true;
+    // ASAuthorizationError.canceled. The message is "error 1001", not "cancel".
+    if (pluginFailureCode(error) === "1001") return true;
     const message = error && typeof error.message === "string" ? error.message : "";
     return /cancel/i.test(message);
   }
@@ -244,6 +246,8 @@
     const message = error && typeof error.message === "string" ? error.message : "";
     const bracket = message.match(/\[(\d{1,6})\]/);
     if (bracket) return bracket[1];
+    const authorization = message.match(/AuthorizationError error (\d{1,6})/i);
+    if (authorization) return authorization[1];
     if (/\b28444\b/.test(message)) return "28444";
     if (/\b10:/.test(message)) return "10";
     return "";
@@ -434,9 +438,23 @@
             error,
           );
         }
-        showError(googleNativeErrorMessage(error), {
-          googleReauth: pluginFailureCode(error) === "16",
-        });
+        if (provider === "apple") {
+          oauthTrace(cancelled ? "apple_login_cancelled" : "apple_native_login_failed", {
+            pluginCode: pluginFailureCode(error),
+            pluginMessage: sanitizePluginMessage(error),
+            hasIdentityToken: false,
+          });
+        }
+        showError(
+          provider === "google"
+            ? googleNativeErrorMessage(error)
+            : cancelled
+              ? "Inloggningen avbröts. Försök igen."
+              : "Kunde inte logga in. Försök igen.",
+          {
+            googleReauth: provider === "google" && pluginFailureCode(error) === "16",
+          },
+        );
         failAuth(
           cancelled
             ? "cancelled"

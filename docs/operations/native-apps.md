@@ -80,7 +80,7 @@ npx cap sync ios
 npx cap open ios
 ```
 
-I Xcode: team och Sign in with Apple capability. Associated Domains (`applinks:korpasset.se` och `webcredentials:korpasset.se`) ligger i [`native/ios/App/App/App.entitlements`](../../native/ios/App/App/App.entitlements). Archive → TestFlight.
+I Xcode: teamet Papa Bravo. Sign in with Apple (`com.apple.developer.applesignin`) och Associated Domains (`applinks:korpasset.se` och `webcredentials:korpasset.se`) ligger i [`native/ios/App/App/App.entitlements`](../../native/ios/App/App/App.entitlements). Utan Sign in with Apple-entitlement avvisar iOS Apple-rutan direkt med `ASAuthorizationError` 1000, innan någon dialog visas. Archive → TestFlight.
 
 ## Appikon (iOS och Android)
 

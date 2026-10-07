@@ -374,6 +374,30 @@ describe("native OAuth login scopes", () => {
     assert.equal(findTrace(rejected.traces, "google_login_cancelled"), undefined);
   });
 
+  it("records an immediate Apple authorization failure and treats error 1001 as cancel", async () => {
+    const rejected = installClient({ name: "Ada" }, {}, "ios", async () => {
+      throw new Error(
+        "The operation couldn’t be completed. (com.apple.AuthenticationServices.AuthorizationError error 1000.)",
+      );
+    });
+    await clickProvider(rejected.click, "apple");
+    assert.deepEqual(rejected.errors, ["Kunde inte logga in. Försök igen."]);
+    assert.equal(rejected.posts.length, 0);
+    const failure = findTrace(rejected.traces, "apple_native_login_failed");
+    assert.equal(failure?.pluginCode, "1000");
+    assert.match(failure?.pluginMessage ?? "", /AuthorizationError error 1000/);
+
+    const cancelled = installClient({ name: "Ada" }, {}, "ios", async () => {
+      throw new Error(
+        "The operation couldn’t be completed. (com.apple.AuthenticationServices.AuthorizationError error 1001.)",
+      );
+    });
+    await clickProvider(cancelled.click, "apple");
+    assert.deepEqual(cancelled.errors, ["Inloggningen avbröts. Försök igen."]);
+    assert.equal(findTrace(cancelled.traces, "apple_login_cancelled")?.pluginCode, "1001");
+    assert.equal(findTrace(cancelled.traces, "apple_native_login_failed"), undefined);
+  });
+
   it("posts the id token from the Android 8.5.10 result shape", async () => {
     const client = installClient({ name: "Ada" }, {}, "android", async () => ({
       provider: "google",
