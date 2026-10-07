@@ -92,9 +92,9 @@ export function privacyPage(options: PublicConsentOptions = {}): string {
      <p>Den rättsliga grunden är ditt samtycke. Du lämnar samtycket genom att kryssa i rutan att du vill bli kontaktad om betan. Du kan när som helst återkalla samtycket genom att kontakta oss.</p>
      <p>Vi använder inte uppgifterna från intresseanmälan för nyhetsbrev, generell säljmarknadsföring eller profilering.</p>
 
-     <h2>Avisering när Android-appen finns</h2>
-     <p>På sidan Kom igång kan du lämna din e-postadress för att bli mejlad när Körpasset finns på Google Play. Vi sparar e-postadressen och att aviseringen gäller Android. Vi ber inte om namn. Raden märks som en Android-avisering så att den går att skilja från en vanlig intresseanmälan.</p>
-     <p>Syftet är bara att skicka det mejlet. Den rättsliga grunden är ditt samtycke, som du lämnar genom att skicka formuläret. Vi använder inte adressen för nyhetsbrev eller annan marknadsföring. Samma lagringstid gäller som för en intresseanmälan: senast 18 månader, tidigare om du ber oss radera den.</p>
+     <h2>Test på Android från Kom igång</h2>
+     <p>På sidan Kom igång kan du lämna din e-postadress så att vi kan lägga upp dig som testare av Android-appen och mejla när det går att installera. Vi sparar e-postadressen och att det gäller Android. Vi ber inte om namn. Raden märks som en Android-testare så att den går att skilja från en vanlig intresseanmälan.</p>
+     <p>Syftet är att lägga upp dig som testare och skicka det mejlet. Den rättsliga grunden är ditt samtycke, som du lämnar genom att skicka formuläret. Vi använder inte adressen för nyhetsbrev eller annan marknadsföring. Samma lagringstid gäller som för en intresseanmälan: senast 18 månader, tidigare om du ber oss radera den.</p>
 
      <h2>När du använder Körpasset</h2>
      <p>När du får tillgång till Körpasset behandlar vi de uppgifter som behövs för att skapa konto och använda en körkortsresa. Det kan bland annat vara:</p>
@@ -213,7 +213,7 @@ export function privacyPage(options: PublicConsentOptions = {}): string {
      <p>Administrationsdelen använder en separat nödvändig HttpOnly-cookie för autentisering, i upp till 12 timmar.</p>
      <p>I appen kan webbläsarens sessionStorage användas tillfälligt för inbjudningslänkar. Det skickas inte som en cookie.</p>
      <p>På sidan Kom igång kan kampanjparametrar (utm) sparas tillfälligt i sessionStorage i samma flik, så att de finns kvar om du öppnar integritet, villkor eller kontakt. Det är inte en cookie. Metas klick-id sparas inte där.</p>
-     <p>Samma sida räknar sidvisning och knapptryck, tillsammans med kampanjlänken, utan cookie och utan klick-id. Det görs för att se om sidan leder vidare till App Store eller en Android-avisering. Rättslig grund är berättigat intresse av att mäta vår egen kampanjsida. Räkningen körs inte i appen.</p>
+     <p>Samma sida räknar sidvisning och knapptryck, tillsammans med kampanjlänken, utan cookie och utan klick-id. Det görs för att se om sidan leder vidare till App Store eller att någon lämnat mejl för att testa på Android. Rättslig grund är berättigat intresse av att mäta vår egen kampanjsida. Räkningen körs inte i appen.</p>
      <p>De nödvändiga cookies som listas här används för att tjänsten ska fungera. De används inte för reklam eller spårning mellan webbplatser.</p>
 
      <h2>Ändringar i policyn</h2>

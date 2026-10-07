@@ -42,7 +42,9 @@ const SUBHEAD =
 const PAGE_DESCRIPTION =
   "Planera nästa körpass, kom ihåg vad ni tränat på och dela samma historik mellan handledare. Gratis under betaperioden.";
 
-const ANDROID_SAVED = "Klart. Vi mejlar när Körpasset finns på Google Play.";
+const ANDROID_CTA = "Android – lämna mejl så lägger vi upp dig";
+const ANDROID_NOTE = "Vi lägger upp dig så du kan testa";
+const ANDROID_SAVED = "Klart. Vi lägger upp dig så du kan testa Körpasset.";
 
 const DONE_TOKEN = /^[A-Za-z0-9_-]{8,32}$/;
 
@@ -108,8 +110,8 @@ function installActions(
         className: "btn btn-secondary go-store-secondary",
       })}
       <p class="go-note">Finns på Google Play</p>`
-    : `${androidHtml || `<a class="go-android-link" href="#android-notify" data-cta-kind="android" data-cta-placement="${placement}">Android – meddela mig när appen finns</a>`}
-      <p class="go-note">Google Play väntar på godkännande</p>`;
+    : `${androidHtml || `<a class="go-android-link" href="#android-notify" data-cta-kind="android" data-cta-placement="${placement}">${ANDROID_CTA}</a>`}
+      <p class="go-note">${ANDROID_NOTE}</p>`;
   return `<div class="go-actions">
     ${primary}
     <p class="go-note">Finns i App Store</p>
@@ -138,7 +140,7 @@ function androidForm(options: {
     : "";
   const open = options.errorMessage ? " open" : "";
   return `<details class="go-android" id="${options.id}"${open}>
-    <summary data-cta-kind="android" data-cta-placement="${options.placement}">Android – meddela mig när appen finns</summary>
+    <summary data-cta-kind="android" data-cta-placement="${options.placement}">${ANDROID_CTA}</summary>
     <form class="go-form" method="post" action="${pageHref(`${KOM_IGANG_PATH}/android`, options.search)}" data-android-form novalidate>
       <div class="hp" aria-hidden="true">
         <label for="${options.emailId}-website">Webbplats</label>
@@ -149,8 +151,8 @@ function androidForm(options: {
       <div data-android-fields>
         <label for="${options.emailId}">E-post</label>
         <input id="${options.emailId}" name="email" type="email" inputmode="email" autocomplete="email" maxlength="120" required spellcheck="false" value="${escapeHtml(options.email)}"${invalid}>
-        <button type="submit" class="go-submit">Meddela mig</button>
-        <p class="go-fine">Vi använder mejlen bara för att säga till när appen finns. <a href="${pageHref("/integritet", options.search)}">Integritet</a></p>
+        <button type="submit" class="go-submit">Lägg upp mig</button>
+        <p class="go-fine">Vi använder mejlen för att lägga upp dig som testare och säga till när du kan installera. <a href="${pageHref("/integritet", options.search)}">Integritet</a></p>
       </div>
       <p class="go-success" data-android-success hidden role="status">${ANDROID_SAVED}</p>
     </form>
@@ -389,7 +391,7 @@ export function renderKomIgangPage(options: {
             ${storeLink({ kind: "store", placement: "final", label: "Hämta Körpasset för iPhone", href: APP_STORE_URL })}
             <p class="go-note">Finns i App Store</p>
             ${finalAndroid}
-            <p class="go-note">Google Play väntar på godkännande</p>
+            <p class="go-note">${ANDROID_NOTE}</p>
           </div>`}
           <p class="go-free go-free--light">Gratis under betaperioden</p>
         </div>

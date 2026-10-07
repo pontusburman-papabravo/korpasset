@@ -36,8 +36,8 @@ describe("campaign page /kom-igang", () => {
     assert.match(page.body, /Gratis under betaperioden/);
     assert.match(page.body, /Hämta Körpasset för iPhone/);
     assert.match(page.body, /Finns i App Store/);
-    assert.match(page.body, /Android – meddela mig när appen finns/);
-    assert.match(page.body, /Google Play väntar på godkännande/);
+    assert.match(page.body, /Android – lämna mejl så lägger vi upp dig/);
+    assert.match(page.body, /Vi lägger upp dig så du kan testa/);
     assert.match(page.body, /En elev\. Flera handledare\. Samma körkortsresa\./);
     assert.match(page.body, /Ingen extra administration/);
     assert.match(page.body, /Nästa fokus/);
@@ -48,7 +48,7 @@ describe("campaign page /kom-igang", () => {
     assert.match(page.body, /src="\/kom-igang\.js"/);
     assert.match(page.body, /src="\/consent\.js"/);
     assert.match(page.body, /for="android-email"/);
-    assert.match(page.body, /Meddela mig/);
+    assert.match(page.body, /Lägg upp mig/);
     assert.match(page.body, /data-go-sticky/);
     assert.match(page.body, /Hämta appen/);
     assert.match(page.body, /name="utm_source" value="meta"/);
@@ -127,19 +127,20 @@ describe("campaign page /kom-igang", () => {
     );
     assert.equal(row.rowCount, 1);
     assert.equal(row.rows[0].email_normalized, "nora@example.com");
-    assert.equal(row.rows[0].name, "Android-avisering");
+    assert.equal(row.rows[0].name, "Android-test");
     assert.equal(row.rows[0].role, "other");
     assert.equal(row.rows[0].platform_android, true);
     assert.equal(row.rows[0].platform_ios, false);
-    assert.match(row.rows[0].message, /Google Play-avisering/);
+    assert.match(row.rows[0].message, /Android-test från \/kom-igang/);
 
     assert.equal(sent.length, 2);
-    assert.match(sent[0].text, /Vi mejlar när Körpasset finns på Google Play/);
+    assert.match(sent[0].text, /Vi lägger upp dig så du kan testa Körpasset på Android/);
+    assert.match(sent[1].text, /vill bli upplagd så hen kan testa/);
     assert.doesNotMatch(sent[0].text, /automatisk access/);
     assert.doesNotMatch(sent[0].text, /tar in familjer/);
 
     const thanks = await app.inject({ method: "GET", url: String(saved.headers.location) });
-    assert.match(thanks.body, /Klart\. Vi mejlar när Körpasset finns på Google Play\./);
+    assert.match(thanks.body, /Klart\. Vi lägger upp dig så du kan testa Körpasset\./);
     await app.close();
   });
 
@@ -173,7 +174,7 @@ describe("campaign page /kom-igang", () => {
     assert.equal(row.rows[0].platform_ios, true);
     assert.equal(row.rows[0].platform_android, true);
     assert.match(row.rows[0].message, /Redan i kön/);
-    assert.match(row.rows[0].message, /Google Play-avisering/);
+    assert.match(row.rows[0].message, /Android-test från \/kom-igang/);
     await app.close();
   });
 
@@ -247,7 +248,7 @@ describe("campaign page /kom-igang", () => {
     const page = await app.inject({ method: "GET", url: "/kom-igang" });
     assert.match(page.body, /Hämta på Google Play/);
     assert.ok(page.body.includes(PLAY_STORE_URL));
-    assert.doesNotMatch(page.body, /Meddela mig/);
+    assert.doesNotMatch(page.body, /Lägg upp mig/);
     assert.doesNotMatch(page.body, /data-android-form/);
     await app.close();
   });

@@ -275,6 +275,7 @@
       } else {
         link.href = "#android-notify";
         link.setAttribute("data-cta-kind", "android");
+        link.textContent = "Lämna mejl";
       }
     }
     var observer = new IntersectionObserver(
