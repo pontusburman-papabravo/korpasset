@@ -12,7 +12,7 @@ const script = readFileSync(
 
 type LoginCall = {
   provider: string;
-  options: { scopes?: string[]; nonce: string };
+  options: { scopes?: string[]; nonce: string; forcePrompt?: boolean };
 };
 
 type InitPayload = {
@@ -52,9 +52,10 @@ function installClient(
   loginImpl?: (call: LoginCall) => Promise<unknown>,
   fetchImpl?: (url: string, body: PostedBody) => Promise<FetchResult>,
   initializeImpl?: () => Promise<void>,
-  page?: { hash?: string; native?: boolean },
+  page?: { hash?: string; native?: boolean; logoutImpl?: () => Promise<void> },
 ) {
   const logins: LoginCall[] = [];
+  const logouts: Array<{ provider?: string }> = [];
   const inits: InitPayload[] = [];
   const posts: PostedBody[] = [];
   const postUrls: string[] = [];
@@ -210,6 +211,10 @@ function installClient(
               },
             };
           },
+          async logout(payload: { provider?: string }) {
+            logouts.push(payload);
+            if (page?.logoutImpl) await page.logoutImpl();
+          },
         },
       },
     };
@@ -218,6 +223,7 @@ function installClient(
   runInContext(script, createContext(sandbox));
   return {
     logins,
+    logouts,
     inits,
     posts,
     postUrls,
@@ -307,10 +313,91 @@ describe("native OAuth login scopes", () => {
     const scopes = Array.from(client.logins[0].options.scopes);
     assert.deepEqual(scopes, ["email", "profile"]);
     assert.equal(scopes.includes("name"), false);
+    assert.equal(client.logins[0].options.forcePrompt, true);
     assert.equal(client.posts.length, 1);
     assert.equal(client.posts[0].nonce, client.logins[0].options.nonce);
     assert.equal(client.posts[0].displayName, "Ada Lovelace");
     assert.equal(client.posts[0].authorizationCode, undefined);
+  });
+
+  it("signs Google out of the phone before the Körpasset logout form is sent", async () => {
+    const client = installClient({ name: "Ada" });
+    const submitted: string[] = [];
+    let prevented = false;
+    const form = {
+      signedOut: "",
+      getAttribute(name: string) {
+        if (name === "action") return "/logout";
+        if (name === "data-google-signed-out") return this.signedOut || null;
+        return null;
+      },
+      setAttribute(name: string, value: string) {
+        if (name === "data-google-signed-out") this.signedOut = value;
+      },
+      submit() {
+        submitted.push("submit");
+      },
+    };
+    client.click({
+      target: {
+        closest(selector: string) {
+          if (selector === "form") return form;
+          return null;
+        },
+      },
+      preventDefault() {
+        prevented = true;
+      },
+    });
+    for (let i = 0; i < 10; i += 1) {
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+    assert.equal(prevented, true);
+    assert.equal(client.logouts.length, 1);
+    assert.equal(client.logouts[0].provider, "google");
+    assert.equal(client.inits[0].google?.iOSClientId, "ios.apps.googleusercontent.com");
+    assert.equal(submitted.length, 1);
+    assert.equal(findTrace(client.traces, "google_native_signed_out")?.step, "google_native_signed_out");
+    assert.equal(client.beacons.join("").includes("identity-token"), false);
+    assert.equal(client.logins.length, 0);
+  });
+
+  it("still logs out of Körpasset when the phone cannot sign out of Google", async () => {
+    const client = installClient({ name: "Ada" }, {}, "ios", undefined, undefined, undefined, {
+      logoutImpl: async () => {
+        throw new Error("sign-out unavailable");
+      },
+    });
+    const submitted: string[] = [];
+    const form = {
+      signedOut: "",
+      getAttribute(name: string) {
+        if (name === "action") return "/logout";
+        if (name === "data-google-signed-out") return this.signedOut || null;
+        return null;
+      },
+      setAttribute(name: string, value: string) {
+        if (name === "data-google-signed-out") this.signedOut = value;
+      },
+      submit() {
+        submitted.push("submit");
+      },
+    };
+    client.click({
+      target: {
+        closest(selector: string) {
+          if (selector === "form") return form;
+          return null;
+        },
+      },
+      preventDefault() {},
+    });
+    for (let i = 0; i < 10; i += 1) {
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+    assert.equal(submitted.length, 1);
+    assert.equal(findTrace(client.traces, "google_native_signout_failed")?.step, "google_native_signout_failed");
+    assert.equal(client.beacons.join("").includes("eyJ"), false);
   });
 
   it("does not send a Google access token as an Apple authorization code", async () => {
@@ -334,6 +421,7 @@ describe("native OAuth login scopes", () => {
     assert.equal(client.logins.length, 1);
     assert.equal(client.logins[0].provider, "google");
     assert.equal(client.logins[0].options.scopes, undefined);
+    assert.equal(client.logins[0].options.forcePrompt, undefined);
     assert.equal(typeof client.logins[0].options.nonce, "string");
     assert.equal(client.posts.length, 1);
     assert.equal(client.posts[0].identityToken, "identity-token");
