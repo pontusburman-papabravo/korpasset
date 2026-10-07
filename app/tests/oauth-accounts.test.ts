@@ -33,6 +33,31 @@ describe("continueWithOAuth (FR-11, FR-10)", () => {
     assert.equal(identities.rows[0].provider_subject, "apple-sub-1");
   });
 
+  it("logs the same Apple subject back into the same user without a second account", async () => {
+    const first = await continueWithOAuth({
+      provider: "apple",
+      subject: "apple-sub-return",
+      displayName: "Ella",
+      email: "ella@privaterelay.appleid.com",
+    });
+    const second = await continueWithOAuth({
+      provider: "apple",
+      subject: "apple-sub-return",
+      displayName: "Someone Else",
+    });
+    assert.equal(second.userId, first.userId);
+    assert.equal(second.created, false);
+    const user = await getUserById(first.userId);
+    assert.equal(user?.displayName, "Ella");
+    const identities = await getPool().query(
+      `SELECT provider_subject, email FROM auth_identities WHERE user_id = $1`,
+      [first.userId],
+    );
+    assert.equal(identities.rowCount, 1);
+    assert.equal(identities.rows[0].provider_subject, "apple-sub-return");
+    assert.equal(identities.rows[0].email, "ella@privaterelay.appleid.com");
+  });
+
   it("logs the same subject back into the same user", async () => {
     const first = await continueWithOAuth({
       provider: "google",

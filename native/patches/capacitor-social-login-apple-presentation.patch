@@ -1,0 +1,70 @@
+--- a/ios/Sources/SocialLoginPlugin/AppleProvider.swift
++++ b/ios/Sources/SocialLoginPlugin/AppleProvider.swift
+@@ -235,6 +235,24 @@
+         print("Apple retrieveState: \(object)")
+     }
+ 
++    /// Window chosen for the in-flight Apple sheet. login() refuses to start
++    /// without one, so presentationAnchor does not invent an empty window.
++    private var presentationWindow: UIWindow?
++
++    /// Same rules as app/src/auth/apple-presentation.ts: foreground-active
++    /// scene only, visible key window, then any visible window. Never
++    /// UIApplication.shared.windows.first.
++    private func korpassetApplePresentationWindow() -> UIWindow? {
++        let activeWindows = UIApplication.shared.connectedScenes
++            .compactMap { $0 as? UIWindowScene }
++            .filter { $0.activationState == .foregroundActive }
++            .flatMap { $0.windows }
++        if let key = activeWindows.first(where: { $0.isKeyWindow && !$0.isHidden }) {
++            return key
++        }
++        return activeWindows.first(where: { !$0.isHidden })
++    }
++
+     func login(payload: [String: Any], completion: @escaping (Result<AppleProviderResponse, Error>) -> Void) {
+         self.completion = completion
+ 
+@@ -244,6 +262,17 @@
+                 return
+             }
+ 
++            guard let window = self.korpassetApplePresentationWindow() else {
++                self.presentationWindow = nil
++                completion(.failure(NSError(
++                    domain: "KorpassetApple",
++                    code: 1,
++                    userInfo: [NSLocalizedDescriptionKey: "Apple presentation anchor missing"]
++                )))
++                return
++            }
++            self.presentationWindow = window
++
+             let appleIDProvider = ASAuthorizationAppleIDProvider()
+             let request = appleIDProvider.createRequest()
+ 
+@@ -689,11 +718,19 @@
+     // MARK: - ASAuthorizationControllerPresentationContextProviding
+ 
+     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+-        let windows = UIApplication.shared.connectedScenes
+-            .compactMap { $0 as? UIWindowScene }
+-            .filter { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }
+-            .flatMap { $0.windows }
+-        return windows.first { $0.isKeyWindow } ?? windows.first ?? UIApplication.shared.windows.first ?? ASPresentationAnchor()
++        if let window = presentationWindow,
++           window.windowScene?.activationState == .foregroundActive,
++           !window.isHidden {
++            return window
++        }
++        if let window = korpassetApplePresentationWindow() {
++            presentationWindow = window
++            return window
++        }
++        // login() does not call performRequests unless a real window exists.
++        // This fallback only satisfies the delegate if the scene disappears
++        // between the check and the callback.
++        return presentationWindow ?? ASPresentationAnchor()
+     }
+ 
+     private func persistName(userId: String, givenName: String?, familyName: String?) {
