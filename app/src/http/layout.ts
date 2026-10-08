@@ -315,10 +315,17 @@ function reviewLoginForm(returnTo: string): string {
          </form>`;
 }
 
-export function oauthContinuePanel(intro?: string, returnTo = "/app"): string {
+export function oauthContinuePanel(
+  intro?: string,
+  returnTo = "/app",
+  mode: "product" | "play-review" = "product",
+): string {
+  if (mode === "play-review") {
+    const form = reviewLoginForm(returnTo);
+    if (form) return `<div class="stack review-login">${form}</div>`;
+  }
   return `${intro ? `<p>${intro}</p>` : ""}
          <div class="stack oauth-continue" data-return-to="${escapeHtml(returnTo)}">
-           ${reviewLoginForm(returnTo)}
            <p>Fortsätt med Apple eller Google</p>
            <p class="muted">Första gången skapas ditt konto automatiskt. Nästa gång använder du samma val för att logga in.</p>
            <p id="oauth-error" class="banner banner-error" hidden></p>

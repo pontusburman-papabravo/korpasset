@@ -6,10 +6,17 @@ Byggsteg: [native-apps.md](native-apps.md).
 
 Portal: [Play Console](https://play.google.com/console)
 
-## Granskningskonto (klart 2026-09-20)
+## Granskningskonto
 
-Play-granskaren kan inte skapa konto. Körpasset har ingen e-post/lösenord —
-de ska trycka **Fortsätt med Google**.
+Play-granskaren kommer inte igenom Sign in with Google. Medan
+`PLAY_REVIEW_EMAIL` och `PLAY_REVIEW_PASSWORD` är satta visar **bara
+Android-appens WebView** e-post och lösenord, utan Apple- och
+Google-knappar. Webben och iPhone visar bara Fortsätt med Apple eller
+Google. Riktiga konton är fortfarande Apple och Google
+([ADR-008](../decisions/ADR-008-app-oauth-accounts.md)).
+
+När Play har godkänt: ta bort de två variablerna ur VPS-env och starta om
+appen. Då är Android tillbaka på Apple och Google.
 
 Ett konto: `korpasset@gmail.com`. Inget send-as-alias.
 
@@ -52,7 +59,7 @@ Klistra in i **Annan information som krävs för åtkomst till appen**
 (max 500 tecken, engelska):
 
 ```
-On the first screen use the email and password fields, not Google. Email is korpasset@gmail.com and the password is in the field above. No 2FA, biometrics, membership, location, or QR. Skip invitation QR. First login creates test data. No payment. Apple is iOS-only. Do not use /admin.
+The first screen has only email and password. There is no Google or Apple button. Email: korpasset@gmail.com. Password: the password in the field above. No 2FA, QR, location, or payment. First login opens "Vad vill du göra?".
 ```
 
 ## Innehållsklassificering (IARC, klart 2026-09-20)

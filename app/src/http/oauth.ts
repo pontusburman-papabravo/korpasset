@@ -134,8 +134,19 @@ async function establishFromToken(
   });
 }
 
+export function userAgentText(userAgent: string | string[] | undefined): string {
+  return Array.isArray(userAgent) ? userAgent.join(" ") : userAgent || "";
+}
+
+export function isAndroidAppWebView(userAgent: string | string[] | undefined): boolean {
+  const ua = userAgentText(userAgent);
+  // Play reviews the installed app. Capacitor's Android WebView includes "wv".
+  // Chrome and the website do not, so they keep Apple and Google.
+  return /Android/i.test(ua) && /\bwv\b/.test(ua);
+}
+
 export function isExternalAndroidBrowser(userAgent: string | string[] | undefined): boolean {
-  const ua = Array.isArray(userAgent) ? userAgent.join(" ") : userAgent || "";
+  const ua = userAgentText(userAgent);
   if (!/Android/i.test(ua)) return false;
   // Capacitor's WebView includes "wv". Chrome, which Credential Manager
   // fallback opens, does not. That Chrome session cannot set the app cookie.

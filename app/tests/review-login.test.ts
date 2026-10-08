@@ -6,6 +6,10 @@ import { resetDatabaseData } from "./setup.js";
 
 const EMAIL = "korpasset@gmail.com";
 const PASSWORD = "review-secret-1";
+const ANDROID_APP =
+  "Mozilla/5.0 (Linux; Android 14; Pixel 7a Build/AP2A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/128.0.6613.88 Mobile Safari/537.36";
+const ANDROID_CHROME =
+  "Mozilla/5.0 (Linux; Android 14; Pixel 7a) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.88 Mobile Safari/537.36";
 
 function setReviewEnv(): void {
   process.env.PLAY_REVIEW_EMAIL = EMAIL;
@@ -44,15 +48,43 @@ describe("play review login", () => {
     await app.close();
   });
 
+  it("shows email login only in the Android app while review credentials are set", async () => {
+    setReviewEnv();
+    const app = await createTestApp();
+    const web = await app.inject({ method: "GET", url: "/app" });
+    assert.doesNotMatch(web.body, /review-password/);
+    assert.doesNotMatch(web.body, /Logga in med e-post/);
+    assert.match(web.body, /Fortsätt med Apple/);
+    assert.match(web.body, /Fortsätt med Google/);
+
+    const chrome = await app.inject({
+      method: "GET",
+      url: "/app",
+      headers: { "user-agent": ANDROID_CHROME },
+    });
+    assert.doesNotMatch(chrome.body, /review-password/);
+    assert.match(chrome.body, /Fortsätt med Google/);
+
+    const phone = await app.inject({
+      method: "GET",
+      url: "/app",
+      headers: { "user-agent": ANDROID_APP },
+    });
+    assert.match(phone.body, /<h1>Logga in<\/h1>/);
+    assert.match(phone.body, /Logga in med e-post/);
+    assert.match(phone.body, /name="email"/);
+    assert.match(phone.body, /name="password"/);
+    assert.match(phone.body, new RegExp(`value="${EMAIL}"`));
+    assert.equal(phone.body.includes(PASSWORD), false);
+    assert.doesNotMatch(phone.body, /Fortsätt med Apple/);
+    assert.doesNotMatch(phone.body, /Fortsätt med Google/);
+    assert.doesNotMatch(phone.body, /oauth-continue/);
+    await app.close();
+  });
+
   it("signs the review account in and reuses the same user", async () => {
     setReviewEnv();
     const app = await createTestApp();
-    const page = await app.inject({ method: "GET", url: "/app" });
-    assert.match(page.body, /Logga in med e-post/);
-    assert.match(page.body, /name="email"/);
-    assert.match(page.body, /name="password"/);
-    assert.match(page.body, new RegExp(`value="${EMAIL}"`));
-    assert.equal(page.body.includes(PASSWORD), false);
 
     const first = await app.inject({
       method: "POST",
@@ -98,8 +130,14 @@ describe("play review login", () => {
     assert.equal(wrong.headers.location, "/app?review_error=credentials");
     assert.equal(wrong.cookies.find((item) => item.name === "bilklar_session"), undefined);
 
-    const failed = await app.inject({ method: "GET", url: "/app?review_error=credentials" });
+    const failed = await app.inject({
+      method: "GET",
+      url: "/app?review_error=credentials",
+      headers: { "user-agent": ANDROID_APP },
+    });
     assert.match(failed.body, /Fel e-post eller lösenord/);
+    assert.match(failed.body, /review-password/);
+    assert.doesNotMatch(failed.body, /Fortsätt med Google/);
     assert.equal(failed.body.includes("not-the-password"), false);
     await app.close();
   });
