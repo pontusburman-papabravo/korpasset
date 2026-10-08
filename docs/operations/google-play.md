@@ -17,6 +17,7 @@ inloggningen skickar Chrome tillbaka till appen.
 
 Riktiga konton är Apple och Google
 ([ADR-008](../decisions/ADR-008-app-oauth-accounts.md)).
+Inloggningen i appen är Fortsätt med Apple eller Fortsätt med Google.
 
 Ett konto: `korpasset@gmail.com`. Inget send-as-alias.
 
@@ -95,7 +96,6 @@ Gmail-MCP i Cursor är OAuth mot det konto användaren godkänner och läser
 | --- | --- | --- |
 | `GMAIL_LOGGIN` | Environment Variable | `korpasset@gmail.com` |
 | `GMAIL_LOGGIN_PASSWORD` | Runtime Secret | Gmail-lösenordet |
-| `PLAY_REVIEW_EMAIL` | Environment Variable | `korpasset@gmail.com` |
 
 Äldre namn (`GOOGLE_ACCOUNT_EMAIL`, `GOOGLE_ACCOUNT_PASSWORD`) skapades
 inte. `RESEND_API_KEY` och `RESEND_WEBHOOK_SECRET` i samma environment är

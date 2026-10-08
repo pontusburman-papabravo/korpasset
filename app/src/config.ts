@@ -91,13 +91,6 @@ export const config = {
   get googleIosClientId() {
     return sanitizePublicGoogleClientId(process.env.GOOGLE_IOS_CLIENT_ID);
   },
-  /** Play Console review account. Empty hides the email form. Not a product login. */
-  get playReviewEmail() {
-    return (process.env.PLAY_REVIEW_EMAIL ?? "").trim().toLowerCase();
-  },
-  get playReviewPassword() {
-    return process.env.PLAY_REVIEW_PASSWORD ?? "";
-  },
   get androidPackageName() {
     return env("ANDROID_PACKAGE_NAME", config.appleBundleId);
   },

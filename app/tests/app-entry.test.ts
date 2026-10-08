@@ -54,6 +54,8 @@ describe("app entry (GET /app) and production onboarding", () => {
     assert.equal(response.statusCode, 200);
     assert.match(response.body, /Fortsätt med Apple/);
     assert.match(response.body, /Fortsätt med Google/);
+    assert.doesNotMatch(response.body, /type="password"/);
+    assert.doesNotMatch(response.body, /review-password/);
     assert.match(response.body, /Första gången skapas ditt konto automatiskt/);
     assert.doesNotMatch(response.body, /Samma knapp är både första gången/);
     assert.match(response.body, /noindex, nofollow/);

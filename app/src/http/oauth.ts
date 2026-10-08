@@ -14,7 +14,6 @@ import { attributeReferralSignup, platformFromUserAgent } from "../services/shar
 import { readReferralCookie } from "./share.js";
 import { createOAuthHandoff } from "../services/oauth-handoff.js";
 import { signedInRedirectPath } from "./navigation.js";
-import { signInPlayReview, playReviewConfigured } from "../services/review-login.js";
 import { readOnboardingTrack } from "./onboarding-track.js";
 import { allowRequest, OAUTH_RATE_LIMIT } from "./rate-limit.js";
 
@@ -373,30 +372,6 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
       );
       return reply.redirect("/app?oauth_error=failed");
     }
-  });
-
-  app.post("/api/auth/review-login", async (request, reply) => {
-    if (!playReviewConfigured()) {
-      return reply.status(404).send({ error: "Not found" });
-    }
-    const body = (request.body ?? {}) as { email?: unknown; password?: unknown };
-    if (
-      !allowRequest(
-        `review-login:${request.ip || "unknown"}`,
-        OAUTH_RATE_LIMIT.limit,
-        OAUTH_RATE_LIMIT.windowMs,
-      )
-    ) {
-      return reply.redirect("/app?review_error=rate", 303);
-    }
-    const userId = await signInPlayReview(body.email, body.password);
-    if (!userId) {
-      request.log.info({ reviewLogin: false }, "play review login rejected");
-      return reply.redirect("/app?review_error=credentials", 303);
-    }
-    setSessionCookie(reply, userId);
-    request.log.info({ reviewLogin: true }, "play review login");
-    return reply.redirect(await signedInRedirectPath(userId, readOnboardingTrack(request)), 303);
   });
 
   app.post("/api/auth/:provider", async (request, reply) => {

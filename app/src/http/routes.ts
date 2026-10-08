@@ -327,14 +327,6 @@ function oauthHandoffQuery(query: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
-function reviewLoginError(query: unknown): string | undefined {
-  if (!query || typeof query !== "object") return undefined;
-  const value = (query as { review_error?: unknown }).review_error;
-  if (value === "rate") return "För många försök. Vänta en stund och prova igen.";
-  if (value === "credentials") return "Fel e-post eller lösenord.";
-  return undefined;
-}
-
 function appLoginPage(errorMessage?: string, returnTo = "/app"): string {
   return layout(
     "Körpasset",
@@ -393,7 +385,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     if (!sessionUserId) {
       return reply
         .type("text/html")
-        .send(appLoginPage(reviewLoginError(request.query), loginReturnFromQuery(request.query)));
+        .send(appLoginPage(undefined, loginReturnFromQuery(request.query)));
     }
 
     const home = await signedInHome(sessionUserId);
