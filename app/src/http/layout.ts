@@ -301,7 +301,8 @@ export function siteLayout(
 function reviewLoginForm(returnTo: string): string {
   if (!config.playReviewEmail || !config.playReviewPassword) return "";
   return `<form method="post" action="/api/auth/review-login" class="stack">
-           <p>Logga in med e-post</p>
+           <p>Logga in med Google-kontot</p>
+           <p class="muted">Skriv e-post och lösenord för kontot här i appen.</p>
            <div>
              <label for="review-email">E-post</label>
              <input id="review-email" name="email" type="email" autocomplete="username" required maxlength="200" value="${escapeHtml(config.playReviewEmail)}">

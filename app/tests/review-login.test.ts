@@ -36,7 +36,7 @@ describe("play review login", () => {
     const page = await app.inject({ method: "GET", url: "/app" });
     assert.equal(page.statusCode, 200);
     assert.doesNotMatch(page.body, /review-password/);
-    assert.doesNotMatch(page.body, /Logga in med e-post/);
+    assert.doesNotMatch(page.body, /Logga in med Google-kontot/);
 
     const posted = await app.inject({
       method: "POST",
@@ -53,7 +53,7 @@ describe("play review login", () => {
     const app = await createTestApp();
     const web = await app.inject({ method: "GET", url: "/app" });
     assert.doesNotMatch(web.body, /review-password/);
-    assert.doesNotMatch(web.body, /Logga in med e-post/);
+    assert.doesNotMatch(web.body, /Logga in med Google-kontot/);
     assert.match(web.body, /Fortsätt med Apple/);
     assert.match(web.body, /Fortsätt med Google/);
 
@@ -71,7 +71,8 @@ describe("play review login", () => {
       headers: { "user-agent": ANDROID_APP },
     });
     assert.match(phone.body, /<h1>Logga in<\/h1>/);
-    assert.match(phone.body, /Logga in med e-post/);
+    assert.match(phone.body, /Logga in med Google-kontot/);
+    assert.match(phone.body, /Skriv e-post och lösenord för kontot här i appen/);
     assert.match(phone.body, /name="email"/);
     assert.match(phone.body, /name="password"/);
     assert.match(phone.body, new RegExp(`value="${EMAIL}"`));
