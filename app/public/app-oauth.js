@@ -191,7 +191,7 @@
       scope: "openid email profile",
       nonce: nonce,
       state: state,
-      prompt: prompt === "login" ? "login" : "select_account",
+      prompt: prompt === "login" || prompt === "direct" ? "login" : "select_account",
     });
     return "https://accounts.google.com/o/oauth2/v2/auth?" + params.toString();
   }
@@ -384,7 +384,7 @@
   }
 
   async function continueWith(provider) {
-    if (authRuntime.inProgress || authRuntime.navigating) {
+    if (authRuntime.inProgress || authRuntime.navigating || browserStartIsCoolingDown()) {
       oauthTrace("auth_duplicate_start_blocked", { provider: provider });
       return;
     }
@@ -432,6 +432,14 @@
       }
 
       const nonce = randomNonce();
+      // Play-signed builds fail inside Credential Manager (16 / 28444) before
+      // Körpasset receives an identity. The web client does not depend on the
+      // APK certificate, so Android opens Google's own sign-in page.
+      if (provider === "google" && platform() === "android" && oauth.googleWebClientId) {
+        selectAuthPath("browser-direct");
+        startGoogleBrowserFallback(returnTo, nonce, "", "direct");
+        return;
+      }
       try {
         await initializeOnce(SocialLogin, provider);
       } catch (error) {
@@ -556,15 +564,25 @@
     });
   }
 
+  function browserStartIsCoolingDown() {
+    return typeof authRuntime.browserUntil === "number" && Date.now() < authRuntime.browserUntil;
+  }
+
   function startGoogleBrowserFallback(returnTo, nonce, pluginCode, prompt) {
     oauthTrace("google_browser_fallback", {
       pluginCode: pluginCode,
       hasIdentityToken: false,
-      reason: prompt === "login" ? "browser-after-picker" : "browser-before-picker",
+      reason:
+        prompt === "direct"
+          ? "browser-direct"
+          : prompt === "login"
+            ? "browser-after-picker"
+            : "browser-before-picker",
     });
     updateAuthPhase("browser");
     hideGoogleDeviceHint();
     window.location.assign(googleBrowserAuthorizeUrl(nonce, returnTo, prompt));
+    authRuntime.browserUntil = Date.now() + 2000;
     // Capacitor opens accounts.google.com outside the WebView, so this page
     // stays put. Leave the buttons usable if the reviewer comes back.
     authRuntime.inProgress = false;
@@ -1207,6 +1225,9 @@
     if (authRuntime.inProgress) return { authenticated: false, waiting: true, outcome: "pending" };
     if (pending && !isReturn) {
       setLoginBusy(true);
+      return { authenticated: false, waiting: true, outcome: "pending" };
+    }
+    if (pending && isReturn && browserStartIsCoolingDown()) {
       return { authenticated: false, waiting: true, outcome: "pending" };
     }
     if (pending && isReturn) {

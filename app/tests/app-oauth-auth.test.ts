@@ -352,34 +352,31 @@ function findTrace(traces: OAuthTrace[], step: string) {
 }
 
 describe("Android Google auth lifecycle", () => {
-  it("cold start: one Google tap posts once and navigates", async () => {
+  it("cold start: one Google tap opens Google sign-in", async () => {
     const client = installAuth({ platform: "android", launchUrl: "" });
     await flush();
     await client.tapGoogle();
-    assert.equal(client.logins.length, 1);
-    assert.equal(client.posts.length, 1);
-    assert.equal(client.posts[0].url, "/api/auth/google");
-    assert.equal(client.assignments[0], "/onboarding");
+    assert.equal(client.logins.length, 0);
+    assert.equal(client.posts.length, 0);
+    assert.match(client.assignments[0] ?? "", /https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth/);
+    assert.match(client.assignments[0] ?? "", /prompt=login/);
     assert.equal(findTrace(client.traces, "auth_google_started")?.step, "auth_google_started");
-    assert.equal(findTrace(client.traces, "auth_google_account_selected")?.step, "auth_google_account_selected");
-    assert.equal(findTrace(client.traces, "auth_session_verified")?.step, "auth_session_verified");
-    assert.equal(findTrace(client.traces, "auth_navigation_started")?.step, "auth_navigation_started");
-    assert.equal(findTrace(client.traces, "auth_navigation_completed")?.step, "auth_navigation_completed");
+    assert.equal(findTrace(client.traces, "auth_path_selected")?.reason, "browser-direct");
+    assert.equal(findTrace(client.traces, "google_browser_fallback")?.reason, "browser-direct");
     const attemptId = findTrace(client.traces, "auth_google_started")?.attemptId;
     assert.match(attemptId ?? "", /^[a-f0-9]{32}$/);
-    assert.equal(findTrace(client.traces, "auth_navigation_completed")?.attemptId, attemptId);
     assert.equal(client.beacons.join("").includes("identity-token"), false);
   });
 
-  it("warm app: resume then Google tap still starts exactly one login", async () => {
+  it("warm app: resume then Google tap still opens one Google sign-in", async () => {
     const client = installAuth({ platform: "android" });
     await flush();
     client.resume();
     await flush();
     await client.tapGoogle();
-    assert.equal(client.logins.length, 1);
-    assert.equal(client.posts.length, 1);
-    assert.equal(client.assignments[0], "/onboarding");
+    assert.equal(client.logins.length, 0);
+    assert.equal(client.posts.length, 0);
+    assert.match(client.assignments[0] ?? "", /prompt=login/);
   });
 
   it("return from Google with an existing session navigates without another tap", async () => {
@@ -451,29 +448,19 @@ describe("Android Google auth lifecycle", () => {
     assert.equal(client.logins.length, 0);
   });
 
-  it("double-tapping Fortsätt med Google starts one native login", async () => {
-    let release: ((value: unknown) => void) | undefined;
-    const client = installAuth({
-      platform: "android",
-      login: () =>
-        new Promise((resolve) => {
-          release = resolve;
-        }),
-    });
+  it("double-tapping Fortsätt med Google opens one Google sign-in", async () => {
+    const client = installAuth({ platform: "android" });
     await flush();
     const first = client.tapGoogle();
     const second = client.tapGoogle();
-    await flush();
-    assert.equal(client.logins.length, 1);
-    assert.equal(client.google.disabled, true);
-    assert.equal(client.google.textContent, "Loggar in…");
-    release?.({ result: { idToken: "identity-token", profile: { name: "Ada" } } });
     await first;
     await second;
     await flush();
-    assert.equal(client.logins.length, 1);
-    assert.equal(client.posts.length, 1);
-    assert.equal(client.consent.hidden, true);
+    assert.equal(client.logins.length, 0);
+    assert.equal(client.assignments.length, 1);
+    assert.match(client.assignments[0] ?? "", /accounts\.google\.com/);
+    assert.ok(findTrace(client.traces, "auth_duplicate_start_blocked"));
+    assert.equal(client.google.disabled, false);
   });
 
   it("two start attempts do not create two OAuth flows", async () => {
@@ -484,7 +471,8 @@ describe("Android Google auth lifecycle", () => {
     await started;
     await blocked;
     await flush();
-    assert.equal(client.logins.length, 1);
+    assert.equal(client.logins.length, 0);
+    assert.equal(client.assignments.length, 1);
     assert.ok(findTrace(client.traces, "auth_duplicate_start_blocked"));
   });
 
@@ -512,7 +500,7 @@ describe("Android Google auth lifecycle", () => {
   it("lets the user retry after a cancelled OAuth without restarting", async () => {
     let cancelled = true;
     const client = installAuth({
-      platform: "android",
+      platform: "ios",
       login: async () => {
         if (cancelled) {
           const error = new Error("Google Sign-In cancelled by user");
@@ -580,54 +568,33 @@ describe("Android Google auth lifecycle", () => {
     assert.equal(client.beacons.join("").includes("handoffcodehandoffcode12"), false);
   });
 
-  it("does not permanently disable native Google after Credential Manager 16", async () => {
-    let failNative = true;
+  it("opens Google sign-in directly instead of Credential Manager on Android", async () => {
     const client = installAuth({
       platform: "android",
       login: async () => {
-        if (failNative) {
-          throw new Error("Google Sign-In failed: [16] Account reauth failed");
-        }
-        return { result: { idToken: "identity-token", profile: { name: "Ada" } } };
+        throw new Error("Google Sign-In failed: [16] Account reauth failed");
       },
     });
     await flush();
     await client.tapGoogle();
-    assert.equal(client.logins.length, 1);
+    assert.equal(client.logins.length, 0);
     assert.match(client.assignments[0] ?? "", /prompt=login/);
     assert.equal(client.google.disabled, false);
-    assert.equal(findTrace(client.traces, "google_browser_fallback")?.reason, "browser-after-picker");
+    assert.equal(findTrace(client.traces, "google_browser_fallback")?.reason, "browser-direct");
     assert.deepEqual(client.errors, []);
     assert.equal(client.hint.hidden, true);
     assert.equal(client.reauth.hidden, true);
-    failNative = false;
-    await client.tapGoogle();
-    assert.equal(client.logins.length, 2);
-    assert.equal(client.posts.length, 1);
-    assert.equal(client.assignments.at(-1), "/onboarding");
   });
 
-  it("does not overwrite a Credential Manager 16 failure with incomplete-return on resume", async () => {
-    let release: ((error: Error) => void) | undefined;
-    const client = installAuth({
-      platform: "android",
-      login: () =>
-        new Promise((_resolve, reject) => {
-          release = reject;
-        }),
-    });
+  it("does not show an incomplete-return error when Google sign-in has just opened", async () => {
+    const client = installAuth({ platform: "android" });
     await flush();
     const started = client.tapGoogle();
     await flush();
     client.resume();
-    await flush();
-    assert.equal(
-      client.errors.includes("Kunde inte slutföra inloggningen. Försök igen."),
-      false,
-    );
-    release?.(new Error("Google Sign-In failed: [16] Account reauth failed"));
     await started;
     await flush();
+    await new Promise((resolve) => setTimeout(resolve, 80));
     assert.match(client.assignments[0] ?? "", /accounts\.google\.com\/o\/oauth2\/v2\/auth/);
     assert.match(client.assignments[0] ?? "", /prompt=login/);
     assert.equal(
@@ -636,7 +603,7 @@ describe("Android Google auth lifecycle", () => {
       ),
       false,
     );
-    assert.equal(findTrace(client.traces, "google_browser_fallback")?.reason, "browser-after-picker");
+    assert.equal(findTrace(client.traces, "google_browser_fallback")?.reason, "browser-direct");
     assert.equal(
       client.traces.some((item) => item.step === "auth_session_failed" && item.reason === "incomplete-return"),
       false,
@@ -656,7 +623,7 @@ describe("Android Google auth lifecycle", () => {
     await client.tapGoogle();
     assert.equal(client.logins.length, 0);
     assert.equal(client.posts.length, 0);
-    assert.equal(findTrace(client.traces, "auth_path_selected")?.reason, "browser-before-picker");
+    assert.equal(findTrace(client.traces, "auth_path_selected")?.reason, "browser-direct");
     assert.match(client.assignments[0] ?? "", /response_mode=form_post/);
     assert.equal(client.beacons.join("").includes("id_token"), false);
   });
@@ -832,7 +799,7 @@ describe("Android Google auth lifecycle", () => {
     assert.match(client.hint.textContent, /Google som gör det/);
     assert.equal(findTrace(client.traces, "google_device_hint_shown")?.reason, "once");
     await client.tapGoogle();
-    assert.equal(client.hint.hidden, false);
+    assert.equal(client.hint.hidden, true);
     assert.equal(
       client.traces.filter((item) => item.step === "google_device_hint_shown").length,
       1,
@@ -859,7 +826,8 @@ describe("Android Google auth lifecycle", () => {
     assert.match(client.assignments[0] ?? "", /prompt=login/);
     assert.equal(client.openedUrls.length, 0);
     assert.equal(findTrace(client.traces, "google_reauth_gmail_opened"), undefined);
-    assert.equal(client.logins.length, 1);
+    assert.equal(client.logins.length, 0);
+    assert.equal(findTrace(client.traces, "google_browser_fallback")?.reason, "browser-direct");
   });
 
   it("does not show the Google device hint again on the same install", async () => {

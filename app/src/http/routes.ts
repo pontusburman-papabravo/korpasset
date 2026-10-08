@@ -78,8 +78,6 @@ import {
 } from "../services/product-events.js";
 import { config } from "../config.js";
 import { redeemOAuthHandoff } from "../services/oauth-handoff.js";
-import { playReviewConfigured } from "../services/review-login.js";
-import { isAndroidAppWebView } from "./oauth.js";
 import { getReusableSessionUserId, getUserById } from "../services/users.js";
 import {
   escapeHtml,
@@ -337,17 +335,12 @@ function reviewLoginError(query: unknown): string | undefined {
   return undefined;
 }
 
-function appLoginPage(
-  errorMessage?: string,
-  returnTo = "/app",
-  userAgent?: string | string[],
-): string {
-  const review = playReviewConfigured() && isAndroidAppWebView(userAgent);
+function appLoginPage(errorMessage?: string, returnTo = "/app"): string {
   return layout(
     "Körpasset",
     `${errorMessage ? errorBanner(errorMessage) : ""}
-     <h1>${review ? "Logga in" : "Fortsätt in i Körpasset"}</h1>
-     ${oauthContinuePanel(undefined, returnTo, review ? "play-review" : "product")}`,
+     <h1>Fortsätt in i Körpasset</h1>
+     ${oauthContinuePanel(undefined, returnTo)}`,
     { navigation: false },
   );
 }
@@ -393,7 +386,6 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         appLoginPage(
           "Inloggningen gick inte att slutföra. Försök igen.",
           loginReturnFromQuery(request.query),
-          request.headers["user-agent"],
         ),
       );
     }
@@ -401,13 +393,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     if (!sessionUserId) {
       return reply
         .type("text/html")
-        .send(
-          appLoginPage(
-            reviewLoginError(request.query),
-            loginReturnFromQuery(request.query),
-            request.headers["user-agent"],
-          ),
-        );
+        .send(appLoginPage(reviewLoginError(request.query), loginReturnFromQuery(request.query)));
     }
 
     const home = await signedInHome(sessionUserId);

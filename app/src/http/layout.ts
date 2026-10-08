@@ -298,33 +298,7 @@ export function siteLayout(
 </html>`;
 }
 
-function reviewLoginForm(returnTo: string): string {
-  if (!config.playReviewEmail || !config.playReviewPassword) return "";
-  return `<form method="post" action="/api/auth/review-login" class="stack">
-           <p>Logga in med Google-kontot</p>
-           <p class="muted">Skriv e-post och lösenord för kontot här i appen.</p>
-           <div>
-             <label for="review-email">E-post</label>
-             <input id="review-email" name="email" type="email" autocomplete="username" required maxlength="200" value="${escapeHtml(config.playReviewEmail)}">
-           </div>
-           <div>
-             <label for="review-password">Lösenord</label>
-             <input id="review-password" name="password" type="password" autocomplete="current-password" required maxlength="200">
-           </div>
-           <input type="hidden" name="returnTo" value="${escapeHtml(returnTo)}">
-           ${primaryButton("Logga in")}
-         </form>`;
-}
-
-export function oauthContinuePanel(
-  intro?: string,
-  returnTo = "/app",
-  mode: "product" | "play-review" = "product",
-): string {
-  if (mode === "play-review") {
-    const form = reviewLoginForm(returnTo);
-    if (form) return `<div class="stack review-login">${form}</div>`;
-  }
+export function oauthContinuePanel(intro?: string, returnTo = "/app"): string {
   return `${intro ? `<p>${intro}</p>` : ""}
          <div class="stack oauth-continue" data-return-to="${escapeHtml(returnTo)}">
            <p>Fortsätt med Apple eller Google</p>

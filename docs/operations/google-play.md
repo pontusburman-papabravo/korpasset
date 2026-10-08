@@ -8,17 +8,15 @@ Portal: [Play Console](https://play.google.com/console)
 
 ## Granskningskonto
 
-`korpasset@gmail.com` är Google-kontot i Play Console. Granskaren kommer
-inte igenom Googles kontoväljare. Medan `PLAY_REVIEW_EMAIL` och
-`PLAY_REVIEW_PASSWORD` är satta visar Android-appens WebView fält för
-det kontots e-post och lösenord. Servern jämför lösenordet med värdet i
-miljön och skapar en Körpasset-session. Anropet går till Körpasset, inte
-till Google. Webben och iPhone visar Fortsätt med Apple eller Google.
-Riktiga konton är fortfarande Apple och Google
-([ADR-008](../decisions/ADR-008-app-oauth-accounts.md)).
+`korpasset@gmail.com` är Google-kontot. På Android öppnar **Fortsätt med
+Google** Googles egen inloggningssida. Credential Manager i den
+Play-signerade appen ger ingen session (fel 16 och 28444) förrän
+SHA-1 från **Körpassets** Play App signing ligger på Android-OAuth-klienten
+i Google Cloud. Web-klienten behöver inte det certifikatet. Efter
+inloggningen skickar Chrome tillbaka till appen.
 
-När Play har godkänt: ta bort de två variablerna ur VPS-env och starta om
-appen. Då är Android tillbaka på Apple och Google.
+Riktiga konton är Apple och Google
+([ADR-008](../decisions/ADR-008-app-oauth-accounts.md)).
 
 Ett konto: `korpasset@gmail.com`. Inget send-as-alias.
 
@@ -61,7 +59,7 @@ Klistra in i **Annan information som krävs för åtkomst till appen**
 (max 500 tecken, engelska):
 
 ```
-The username is the Google account korpasset@gmail.com. On the first screen, type that email and the password into the app's fields. The screen stays inside the app. No 2FA, QR, location, or payment. First login opens "Vad vill du göra?".
+On the first screen tap "Fortsätt med Google". A browser opens Google sign-in. Use the Google account korpasset@gmail.com and the password above. The app then opens. No 2FA, QR, location, or payment. First login opens "Vad vill du göra?".
 ```
 
 ## Innehållsklassificering (IARC, klart 2026-09-20)
