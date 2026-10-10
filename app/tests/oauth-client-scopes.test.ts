@@ -410,23 +410,21 @@ describe("native OAuth login scopes", () => {
     assert.equal(JSON.stringify(client.posts[0]).includes("google-access-token"), false);
   });
 
-  it("starts Android Google login without Apple init or custom scopes", async () => {
+  it("opens Google sign-in directly on Android", async () => {
     const client = installClient({ name: "Ada Lovelace" }, {}, "android");
     await clickProvider(client.click, "google");
 
-    assert.equal(client.inits.length, 1);
-    assert.equal(client.inits[0].apple, undefined);
-    assert.equal(client.inits[0].google?.mode, "online");
-    assert.equal(client.inits[0].google?.webClientId, "web.apps.googleusercontent.com");
-    assert.equal(client.logins.length, 1);
-    assert.equal(client.logins[0].provider, "google");
-    assert.equal(client.logins[0].options.scopes, undefined);
-    assert.equal(client.logins[0].options.forcePrompt, undefined);
-    assert.equal(typeof client.logins[0].options.nonce, "string");
-    assert.equal(client.posts.length, 1);
-    assert.equal(client.posts[0].identityToken, "identity-token");
-    assert.equal(client.posts[0].nonce, client.logins[0].options.nonce);
+    assert.equal(client.inits.length, 0);
+    assert.equal(client.logins.length, 0);
+    assert.equal(client.posts.length, 0);
     assert.equal(client.errors.length, 0);
+    assert.equal(findTrace(client.traces, "auth_path_selected")?.reason, "browser-direct");
+    const url = new URL(client.assignments[0] ?? "");
+    assert.equal(url.origin, "https://accounts.google.com");
+    assert.equal(url.pathname, "/o/oauth2/v2/auth");
+    assert.equal(url.searchParams.get("prompt"), "login");
+    assert.equal(url.searchParams.get("response_mode"), "form_post");
+    assert.equal(url.searchParams.get("client_id"), "web.apps.googleusercontent.com");
   });
 
   it("keeps Apple and Google together when iOS starts Google login", async () => {
@@ -439,7 +437,7 @@ describe("native OAuth login scopes", () => {
   });
 
   it("shows cancellation only when the native login was actually cancelled", async () => {
-    const cancelled = installClient({ name: "Ada" }, {}, "android", async () => {
+    const cancelled = installClient({ name: "Ada" }, {}, "ios", async () => {
       const error = new Error("Google Sign-In cancelled by user");
       (error as Error & { code?: string }).code = "USER_CANCELLED";
       throw error;
@@ -451,7 +449,7 @@ describe("native OAuth login scopes", () => {
     assert.equal(findTrace(cancelled.traces, "google_login_cancelled")?.step, "google_login_cancelled");
     assert.equal(findTrace(cancelled.traces, "google_login_cancelled")?.pluginCode, "USER_CANCELLED");
 
-    const rejected = installClient({ name: "Ada" }, {}, "android", async () => {
+    const rejected = installClient({ name: "Ada" }, {}, "ios", async () => {
       throw new Error("apple.android.redirectUrl is null or empty");
     });
     await clickProvider(rejected.click, "google");
@@ -569,8 +567,8 @@ describe("native OAuth login scopes", () => {
     assert.equal(findTrace(transport.traces, "apple_authorization_failed"), undefined);
   });
 
-  it("posts the id token from the Android 8.5.10 result shape", async () => {
-    const client = installClient({ name: "Ada" }, {}, "android", async () => ({
+  it("posts an id token from the native result shape on iOS", async () => {
+    const client = installClient({ name: "Ada" }, {}, "ios", async () => ({
       provider: "google",
       result: {
         accessToken: null,
@@ -588,27 +586,21 @@ describe("native OAuth login scopes", () => {
     }));
     await clickProvider(client.click, "google");
 
-    assert.equal(client.logins[0].options.scopes, undefined);
-    assert.equal(client.inits[0].apple, undefined);
     assert.equal(client.posts.length, 1);
     assert.equal(client.postUrls[0], "/api/auth/google");
     assert.equal(client.assignments[0], "/app");
     assert.equal(client.posts[0].identityToken, "android-id-token");
     assert.equal(client.posts[0].displayName, "Ada Lovelace");
     assert.equal(client.posts[0].authorizationCode, undefined);
-    assert.equal(findTrace(client.traces, "google_login_success")?.step, "google_login_success");
-    assert.equal(findTrace(client.traces, "google_login_success")?.platform, "android");
     assert.equal(findTrace(client.traces, "google_login_success")?.hasIdentityToken, true);
-    assert.equal(findTrace(client.traces, "google_login_success")?.created, true);
     const beacon = client.beacons.join("\n");
     assert.match(beacon, /step=google_login_success/);
     assert.equal(beacon.includes("android-id-token"), false);
     assert.equal(beacon.includes("ada@example.com"), false);
     assert.equal(beacon.includes("google-sub"), false);
-    assert.equal(beacon.includes(client.logins[0].options.nonce), false);
   });
 
-  it("opens browser login after Credential Manager 16 or 28444 once the native picker has been shown", async () => {
+  it("opens Google sign-in directly when Android Credential Manager would reject the account", async () => {
     const reauth = installClient({ name: "Ada" }, {}, "android", async () => {
       throw new Error(
         "Google Sign-In failed: [16] Account reauth failed. The plugin cleared Credential Manager credential-selection state and retried once.",
@@ -617,28 +609,14 @@ describe("native OAuth login scopes", () => {
     await clickProvider(reauth.click, "google");
     assert.deepEqual(reauth.errors, []);
     assert.equal(reauth.posts.length, 0);
-    assert.equal(reauth.logins.length, 1);
+    assert.equal(reauth.logins.length, 0);
     assert.equal(reauth.assignments.length, 1);
-    assert.equal(findTrace(reauth.traces, "google_native_login_failed")?.pluginCode, "16");
-    assert.equal(findTrace(reauth.traces, "google_browser_fallback")?.reason, "browser-after-picker");
+    assert.equal(findTrace(reauth.traces, "google_browser_fallback")?.reason, "browser-direct");
     assert.equal(findTrace(reauth.traces, "auth_session_failed"), undefined);
     const reauthUrl = new URL(reauth.assignments[0] ?? "");
     assert.equal(reauthUrl.origin, "https://accounts.google.com");
     assert.equal(reauthUrl.searchParams.get("prompt"), "login");
     assert.equal(reauthUrl.searchParams.get("response_mode"), "form_post");
-
-    const consoleSetup = installClient({ name: "Ada" }, {}, "android", async () => {
-      throw new Error(
-        "Google Sign-In failed: Google Cloud OAuth is not configured for this installed build ([28444] Developer console is not set up correctly).",
-      );
-    });
-    await clickProvider(consoleSetup.click, "google");
-    assert.equal(findTrace(consoleSetup.traces, "google_native_login_failed")?.pluginCode, "28444");
-    assert.equal(findTrace(consoleSetup.traces, "google_browser_fallback")?.reason, "browser-after-picker");
-    assert.equal(consoleSetup.assignments.length, 1);
-    assert.equal(new URL(consoleSetup.assignments[0] ?? "").searchParams.get("prompt"), "login");
-    assert.deepEqual(consoleSetup.errors, []);
-    assert.equal(findTrace(consoleSetup.traces, "auth_session_failed"), undefined);
 
     const ios = installClient({ name: "Ada" }, {}, "ios", async () => {
       throw new Error("Google Sign-In failed: [16] Account reauth failed");
@@ -669,17 +647,17 @@ describe("native OAuth login scopes", () => {
     );
     await clickProvider(beforePicker.click, "google");
     assert.equal(beforePicker.logins.length, 0);
+    assert.equal(beforePicker.inits.length, 0);
     assert.equal(beforePicker.posts.length, 0);
-    assert.equal(findTrace(beforePicker.traces, "google_initialize_failed")?.pluginCode, "28444");
-    assert.equal(findTrace(beforePicker.traces, "auth_path_selected")?.reason, "browser-before-picker");
-    assert.equal(findTrace(beforePicker.traces, "google_browser_fallback")?.step, "google_browser_fallback");
+    assert.equal(findTrace(beforePicker.traces, "auth_path_selected")?.reason, "browser-direct");
+    assert.equal(findTrace(beforePicker.traces, "google_browser_fallback")?.reason, "browser-direct");
     assert.equal(beforePicker.assignments.length, 1);
     const url = new URL(beforePicker.assignments[0] ?? "");
     assert.equal(url.origin, "https://accounts.google.com");
     assert.equal(url.pathname, "/o/oauth2/v2/auth");
     assert.equal(url.searchParams.get("response_mode"), "form_post");
     assert.equal(url.searchParams.get("response_type"), "id_token");
-    assert.equal(url.searchParams.get("prompt"), "select_account");
+    assert.equal(url.searchParams.get("prompt"), "login");
     assert.equal(url.searchParams.get("redirect_uri"), "https://korpasset.se/app");
     assert.equal(beforePicker.beacons.join("").includes("id_token"), false);
     assert.deepEqual(beforePicker.errors, []);
@@ -698,12 +676,12 @@ describe("native OAuth login scopes", () => {
     );
     await clickProvider(reauthInit.click, "google");
     assert.equal(reauthInit.logins.length, 0);
-    assert.equal(findTrace(reauthInit.traces, "auth_path_selected")?.reason, "browser-before-picker");
+    assert.equal(findTrace(reauthInit.traces, "auth_path_selected")?.reason, "browser-direct");
     assert.match(reauthInit.assignments[0] ?? "", /accounts\.google\.com/);
   });
 
   it("records a missing id token instead of posting an access token", async () => {
-    const client = installClient({ name: "Ada" }, {}, "android", async () => ({
+    const client = installClient({ name: "Ada" }, {}, "ios", async () => ({
       provider: "google",
       result: {
         accessToken: { token: "access-only" },
@@ -722,7 +700,7 @@ describe("native OAuth login scopes", () => {
     const rejected = installClient(
       { name: "Ada" },
       {},
-      "android",
+      "ios",
       undefined,
       async () => ({
         ok: false,
@@ -745,7 +723,7 @@ describe("native OAuth login scopes", () => {
     const account = installClient(
       { name: "Ada" },
       {},
-      "android",
+      "ios",
       undefined,
       async () => ({
         ok: false,
@@ -765,7 +743,7 @@ describe("native OAuth login scopes", () => {
   });
 
   it("records a transport failure after a native id token exists", async () => {
-    const client = installClient({ name: "Ada" }, {}, "android", undefined, async () => {
+    const client = installClient({ name: "Ada" }, {}, "ios", undefined, async () => {
       throw new Error("network down");
     });
     await clickProvider(client.click, "google");
@@ -778,7 +756,7 @@ describe("native OAuth login scopes", () => {
     const client = installClient(
       { name: "Ada" },
       {},
-      "android",
+      "ios",
       undefined,
       undefined,
       async () => {

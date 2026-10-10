@@ -6,10 +6,18 @@ Byggsteg: [native-apps.md](native-apps.md).
 
 Portal: [Play Console](https://play.google.com/console)
 
-## Granskningskonto (klart 2026-09-20)
+## Granskningskonto
 
-Play-granskaren kan inte skapa konto. Körpasset har ingen e-post/lösenord —
-de ska trycka **Fortsätt med Google**.
+`korpasset@gmail.com` är Google-kontot. På Android öppnar **Fortsätt med
+Google** Googles egen inloggningssida. Credential Manager i den
+Play-signerade appen ger ingen session (fel 16 och 28444) förrän
+SHA-1 från **Körpassets** Play App signing ligger på Android-OAuth-klienten
+i Google Cloud. Web-klienten behöver inte det certifikatet. Efter
+inloggningen skickar Chrome tillbaka till appen.
+
+Riktiga konton är Apple och Google
+([ADR-008](../decisions/ADR-008-app-oauth-accounts.md)).
+Inloggningen i appen är Fortsätt med Apple eller Fortsätt med Google.
 
 Ett konto: `korpasset@gmail.com`. Inget send-as-alias.
 
@@ -52,7 +60,7 @@ Klistra in i **Annan information som krävs för åtkomst till appen**
 (max 500 tecken, engelska):
 
 ```
-Sign in with "Fortsätt med Google" using korpasset@gmail.com (fields above). If the Google sheet is blank, a browser opens: sign in there with the same account, then tap Open Körpasset. No 2FA, biometrics, membership, location, or QR. Skip invitation QR. First login creates test data. No payment. Apple is iOS-only. Do not use /admin.
+On the first screen tap "Fortsätt med Google". A browser opens Google sign-in. Use the Google account korpasset@gmail.com and the password above. The app then opens. No 2FA, QR, location, or payment. First login opens "Vad vill du göra?".
 ```
 
 ## Innehållsklassificering (IARC, klart 2026-09-20)
@@ -88,7 +96,6 @@ Gmail-MCP i Cursor är OAuth mot det konto användaren godkänner och läser
 | --- | --- | --- |
 | `GMAIL_LOGGIN` | Environment Variable | `korpasset@gmail.com` |
 | `GMAIL_LOGGIN_PASSWORD` | Runtime Secret | Gmail-lösenordet |
-| `PLAY_REVIEW_EMAIL` | Environment Variable | `korpasset@gmail.com` |
 
 Äldre namn (`GOOGLE_ACCOUNT_EMAIL`, `GOOGLE_ACCOUNT_PASSWORD`) skapades
 inte. `RESEND_API_KEY` och `RESEND_WEBHOOK_SECRET` i samma environment är
