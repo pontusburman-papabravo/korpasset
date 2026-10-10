@@ -52,6 +52,10 @@ docker compose --project-directory /var/www/korpasset/deploy \
 
 Agent-SSH: `scripts/vps-ssh.sh check`.
 
+Papa Bravo ligger på samma Caddy, med filer i volymen `deploy_caddy_data`.
+En framtida självständig publicering är beskriven i
+[papabravo-release.md](papabravo-release.md). Den är inte införd.
+
 Daglig Postgres-dump ligger i `/var/backups/korpasset` (14 dagars retention). Se
 [Production](production.md#backup-och-restore).
 

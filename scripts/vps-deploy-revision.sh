@@ -34,6 +34,14 @@ require_tree_path scripts/vps-deploy-revision.sh
 require_tree_path scripts/vps-backup.sh
 require_tree_path scripts/vps-install-backup-timer.sh
 
+# papabravo.se is served by this same Caddy. A checkout whose Caddyfile
+# drops that site recreates the container and takes the static site offline.
+if ! git grep -q -F "papabravo.se" "$DEPLOY_SHA" -- deploy/Caddyfile \
+  || ! git grep -q -F "/data/sites/papabravo" "$DEPLOY_SHA" -- deploy/Caddyfile; then
+  echo "SHA $DEPLOY_SHA deploy/Caddyfile does not serve papabravo.se — refusing checkout" >&2
+  exit 1
+fi
+
 # Never print values. Empty or missing keys fail the deploy.
 require_env_nonempty() {
   local key="$1"
