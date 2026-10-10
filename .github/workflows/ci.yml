@@ -28,6 +28,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Deploy plan tests
+        run: bash scripts/vps-deploy-plan.test.sh
       - name: Validate Caddyfile with Caddy 2.11.4
         run: |
           set -euo pipefail

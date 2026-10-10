@@ -50,6 +50,12 @@ jobs:
           ref: ${{ steps.sha.outputs.sha }}
           fetch-depth: 1
 
+      - name: Refuse a Caddyfile without Papa Bravo
+        run: |
+          set -euo pipefail
+          grep -q -F "papabravo.se" deploy/Caddyfile
+          grep -q -F "/data/sites/papabravo" deploy/Caddyfile
+
       - name: Deploy exact revision over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:

@@ -23,13 +23,24 @@ export DEPLOY_SHA=<40-hex-sha>
 bash scripts/vps-deploy-revision.sh
 ```
 
-Scriptet checkar ut SHA:n och kör Compose med `--project-directory deploy` så
-befintliga volymer (`deploy_postgres_data`) återanvänds. Appen kör
-`applyMigrations` vid start: 0001 stämpas om `users` redan finns, sedan
-appliceras 0002–0004.
+Scriptet jämför SHA:n med utcheckningen innan den rör arbetskopian.
+En ändring som bara rör Caddyfile, Caddy-testet, testerna, markdown eller
+`.github/` checkas ut utan att bygga om appen. Caddy startas om bara om
+filens innehåll skiljer sig från det som redan körs. En applikationsändring
+som är en efterföljare till den körande revisionen byggs med Compose och
+`--project-directory deploy`, så befintliga volymer (`deploy_postgres_data`)
+återanvänds. Appen kör `applyMigrations` vid start: 0001 stämpas om `users`
+redan finns, sedan appliceras 0002–0004. Kan släktskapet inte bevisas avbryts
+deployen före checkout. En ofullständig shallow-klon får inte hoppa över ett
+appbygge. `docs/domain/*.json` räknas som applikation, eftersom taxonomin
+kopieras in i avbildningen.
 
 Före checkout vägrar scriptet SHA:n om `deploy/docker-compose.yml`,
-`deploy/Dockerfile` eller `scripts/vps-deploy-revision.sh` saknas.
+`deploy/Dockerfile` eller `scripts/vps-deploy-revision.sh` saknas, eller om
+`deploy/Caddyfile` inte serverar `papabravo.se` från `/data/sites/papabravo`.
+Samma Caddyfile-spärr körs i GitHub Actions innan SSH. Rollback av appen
+bygger bara om tjänsten `app`. Saknar den tidigare revisionens Caddyfile
+Papa Bravo läggs filen som gällde före checkout tillbaka.
 
 Sätt **icke-tomma** värden i befintlig `/var/www/korpasset/deploy/.env` före
 deploy. Tom `RESEND_API_KEY` eller `RESEND_WEBHOOK_SECRET` avbryter
